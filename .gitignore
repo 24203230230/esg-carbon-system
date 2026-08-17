@@ -1,0 +1,26 @@
+# ===== 敏感信息（绝不入库）=====
+.env
+*.env.local
+*.env.*.local
+
+# ===== Python 缓存 =====
+__pycache__/
+*.pyc
+*.pyo
+
+# ===== 系统文件 =====
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# ===== IDE =====
+.vscode/
+.idea/
+
+# ===== 临时文件 =====
+*.tmp
+*.log
+~$*
+
+# ===== 容器/构建产物 =====
+*.tgz

@@ -1,0 +1,1025 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ESG碳治理能力画像系统</title>
+    <meta name="description" content="面向企业与金融机构的碳治理能力评估工具 — 自动提取ESG报告碳信息，量化评估碳管理能力，生成可视化画像">
+    <link rel="stylesheet" href="css/style.css?v=69">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <!-- 第三方库（本地化 vendor，离线可用） -->
+    <script src="vendor/chart.umd.min.js"></script>
+    <script src="vendor/marked.min.js"></script>
+    <script src="vendor/purify.min.js"></script>
+    <script src="vendor/pdfmake.min.js"></script>
+    <script src="vendor/vfs_cn.js"></script>
+</head>
+<body>
+
+<!-- ============ 顶部导航栏 ============ -->
+<header class="navbar" id="navbar">
+    <div class="nav-container">
+        <div class="nav-logo" onclick="scrollToSection('hero')">
+            <svg class="logo-icon" viewBox="0 0 32 32" fill="none">
+                <path d="M16 2C8 2 2 8 2 16s6 14 14 14 14-6 14-14S24 2 16 2z" stroke="#10b981" stroke-width="2"/>
+                <path d="M16 8v8l5 3" stroke="#3b82f6" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                <circle cx="16" cy="16" r="3" fill="#10b981"/>
+            </svg>
+            <span class="logo-text">碳治·智评</span>
+        </div>
+        <nav class="nav-menu">
+            <a href="#hero" class="nav-link active" data-section="hero">首页</a>
+            <a href="#upload" class="nav-link" data-section="upload">上传报告</a>
+            <a href="#analysis" class="nav-link" data-section="analysis">数据提取</a>
+            <a href="#scoring" class="nav-link" data-section="scoring">评分画像</a>
+            <a href="#finance" class="nav-link" data-section="finance">金融机构端</a>
+        </nav>
+        <div class="nav-actions">
+            <button class="btn btn-ghost" onclick="scrollToSection('finance')">标准规则</button>
+            <button class="btn btn-primary" onclick="scrollToSection('upload')">开始评估</button>
+        </div>
+        <button class="nav-toggle" id="navToggle" aria-label="菜单">
+            <span></span><span></span><span></span>
+        </button>
+    </div>
+</header>
+
+<!-- ============ Hero 首页 ============ -->
+<section class="section-hero" id="hero">
+    <div class="hero-bg-grid"></div>
+    <div class="hero-bg-glow"></div>
+    <div class="container">
+        <div class="hero-content">
+            <div class="hero-badge">
+                <span class="dot-pulse"></span>
+                <span>ESG Carbon Governance Assessment</span>
+            </div>
+            <h1 class="hero-title">
+                碳治理能力<span class="text-gradient">自动画像</span><br>
+                让每一份ESG报告<span class="text-gradient">可量化、可比较</span>
+            </h1>
+            <p class="hero-desc">
+                通过自动化处理企业ESG报告，实现碳管理能力的量化评估与可视化呈现。<br>
+                为企业提供自查工具，为金融机构提供标准化碳治理评估依据。
+            </p>
+            <div class="hero-actions">
+                <button class="btn btn-primary btn-lg" onclick="scrollToSection('upload')">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M17 8l-5-5-5 5M12 3v12"/>
+                    </svg>
+                    上传ESG报告
+                </button>
+                <button class="btn btn-outline btn-lg" onclick="scrollToSection('scoring')">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M3 3v18h18M7 12l4-4 4 4 5-5"/>
+                    </svg>
+                    查看评分示例
+                </button>
+            </div>
+            <div class="hero-stats">
+                <div class="stat-item">
+                    <span class="stat-number" data-count="4">4</span>
+                    <span class="stat-label">评估维度</span>
+                </div>
+                <div class="stat-divider"></div>
+                <div class="stat-item">
+                    <span class="stat-number" data-count="10">0-10</span>
+                    <span class="stat-label">量化评分</span>
+                </div>
+                <div class="stat-divider"></div>
+                <div class="stat-item">
+                    <span class="stat-number" data-count="3">3步</span>
+                    <span class="stat-label">完成评估</span>
+                </div>
+                <div class="stat-divider"></div>
+                <div class="stat-item">
+                    <span class="stat-number">PDF/Word</span>
+                    <span class="stat-label">自动提取</span>
+                </div>
+            </div>
+        </div>
+        <div class="hero-visual">
+            <div class="hero-card-float">
+                <div class="float-card card-1">
+                    <div class="float-card-header">
+                        <span class="float-card-icon green">
+                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/></svg>
+                        </span>
+                        <span>Scope 1 直接排放</span>
+                    </div>
+                    <div class="float-card-value"><span id="hero-scope1">12,450</span> <span>tCO₂e</span></div>
+                    <div class="float-card-bar"><div class="bar-fill green" style="width: 62%"></div></div>
+                </div>
+                <div class="float-card card-2">
+                    <div class="float-card-header">
+                        <span class="float-card-icon blue">
+                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 3v18h18M7 12l4-4 4 4 5-5"/></svg>
+                        </span>
+                        <span>综合碳治理评分</span>
+                    </div>
+                    <div class="float-card-value score"><span id="hero-score">7.8</span><span>/10</span></div>
+                    <div class="float-card-bar"><div class="bar-fill blue" style="width: 78%"></div></div>
+                </div>
+                <div class="float-card card-3">
+                    <div class="float-card-header">
+                        <span class="float-card-icon teal">
+                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M2 12h20M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg>
+                        </span>
+                        <span>供应链碳管理</span>
+                    </div>
+                    <div class="float-card-value"><span id="hero-supply">6.5</span><span>/10</span></div>
+                    <div class="float-card-bar"><div class="bar-fill teal" style="width: 65%"></div></div>
+                </div>
+                <div class="hero-radar-mini">
+                    <canvas id="heroRadar"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 操作引导 -->
+    <div class="hero-guide">
+        <div class="guide-line"></div>
+        <div class="guide-steps">
+            <div class="guide-step">
+                <div class="guide-step-num">1</div>
+                <div class="guide-step-text">
+                    <strong>上传报告</strong>
+                    <span>拖拽PDF/Word文件</span>
+                </div>
+            </div>
+            <div class="guide-step">
+                <div class="guide-step-num">2</div>
+                <div class="guide-step-text">
+                    <strong>查看评分</strong>
+                    <span>四维度量化评估</span>
+                </div>
+            </div>
+            <div class="guide-step">
+                <div class="guide-step-num">3</div>
+                <div class="guide-step-text">
+                    <strong>生成画像</strong>
+                    <span>可视化报告下载</span>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- ============ 核心价值介绍 ============ -->
+<section class="section-features" id="features">
+    <div class="container">
+        <div class="section-header">
+            <span class="section-tag">核心能力</span>
+            <h2 class="section-title">三大核心功能，构建碳治理评估闭环</h2>
+            <p class="section-subtitle">从数据提取到量化评分，从可视化画像到金融机构标准化评估</p>
+        </div>
+        <div class="feature-grid">
+            <div class="feature-card">
+                <div class="feature-icon green">
+                    <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+                        <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+                        <polyline points="14 2 14 8 20 8"/>
+                        <line x1="9" y1="13" x2="15" y2="13"/>
+                        <line x1="9" y1="17" x2="15" y2="17"/>
+                    </svg>
+                </div>
+                <h3>碳数据自动提取</h3>
+                <p>基于NLP技术自动识别ESG报告中的碳排放数据（Scope 1/2/3）、能源消耗、供应链碳管理等关键信息，结构化输出。</p>
+                <div class="feature-tags">
+                    <span class="tag">PDF解析</span>
+                    <span class="tag">Word文档</span>
+                    <span class="tag">NLP提取</span>
+                </div>
+            </div>
+            <div class="feature-card highlight">
+                <div class="feature-icon blue">
+                    <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+                        <path d="M3 3v18h18"/>
+                        <rect x="7" y="12" width="3" height="6" fill="currentColor" opacity="0.3"/>
+                        <rect x="12" y="8" width="3" height="10" fill="currentColor" opacity="0.5"/>
+                        <rect x="17" y="5" width="3" height="13" fill="currentColor" opacity="0.7"/>
+                    </svg>
+                </div>
+                <h3>碳治理量化评分</h3>
+                <p>从企业内部碳管理、供应链管理、透明度披露、碳金融转化四个维度，输出0-10分的综合评分与分项评分。</p>
+                <div class="feature-tags">
+                    <span class="tag">四维模型</span>
+                    <span class="tag">0-10评分</span>
+                    <span class="tag">权重可调</span>
+                </div>
+            </div>
+            <div class="feature-card">
+                <div class="feature-icon teal">
+                    <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+                        <polygon points="12 2 22 8.5 22 15.5 12 22 2 15.5 2 8.5 12 2"/>
+                        <line x1="12" y1="22" x2="12" y2="15.5"/>
+                        <polyline points="22 8.5 12 15.5 2 8.5"/>
+                    </svg>
+                </div>
+                <h3>可视化画像报告</h3>
+                <p>一键生成含雷达图、柱状图、数据表格的可视化画像报告，支持在线预览与PDF下载，便于分享与存档。</p>
+                <div class="feature-tags">
+                    <span class="tag">雷达图</span>
+                    <span class="tag">柱状图</span>
+                    <span class="tag">可下载</span>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- ============ 报告上传模块 ============ -->
+<section class="section-upload" id="upload">
+    <div class="container">
+        <div class="section-header">
+            <span class="section-tag">Step 1</span>
+            <h2 class="section-title">上传ESG报告</h2>
+            <p class="section-subtitle">支持PDF、Word格式，拖拽或点击上传</p>
+        </div>
+
+        <div class="upload-area">
+            <div class="upload-zone" id="uploadZone">
+                <div class="upload-zone-inner">
+                    <div class="upload-icon">
+                        <svg width="56" height="56" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+                            <polyline points="17 8 12 3 7 8"/>
+                            <line x1="12" y1="3" x2="12" y2="15"/>
+                        </svg>
+                    </div>
+                    <h3 class="upload-title">将ESG报告拖拽到此处</h3>
+                    <p class="upload-hint">或 <label for="fileInput" class="upload-link">点击选择文件</label> 上传</p>
+                    <p class="upload-formats">支持 PDF、DOC、DOCX 格式，单个文件不超过 200MB</p>
+                    <input type="file" id="fileInput" accept=".pdf,.doc,.docx" multiple style="display:none">
+                </div>
+            </div>
+
+            <!-- 公司类型选择（评分分流：上市/非上市两套权重） -->
+            <div class="company-type-selector" id="companyTypeSelector">
+                <span class="company-type-label">公司类型（决定对标评分方案）</span>
+                <div class="company-type-options">
+                    <label class="company-type-option active" data-type="listed">
+                        <input type="radio" name="companyType" value="listed" checked>
+                        <span class="option-card">
+                            <span class="option-name">上市公司</span>
+                            <span class="option-desc">对标评分 · 公开披露数据</span>
+                        </span>
+                    </label>
+                    <label class="company-type-option" data-type="unlisted">
+                        <input type="radio" name="companyType" value="unlisted">
+                        <span class="option-card">
+                            <span class="option-name">非上市公司</span>
+                            <span class="option-desc">二元证据 · 基准评分</span>
+                        </span>
+                    </label>
+                </div>
+            </div>
+
+            <!-- 上传中进度 -->
+            <div class="upload-progress-list" id="progressList"></div>
+
+            <!-- 已上传文件列表 -->
+            <div class="file-list-section" id="fileListSection" style="display:none">
+                <div class="file-list-header">
+                    <h4>已上传文件</h4>
+                    <span class="file-count" id="fileCount">0 个文件</span>
+                </div>
+                <div class="file-list" id="fileList"></div>
+            </div>
+
+            <!-- 模拟提取按钮 -->
+            <div class="upload-action" id="uploadAction" style="display:none">
+                <button class="btn btn-primary btn-lg btn-block" onclick="startAnalysis()" id="analyzeBtn">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M21 12a9 9 0 1 1-9-9c2.5 0 4.8 1 6.4 2.6L21 8"/>
+                        <path d="M21 3v5h-5"/>
+                    </svg>
+                    开始数据提取
+                </button>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- ============ 数据提取结果展示 ============ -->
+<section class="section-analysis" id="analysis" style="display:none">
+    <div class="container">
+        <div class="section-header">
+            <span class="section-tag">Step 2</span>
+            <h2 class="section-title">数据提取结果</h2>
+            <p class="section-subtitle">系统已从ESG报告中自动识别并结构化以下关键碳数据</p>
+        </div>
+
+        <!-- 提取进度 -->
+        <div class="extract-progress" id="extractProgress">
+            <div class="extract-loader">
+                <div class="loader-ring"></div>
+                <div class="loader-ring"></div>
+                <div class="loader-ring"></div>
+            </div>
+            <p class="extract-status" id="extractStatus">正在解析报告文件...</p>
+        </div>
+
+        <!-- 提取结果 -->
+        <div class="extract-result" id="extractResult" style="display:none">
+            <div class="extract-tabs">
+                <button class="extract-tab active" data-tab="internal">
+                    <span class="tab-icon">
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 21h18M5 21V7l8-4v18M19 21V11l-6-4"/></svg>
+                    </span>
+                    企业内部碳管理
+                </button>
+                <button class="extract-tab" data-tab="supply">
+                    <span class="tab-icon">
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="1" y="3" width="15" height="13"/><polygon points="16 8 20 8 23 11 23 16 16 16 16 8"/><circle cx="5.5" cy="18.5" r="2.5"/><circle cx="18.5" cy="18.5" r="2.5"/></svg>
+                    </span>
+                    供应链管理
+                </button>
+                <button class="extract-tab" data-tab="disclosure">
+                    <span class="tab-icon">
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M2 12h20M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg>
+                    </span>
+                    透明度披露
+                </button>
+                <button class="extract-tab" data-tab="finance">
+                    <span class="tab-icon">
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
+                    </span>
+                    碳金融转化
+                </button>
+            </div>
+
+            <!-- 企业内部碳管理 -->
+                        <!-- 企业内部碳管理 -->
+                        <!-- 企业内部碳管理 -->
+                        <!-- 维度: 企业内部碳管理 -->
+                        <!-- 维度: 企业内部碳管理 -->
+            <div class="tab-panel" id="tab-internal">
+                <div class="dim-header">
+                    <h3 class="dim-title">企业内部碳管理</h3>
+                    <span class="dim-count">共 13 个三级指标</span>
+                </div>
+                <div class="subgroup">
+                    <div class="subgroup-header">
+                        <span class="subgroup-title">碳排放</span>
+                        <span class="subgroup-count">6个指标</span>
+                    </div>
+                    <div class="data-grid cols-3">
+                    <div class="data-card">
+                        <div class="data-card-label">碳总量</div>
+                        <div class="data-card-value"><span id="l4-01">66,370</span> <span class="unit">tCO₂e</span></div>
+                        <div class="data-card-source" id="l4-01-src">待提取</div>
+                    </div>
+                    <div class="data-card">
+                        <div class="data-card-label">碳排放强度</div>
+                        <div class="data-card-value"><span id="l4-02">3.25</span> <span class="unit">tCO₂e/百万元</span></div>
+                        <div class="data-card-source" id="l4-02-src">待提取</div>
+                    </div>
+                    <div class="data-card">
+                        <div class="data-card-label">范围一排放</div>
+                        <div class="data-card-value"><span id="l4-03">12,450</span> <span class="unit">tCO₂e</span></div>
+                        <div class="data-card-source" id="l4-03-src">待提取</div>
+                    </div>
+                    <div class="data-card">
+                        <div class="data-card-label">范围二排放</div>
+                        <div class="data-card-value"><span id="l4-04">8,320</span> <span class="unit">tCO₂e</span></div>
+                        <div class="data-card-source" id="l4-04-src">待提取</div>
+                    </div>
+                    <div class="data-card">
+                        <div class="data-card-label">范围三排放</div>
+                        <div class="data-card-value"><span id="l4-05">45,600</span> <span class="unit">tCO₂e</span></div>
+                        <div class="data-card-source" id="l4-05-src">待提取</div>
+                    </div>
+                    <div class="data-card">
+                        <div class="data-card-label">碳排放抵消与同比变化</div>
+                        <div class="data-card-value"><span id="l4-06">较上年下降 8.5%</span> </div>
+                        <div class="data-card-source" id="l4-06-src">待提取</div>
+                    </div>
+                    </div>
+                </div>
+                <div class="subgroup">
+                    <div class="subgroup-header">
+                        <span class="subgroup-title">环境治理</span>
+                        <span class="subgroup-count">3个指标</span>
+                    </div>
+                    <div class="data-grid cols-3">
+                    <div class="data-card">
+                        <div class="data-card-label">环保投资</div>
+                        <div class="data-card-value"><span id="l4-07">0</span> <span class="unit">万元</span></div>
+                        <div class="data-card-source" id="l4-07-src">待提取</div>
+                    </div>
+                    <div class="data-card">
+                        <div class="data-card-label">碳管理体系建设</div>
+                        <div class="data-card-value"><span id="l4-08">已建 ISO 14064</span> </div>
+                        <div class="data-card-source" id="l4-08-src">待提取</div>
+                    </div>
+                    <div class="data-card">
+                        <div class="data-card-label">环境管理体系</div>
+                        <div class="data-card-value"><span id="l4-09">ISO 14001 认证</span> </div>
+                        <div class="data-card-source" id="l4-09-src">待提取</div>
+                    </div>
+                    </div>
+                </div>
+                <div class="subgroup">
+                    <div class="subgroup-header">
+                        <span class="subgroup-title">能源消耗与节能方案</span>
+                        <span class="subgroup-count">4个指标</span>
+                    </div>
+                    <div class="data-grid cols-3">
+                    <div class="data-card">
+                        <div class="data-card-label">能源类型和强度</div>
+                        <div class="data-card-value"><span id="l4-10">186,500</span> <span class="unit">MWh</span></div>
+                        <div class="data-card-source" id="l4-10-src">待提取</div>
+                    </div>
+                    <div class="data-card">
+                        <div class="data-card-label">能耗同比变化</div>
+                        <div class="data-card-value"><span id="l4-11">0</span> <span class="unit">%</span></div>
+                        <div class="data-card-source" id="l4-11-src">待提取</div>
+                    </div>
+                    <div class="data-card">
+                        <div class="data-card-label">节能目标与改造情况</div>
+                        <div class="data-card-value"><span id="l4-12">2030年减排30%</span> </div>
+                        <div class="data-card-source" id="l4-12-src">待提取</div>
+                    </div>
+                    <div class="data-card">
+                        <div class="data-card-label">能效提升对比度</div>
+                        <div class="data-card-value"><span id="l4-13">0</span> <span class="unit">%</span></div>
+                        <div class="data-card-source" id="l4-13-src">待提取</div>
+                    </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 维度: 供应链碳管理 -->
+            <div class="tab-panel" id="tab-supply">
+                <div class="dim-header">
+                    <h3 class="dim-title">供应链碳管理</h3>
+                    <span class="dim-count">共 12 个三级指标</span>
+                </div>
+                <div class="subgroup">
+                    <div class="subgroup-header">
+                        <span class="subgroup-title">供应商碳管理</span>
+                        <span class="subgroup-count">4个指标</span>
+                    </div>
+                    <div class="data-grid cols-3">
+                    <div class="data-card">
+                        <div class="data-card-label">供应商碳目标</div>
+                        <div class="data-card-value"><span id="l4-14">0</span> </div>
+                        <div class="data-card-source" id="l4-14-src">待提取</div>
+                    </div>
+                    <div class="data-card">
+                        <div class="data-card-label">供应商碳披露及评价要求</div>
+                        <div class="data-card-value"><span id="l4-15">0</span> </div>
+                        <div class="data-card-source" id="l4-15-src">待提取</div>
+                    </div>
+                    <div class="data-card">
+                        <div class="data-card-label">供应商碳培训及考核情况</div>
+                        <div class="data-card-value"><span id="l4-16">0</span> </div>
+                        <div class="data-card-source" id="l4-16-src">待提取</div>
+                    </div>
+                    <div class="data-card">
+                        <div class="data-card-label">供应商绿色采购标准</div>
+                        <div class="data-card-value"><span id="l4-17">已发布</span> </div>
+                        <div class="data-card-source" id="l4-17-src">待提取</div>
+                    </div>
+                    </div>
+                </div>
+                <div class="subgroup">
+                    <div class="subgroup-header">
+                        <span class="subgroup-title">供应链协同减排</span>
+                        <span class="subgroup-count">4个指标</span>
+                    </div>
+                    <div class="data-grid cols-3">
+                    <div class="data-card">
+                        <div class="data-card-label">供应商激励</div>
+                        <div class="data-card-value"><span id="l4-18">0</span> </div>
+                        <div class="data-card-source" id="l4-18-src">待提取</div>
+                    </div>
+                    <div class="data-card">
+                        <div class="data-card-label">绿色物流</div>
+                        <div class="data-card-value"><span id="l4-19">0</span> </div>
+                        <div class="data-card-source" id="l4-19-src">待提取</div>
+                    </div>
+                    <div class="data-card">
+                        <div class="data-card-label">包装减量及回收情况</div>
+                        <div class="data-card-value"><span id="l4-20">0</span> </div>
+                        <div class="data-card-source" id="l4-20-src">待提取</div>
+                    </div>
+                    <div class="data-card">
+                        <div class="data-card-label">循环经济链塑造</div>
+                        <div class="data-card-value"><span id="l4-21">0</span> </div>
+                        <div class="data-card-source" id="l4-21-src">待提取</div>
+                    </div>
+                    </div>
+                </div>
+                <div class="subgroup">
+                    <div class="subgroup-header">
+                        <span class="subgroup-title">供应链风险管控</span>
+                        <span class="subgroup-count">4个指标</span>
+                    </div>
+                    <div class="data-grid cols-3">
+                    <div class="data-card">
+                        <div class="data-card-label">高碳供应商占比</div>
+                        <div class="data-card-value"><span id="l4-22">0</span> <span class="unit">%</span></div>
+                        <div class="data-card-source" id="l4-22-src">待提取</div>
+                    </div>
+                    <div class="data-card">
+                        <div class="data-card-label">气候风险暴露供应商数量</div>
+                        <div class="data-card-value"><span id="l4-23">0</span> <span class="unit">家</span></div>
+                        <div class="data-card-source" id="l4-23-src">待提取</div>
+                    </div>
+                    <div class="data-card">
+                        <div class="data-card-label">碳合规风险事件发生率</div>
+                        <div class="data-card-value"><span id="l4-24">0</span> <span class="unit">%</span></div>
+                        <div class="data-card-source" id="l4-24-src">待提取</div>
+                    </div>
+                    <div class="data-card">
+                        <div class="data-card-label">供应链碳风险传导影响评估</div>
+                        <div class="data-card-value"><span id="l4-25">0</span> </div>
+                        <div class="data-card-source" id="l4-25-src">待提取</div>
+                    </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 维度: 透明度 -->
+            <div class="tab-panel" id="tab-disclosure">
+                <div class="dim-header">
+                    <h3 class="dim-title">透明度</h3>
+                    <span class="dim-count">共 10 个三级指标</span>
+                </div>
+                <div class="subgroup">
+                    <div class="subgroup-header">
+                        <span class="subgroup-title">披露范围与完整性</span>
+                        <span class="subgroup-count">3个指标</span>
+                    </div>
+                    <div class="data-grid cols-3">
+                    <div class="data-card">
+                        <div class="data-card-label">碳排放披露范围</div>
+                        <div class="data-card-value"><span id="l4-26">Scope 1&2</span> </div>
+                        <div class="data-card-source" id="l4-26-src">待提取</div>
+                    </div>
+                    <div class="data-card">
+                        <div class="data-card-label">供应链碳披露层级</div>
+                        <div class="data-card-value"><span id="l4-27">0</span> </div>
+                        <div class="data-card-source" id="l4-27-src">待提取</div>
+                    </div>
+                    <div class="data-card">
+                        <div class="data-card-label">碳资产与交易信息披露比例</div>
+                        <div class="data-card-value"><span id="l4-28">0</span> <span class="unit">%</span></div>
+                        <div class="data-card-source" id="l4-28-src">待提取</div>
+                    </div>
+                    </div>
+                </div>
+                <div class="subgroup">
+                    <div class="subgroup-header">
+                        <span class="subgroup-title">披露质量与可信度</span>
+                        <span class="subgroup-count">4个指标</span>
+                    </div>
+                    <div class="data-grid cols-3">
+                    <div class="data-card">
+                        <div class="data-card-label">第三方核查覆盖率</div>
+                        <div class="data-card-value"><span id="l4-29">0</span> <span class="unit">%</span></div>
+                        <div class="data-card-source" id="l4-29-src">待提取</div>
+                    </div>
+                    <div class="data-card">
+                        <div class="data-card-label">ESG评级结果及行业排名</div>
+                        <div class="data-card-value"><span id="l4-30">0</span> </div>
+                        <div class="data-card-source" id="l4-30-src">待提取</div>
+                    </div>
+                    <div class="data-card">
+                        <div class="data-card-label">ISO14064/ISO50001认证</div>
+                        <div class="data-card-value"><span id="l4-31">已认证</span> </div>
+                        <div class="data-card-source" id="l4-31-src">待提取</div>
+                    </div>
+                    <div class="data-card">
+                        <div class="data-card-label">信息披露频次</div>
+                        <div class="data-card-value"><span id="l4-32">年度</span> </div>
+                        <div class="data-card-source" id="l4-32-src">待提取</div>
+                    </div>
+                    </div>
+                </div>
+                <div class="subgroup">
+                    <div class="subgroup-header">
+                        <span class="subgroup-title">披露合规性</span>
+                        <span class="subgroup-count">3个指标</span>
+                    </div>
+                    <div class="data-grid cols-3">
+                    <div class="data-card">
+                        <div class="data-card-label">监管强制披露要求符合性</div>
+                        <div class="data-card-value"><span id="l4-33">0</span> </div>
+                        <div class="data-card-source" id="l4-33-src">待提取</div>
+                    </div>
+                    <div class="data-card">
+                        <div class="data-card-label">交易所ESG披露指引符合性</div>
+                        <div class="data-card-value"><span id="l4-34">0</span> </div>
+                        <div class="data-card-source" id="l4-34-src">待提取</div>
+                    </div>
+                    <div class="data-card">
+                        <div class="data-card-label">历史信息披露更正次数</div>
+                        <div class="data-card-value"><span id="l4-35">0</span> <span class="unit">次</span></div>
+                        <div class="data-card-source" id="l4-35-src">待提取</div>
+                    </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 维度: 金融化情况 -->
+            <div class="tab-panel" id="tab-finance">
+                <div class="dim-header">
+                    <h3 class="dim-title">金融化情况</h3>
+                    <span class="dim-count">共 7 个三级指标</span>
+                </div>
+                <div class="subgroup">
+                    <div class="subgroup-header">
+                        <span class="subgroup-title">碳金融</span>
+                        <span class="subgroup-count">3个指标</span>
+                    </div>
+                    <div class="data-grid cols-3">
+                    <div class="data-card">
+                        <div class="data-card-label">绿色信贷</div>
+                        <div class="data-card-value"><span id="l4-36">3.2</span> <span class="unit">亿元</span></div>
+                        <div class="data-card-source" id="l4-36-src">待提取</div>
+                    </div>
+                    <div class="data-card">
+                        <div class="data-card-label">绿色债券</div>
+                        <div class="data-card-value"><span id="l4-37">5.0</span> <span class="unit">亿元</span></div>
+                        <div class="data-card-source" id="l4-37-src">待提取</div>
+                    </div>
+                    <div class="data-card">
+                        <div class="data-card-label">碳金融衍生品参与情况</div>
+                        <div class="data-card-value"><span id="l4-38">0</span> </div>
+                        <div class="data-card-source" id="l4-38-src">待提取</div>
+                    </div>
+                    </div>
+                </div>
+                <div class="subgroup">
+                    <div class="subgroup-header">
+                        <span class="subgroup-title">碳资产管理</span>
+                        <span class="subgroup-count">4个指标</span>
+                    </div>
+                    <div class="data-grid cols-3">
+                    <div class="data-card">
+                        <div class="data-card-label">碳配额管理</div>
+                        <div class="data-card-value"><span id="l4-39">8,200</span> <span class="unit">tCO₂e</span></div>
+                        <div class="data-card-source" id="l4-39-src">待提取</div>
+                    </div>
+                    <div class="data-card">
+                        <div class="data-card-label">CCER开发与储备</div>
+                        <div class="data-card-value"><span id="l4-40">2个项目</span> </div>
+                        <div class="data-card-source" id="l4-40-src">待提取</div>
+                    </div>
+                    <div class="data-card">
+                        <div class="data-card-label">碳资产交易收益</div>
+                        <div class="data-card-value"><span id="l4-41">0</span> <span class="unit">万元</span></div>
+                        <div class="data-card-source" id="l4-41-src">待提取</div>
+                    </div>
+                    <div class="data-card">
+                        <div class="data-card-label">碳资产保值增值策略</div>
+                        <div class="data-card-value"><span id="l4-42">已部署平台</span> </div>
+                        <div class="data-card-source" id="l4-42-src">待提取</div>
+                    </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 进入评分 -->
+            <div class="analysis-next">
+                <button class="btn btn-primary btn-lg" onclick="scrollToSection('scoring')">
+                    查看碳治理评分
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
+                </button>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- ============ 碳治理评分与画像 ============ -->
+<section class="section-scoring" id="scoring" style="display:none">
+    <div class="container">
+        <div class="section-header">
+            <span class="section-tag">Step 3</span>
+            <h2 class="section-title">碳治理能力评分与画像</h2>
+            <p class="section-subtitle">基于四维度模型量化评估，自动生成可视化画像报告</p>
+        </div>
+
+        <!-- 综合评分 -->
+        <div class="score-overview">
+            <div class="score-main">
+                <div class="score-circle-wrap">
+                    <svg class="score-circle-svg" viewBox="0 0 200 200">
+                        <circle cx="100" cy="100" r="85" fill="none" stroke="#e8edf2" stroke-width="14"/>
+                        <circle cx="100" cy="100" r="85" fill="none" stroke="url(#scoreGradient)" stroke-width="14"
+                            stroke-linecap="round"
+                            stroke-dasharray="534"
+                            stroke-dashoffset="117"
+                            transform="rotate(-90 100 100)"
+                            id="scoreCircle"/>
+                        <defs>
+                            <linearGradient id="scoreGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+                                <stop offset="0%" stop-color="#10b981"/>
+                                <stop offset="100%" stop-color="#3b82f6"/>
+                            </linearGradient>
+                        </defs>
+                    </svg>
+                    <div class="score-circle-content">
+                        <div class="score-label">综合评分</div>
+                        <div class="score-number" id="overallScore">7.8</div>
+                        <div class="score-max">/ 10.0</div>
+                        <div class="score-grade">优秀 (A)</div>
+                    </div>
+                </div>
+                <div class="score-summary">
+                    <h3>评估结论</h3>
+                    <p>该企业碳治理能力整体处于<span class="text-green font-bold">优秀</span>水平。在透明度披露和内部碳管理方面表现突出，供应链碳管理仍有提升空间，碳金融转化能力处于行业领先水平。</p>
+                    <div class="score-tags">
+                        <span class="score-tag green" data-dim="internal">内部管理 ✓</span>
+                        <span class="score-tag yellow" data-dim="supply">供应链待提升</span>
+                        <span class="score-tag green" data-dim="disclosure">披露透明 ✓</span>
+                        <span class="score-tag blue" data-dim="finance">金融领先 ✓</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 分项评分 -->
+        <div class="score-charts">
+            <div class="chart-card">
+                <div class="chart-card-header">
+                    <h4>四维度雷达图</h4>
+                    <span class="chart-hint">维度能力分布</span>
+                </div>
+                <div class="chart-body">
+                    <canvas id="radarChart"></canvas>
+                </div>
+            </div>
+            <div class="chart-card">
+                <div class="chart-card-header">
+                    <h4>分项评分对比</h4>
+                    <span class="chart-hint">0-10分</span>
+                </div>
+                <div class="chart-body">
+                    <canvas id="barChart"></canvas>
+                </div>
+            </div>
+        </div>
+
+        <!-- 分项详情 -->
+        <div class="score-details">
+            <div class="score-detail-card">
+                <div class="detail-header green">
+                    <span class="detail-icon">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 21h18M5 21V7l8-4v18M19 21V11l-6-4"/></svg>
+                    </span>
+                    <div>
+                        <h4>企业内部碳管理</h4>
+                        <span class="detail-score green">8.2 / 10</span>
+                    </div>
+                </div>
+                <ul class="detail-list">
+                    <li><span class="dot green"></span>碳排放数据体系完善，Scope 1-3全覆盖</li>
+                    <li><span class="dot green"></span>可再生能源占比32.5%，目标明确</li>
+                    <li><span class="dot yellow"></span>碳减排目标偏保守，建议提高至40%</li>
+                    <li><span class="dot green"></span>设有首席可持续发展官及专项委员会</li>
+                </ul>
+            </div>
+            <div class="score-detail-card">
+                <div class="detail-header yellow">
+                    <span class="detail-icon">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="1" y="3" width="15" height="13"/><polygon points="16 8 20 8 23 11 23 16 16 16 16 8"/><circle cx="5.5" cy="18.5" r="2.5"/><circle cx="18.5" cy="18.5" r="2.5"/></svg>
+                    </span>
+                    <div>
+                        <h4>供应链碳管理</h4>
+                        <span class="detail-score yellow">6.5 / 10</span>
+                    </div>
+                </div>
+                <ul class="detail-list">
+                    <li><span class="dot green"></span>已建立供应商碳数据收集系统</li>
+                    <li><span class="dot yellow"></span>绿色采购执行率仅45%，需加强落地</li>
+                    <li><span class="dot red"></span>仅19%供应商签署减排目标</li>
+                    <li><span class="dot yellow"></span>供应链碳评级覆盖67%，需扩展</li>
+                </ul>
+            </div>
+            <div class="score-detail-card">
+                <div class="detail-header green">
+                    <span class="detail-icon">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M2 12h20M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg>
+                    </span>
+                    <div>
+                        <h4>透明度披露</h4>
+                        <span class="detail-score green">8.5 / 10</span>
+                    </div>
+                </div>
+                <ul class="detail-list">
+                    <li><span class="dot green"></span>连续8年发布ESG报告</li>
+                    <li><span class="dot green"></span>对标GRI/SASB/TCFD三大框架</li>
+                    <li><span class="dot green"></span>Scope 1&2通过第三方审计</li>
+                    <li><span class="dot yellow"></span>Scope 3审计范围可进一步扩大</li>
+                </ul>
+            </div>
+            <div class="score-detail-card">
+                <div class="detail-header blue">
+                    <span class="detail-icon">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
+                    </span>
+                    <div>
+                        <h4>碳金融转化</h4>
+                        <span class="detail-score blue">7.9 / 10</span>
+                    </div>
+                </div>
+                <ul class="detail-list">
+                    <li><span class="dot green"></span>绿色债券发行5亿元，利率优势明显</li>
+                    <li><span class="dot green"></span>碳资产数字化管理平台已部署</li>
+                    <li><span class="dot green"></span>绿色营收占比18.5%，持续增长</li>
+                    <li><span class="dot yellow"></span>CCER项目数量可进一步增加</li>
+                </ul>
+            </div>
+        </div>
+
+        <!-- 画像报告生成 -->
+        <div class="report-generate">
+            <div class="report-generate-inner">
+                <div class="report-gen-left">
+                    <h3>生成可视化画像报告</h3>
+                    <p>包含完整数据提取结果、四维度评分、雷达图分析、改进建议，可下载PDF格式。</p>
+                </div>
+                <div class="report-gen-right">
+                    <button class="btn btn-outline btn-lg" onclick="previewReport()" id="previewBtn">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+                        预览报告
+                    </button>
+                    <button class="btn btn-primary btn-lg" onclick="downloadReport()" id="downloadBtn">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+                        下载画像报告
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- ============ 金融机构端评估 ============ -->
+<section class="section-finance" id="finance">
+    <div class="container">
+        <div class="section-header">
+            <span class="section-tag">金融机构端</span>
+            <h2 class="section-title">标准化碳治理评估依据</h2>
+            <p class="section-subtitle">为金融机构提供统一标准的企业碳管理评估体系</p>
+        </div>
+
+        <!-- 评估标准 -->
+        <div class="finance-standards">
+            <div class="standard-card">
+                <div class="standard-rank">S</div>
+                <div class="standard-info">
+                    <h4>卓越 (9.0-10.0)</h4>
+                    <p>碳治理体系完善，全链条数据透明，碳金融布局领先</p>
+                </div>
+                <div class="standard-color green"></div>
+            </div>
+            <div class="standard-card">
+                <div class="standard-rank">A</div>
+                <div class="standard-info">
+                    <h4>优秀 (7.5-8.9)</h4>
+                    <p>碳管理体系健全，披露透明度高，具备碳金融转化能力</p>
+                </div>
+                <div class="standard-color blue"></div>
+            </div>
+            <div class="standard-card">
+                <div class="standard-rank">B</div>
+                <div class="standard-info">
+                    <h4>良好 (6.0-7.4)</h4>
+                    <p>已建立基本碳管理体系，部分维度需提升</p>
+                </div>
+                <div class="standard-color teal"></div>
+            </div>
+            <div class="standard-card">
+                <div class="standard-rank">C</div>
+                <div class="standard-info">
+                    <h4>待改进 (0-5.9)</h4>
+                    <p>碳治理能力薄弱，需系统性建设与提升</p>
+                </div>
+                <div class="standard-color gray"></div>
+            </div>
+        </div>
+
+        <!-- 多企业对比 -->
+        <div class="comparison-section">
+            <div class="comparison-header">
+                <h3>多企业碳治理评分对比</h3>
+                <div class="comparison-actions">
+                    <select class="compare-select" id="sortSelect">
+                        <option value="overall">按综合评分排序</option>
+                        <option value="internal">按内部碳管理</option>
+                        <option value="supply">按供应链管理</option>
+                        <option value="disclosure">按透明度披露</option>
+                        <option value="finance">按碳金融转化</option>
+                    </select>
+                    <button class="btn btn-outline btn-sm" onclick="toggleCompareChart()">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 3v18h18"/><rect x="7" y="12" width="3" height="6"/><rect x="12" y="8" width="3" height="10"/><rect x="17" y="5" width="3" height="13"/></svg>
+                        切换图表
+                    </button>
+                </div>
+            </div>
+
+            <div class="comparison-table-wrap">
+                <table class="comparison-table" id="comparisonTable">
+                    <thead>
+                        <tr>
+                            <th>企业名称</th>
+                            <th>内部碳管理</th>
+                            <th>供应链管理</th>
+                            <th>透明度披露</th>
+                            <th>碳金融转化</th>
+                            <th>综合评分</th>
+                            <th>评级</th>
+                            <th>操作</th>
+                        </tr>
+                    </thead>
+                    <tbody id="comparisonBody">
+                        <!-- JS动态填充 -->
+                    </tbody>
+                </table>
+            </div>
+
+            <div class="comparison-chart-wrap" id="comparisonChartWrap">
+                <div class="chart-card">
+                    <div class="chart-card-header">
+                        <h4>企业碳治理能力对比</h4>
+                        <span class="chart-hint">多维度横向对比 · <span style="color:#f59e0b;font-weight:600;">演示数据</span></span>
+                    </div>
+                    <div class="chart-body chart-body-lg">
+                        <canvas id="compareChart"></canvas>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- ============ Footer ============ -->
+<footer class="footer">
+    <div class="container">
+        <div class="footer-grid">
+            <div class="footer-brand">
+                <div class="nav-logo">
+                    <svg class="logo-icon" viewBox="0 0 32 32" fill="none">
+                        <path d="M16 2C8 2 2 8 2 16s6 14 14 14 14-6 14-14S24 2 16 2z" stroke="#10b981" stroke-width="2"/>
+                        <path d="M16 8v8l5 3" stroke="#3b82f6" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                        <circle cx="16" cy="16" r="3" fill="#10b981"/>
+                    </svg>
+                    <span class="logo-text">碳治·智评</span>
+                </div>
+                <p>ESG报告碳信息自动提取与碳治理能力画像系统</p>
+            </div>
+            <div class="footer-links">
+                <h5>产品</h5>
+                <a href="#upload">报告上传</a>
+                <a href="#analysis">数据提取</a>
+                <a href="#scoring">评分画像</a>
+            </div>
+            <div class="footer-links">
+                <h5>标准</h5>
+                <a href="#finance">评估规则</a>
+                <a href="#finance">企业对比</a>
+                <a href="#finance">评级体系</a>
+            </div>
+            <div class="footer-links">
+                <h5>关于</h5>
+                <a href="#hero">项目介绍</a>
+                <a href="#features">核心能力</a>
+            </div>
+        </div>
+        <div class="footer-bottom">
+            <p>© 2025 ESG碳治理能力画像系统 | 演示版本 — 数据为模拟生成</p>
+        </div>
+    </div>
+</footer>
+
+<!-- ============ 报告预览模态框 ============ -->
+<div class="modal-overlay" id="reportModal">
+    <div class="modal-content modal-lg">
+        <div class="modal-header">
+            <h3>碳治理能力画像报告</h3>
+            <button class="modal-close" onclick="closeModal('reportModal')">&times;</button>
+        </div>
+        <div class="modal-body" id="reportModalBody">
+            <!-- JS动态填充 -->
+        </div>
+        <div class="modal-footer">
+            <button class="btn btn-outline" onclick="closeModal('reportModal')">关闭</button>
+            <button class="btn btn-primary" onclick="downloadReport()">下载PDF</button>
+        </div>
+    </div>
+</div>
+
+<!-- ============ Toast 提示 ============ -->
+<div class="toast-container" id="toastContainer"></div>
+
+<script src="js/config.js?v=69"></script>
+<script src="js/mock-data.js?v=69"></script>
+<script src="js/app.js?v=69"></script>
+<script src="js/charts.js?v=69"></script>
+</body>
+</html>
