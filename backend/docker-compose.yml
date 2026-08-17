@@ -38,9 +38,39 @@ services:
       - "80:80"
     depends_on:
       - esg-extractor
+      - esg-agent2
     networks:
       - ai-network
     restart: unless-stopped
+
+  # 智能体二 · 障碍度根因分析（双后端：deepseek 默认自主可控 | adp 比赛展示）
+  esg-agent2:
+    build: ./agent2
+    container_name: esg-agent2
+    ports:
+      - "8083:8083"
+    environment:
+      # 后端切换：deepseek（自主可控）| adp（比赛展示）
+      - ADP_BACKEND=${ADP_BACKEND:-deepseek}
+      # DeepSeek（deepseek 模式，复用同一 key）
+      - DEEPSEEK_API_KEY=${DEEPSEEK_API_KEY}
+      - DEEPSEEK_BASE_URL=${DEEPSEEK_BASE_URL:-https://api.deepseek.com}
+      - DEEPSEEK_MODEL=${DEEPSEEK_MODEL:-deepseek-v4-flash}
+      - DEEPSEEK_THINKING=${DEEPSEEK_THINKING:-disabled}
+      - DEEPSEEK_REASONING_EFFORT=${DEEPSEEK_REASONING_EFFORT:-low}
+      # 端口
+      - PORT=8083
+    env_file:
+      - .env
+    networks:
+      - ai-network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "python", "-c", "import requests; r = requests.get('http://localhost:8083/api/health', timeout=5); exit(0 if r.status_code == 200 else 1)"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 20s
 
 networks:
   ai-network:
