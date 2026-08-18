@@ -62,6 +62,212 @@ function closeModal(id) {
     document.body.style.overflow = '';
 }
 
+// ============ Supabase 认证 + 历史记录（v=70） ============
+let supabase = null;
+let authMode = 'login'; // 'login' | 'register'
+
+function initSupabase() {
+    if (typeof window.supabase === 'undefined' || !API_CONFIG.SUPABASE_URL) {
+        console.warn('Supabase 未加载或未配置，登录功能不可用');
+        return;
+    }
+    supabase = window.supabase.createClient(API_CONFIG.SUPABASE_URL, API_CONFIG.SUPABASE_ANON_KEY);
+    supabase.auth.onAuthStateChange((event) => {
+        updateAuthUI();
+        if (event === 'SIGNED_IN') showToast('登录成功', 'success');
+        if (event === 'SIGNED_OUT') showToast('已退出登录', 'info');
+    });
+    updateAuthUI();
+}
+
+async function getCurrentUser() {
+    if (!supabase) return null;
+    try {
+        const { data } = await supabase.auth.getUser();
+        return data.user || null;
+    } catch (e) { return null; }
+}
+
+function openAuthModal() {
+    authMode = 'login';
+    $('#authModalTitle').textContent = '登录';
+    $('#authSubmitBtn').textContent = '登录';
+    $('#authSwitchText').textContent = '还没有账号？';
+    $('#authSwitchLink').textContent = '注册';
+    $('#authNicknameGroup').style.display = 'none';
+    $('#authError').style.display = 'none';
+    openModal('authModal');
+}
+
+function toggleAuthMode() {
+    authMode = authMode === 'login' ? 'register' : 'login';
+    const isRegister = authMode === 'register';
+    $('#authModalTitle').textContent = isRegister ? '注册' : '登录';
+    $('#authSubmitBtn').textContent = isRegister ? '注册并登录' : '登录';
+    $('#authSwitchText').textContent = isRegister ? '已有账号？' : '还没有账号？';
+    $('#authSwitchLink').textContent = isRegister ? '登录' : '注册';
+    $('#authNicknameGroup').style.display = isRegister ? 'block' : 'none';
+    $('#authError').style.display = 'none';
+}
+
+async function handleAuthSubmit() {
+    const email = $('#authEmail').value.trim();
+    const password = $('#authPassword').value;
+    const nickname = $('#authNickname').value.trim();
+    const errEl = $('#authError');
+    errEl.style.display = 'none';
+    if (!email || !password) {
+        errEl.textContent = '请填写邮箱和密码';
+        errEl.style.display = 'block';
+        return;
+    }
+    try {
+        if (authMode === 'register') {
+            if (!nickname) { errEl.textContent = '请填写昵称'; errEl.style.display = 'block'; return; }
+            const { data, error } = await supabase.auth.signUp({
+                email, password,
+                options: { data: { username: nickname } }
+            });
+            if (error) throw error;
+            // 创建 profiles 行（RLS 允许本人 insert）
+            if (data.user) {
+                const r = await supabase.from('profiles').insert({ id: data.user.id, username: nickname });
+                if (r.error && !String(r.error.code).startsWith('23')) console.warn('profile 创建:', r.error.message);
+            }
+            showToast('注册成功！', 'success');
+        } else {
+            const { error } = await supabase.auth.signInWithPassword({ email, password });
+            if (error) throw error;
+        }
+        closeModal('authModal');
+        $('#authPassword').value = '';
+    } catch (e) {
+        errEl.textContent = e.message || '操作失败';
+        errEl.style.display = 'block';
+    }
+}
+
+async function handleLogout() {
+    await supabase.auth.signOut();
+    $('#history').style.display = 'none';
+}
+
+async function updateAuthUI() {
+    const user = await getCurrentUser();
+    const btn = $('#navAuthBtn');
+    const info = $('#navUserInfo');
+    const histLink = $('#navHistoryLink');
+    if (user) {
+        btn.textContent = '退出';
+        btn.onclick = handleLogout;
+        let nickname = (user.user_metadata && user.user_metadata.username) || user.email || '用户';
+        try {
+            const { data } = await supabase.from('profiles').select('username').eq('id', user.id).maybeSingle();
+            if (data && data.username) nickname = data.username;
+        } catch (e) { /* profiles 未建时忽略 */ }
+        info.style.display = 'inline';
+        info.textContent = `👤 ${nickname}`;
+        histLink.style.display = '';
+    } else {
+        btn.textContent = '登录';
+        btn.onclick = openAuthModal;
+        info.style.display = 'none';
+        info.textContent = '';
+        histLink.style.display = 'none';
+    }
+}
+
+// ---------- 历史记录 ----------
+async function saveHistoryToSupabase() {
+    if (!supabase) return;
+    try {
+        const user = await getCurrentUser();
+        if (!user) return; // 游客不保存
+        const ext = (App.extractResult && App.extractResult.extracted) || App.extractResult || {};
+        const meta = ext['报告元数据'] || {};
+        const sd = ext['评分增强数据'] || {};
+        const { error } = await supabase.from('history').insert({
+            company_name: meta['企业名称'] || '未命名企业',
+            industry: meta['所属行业'] || '',
+            report_year: meta['报告年份'] || '',
+            total_score: sd['总分'] || 0,
+            grade: sd['评分等级'] || '',
+            result_json: ext
+        });
+        if (error) console.warn('历史保存失败:', error.message);
+        else showToast('分析记录已保存', 'success');
+    } catch (e) {
+        console.warn('历史保存异常:', e);
+    }
+}
+
+function openHistoryPage() {
+    $('#history').style.display = 'block';
+    scrollToSection('history');
+    refreshHistory();
+}
+
+async function refreshHistory() {
+    if (!supabase) return;
+    const listEl = $('#historyList');
+    listEl.innerHTML = '<div class="history-loading">加载中...</div>';
+    const { data, error } = await supabase
+        .from('history')
+        .select('*')
+        .order('created_at', { ascending: false });
+    if (error) {
+        listEl.innerHTML = `<div class="history-empty" style="display:block;">加载失败：${error.message}</div>`;
+        return;
+    }
+    if (!data || data.length === 0) {
+        listEl.innerHTML = '<div class="history-empty" style="display:block;">暂无分析记录 —— 上传报告并完成分析后，结果会自动保存到这里</div>';
+        return;
+    }
+    listEl.innerHTML = data.map(h => `
+        <div class="history-card">
+            <div class="history-card-main" style="cursor:pointer;" onclick="openHistoryDetail('${h.id}')">
+                <div class="history-card-name">${h.company_name || '未命名企业'}</div>
+                <div class="history-card-meta">${h.report_year || '—'} 年度 · ${h.industry || '—'} · ${formatTime(h.created_at)}</div>
+            </div>
+            <div class="history-card-score">
+                <div class="history-card-grade">${h.grade || '—'}</div>
+                <div class="history-card-score-num">${h.total_score != null ? Number(h.total_score).toFixed(2) : '—'}</div>
+                <div class="history-card-score-label">综合评分</div>
+            </div>
+            <div class="history-card-actions">
+                <button class="btn btn-outline" onclick="openHistoryDetail('${h.id}')">查看</button>
+                <button class="btn btn-outline" onclick="deleteHistory('${h.id}')" style="color:#dc2626;">删除</button>
+            </div>
+        </div>
+    `).join('');
+}
+
+function formatTime(iso) {
+    if (!iso) return '';
+    const d = new Date(iso);
+    const p = n => String(n).padStart(2, '0');
+    return `${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())} ${p(d.getHours())}:${p(d.getMinutes())}`;
+}
+
+async function openHistoryDetail(id) {
+    if (!supabase) return;
+    const { data, error } = await supabase.from('history').select('*').eq('id', id).single();
+    if (error || !data) { showToast('记录加载失败', 'error'); return; }
+    // 设置全局数据复用 previewReport（不触发重复保存）
+    App.extractResult = { extracted: data.result_json };
+    App.scoreResult = null;
+    App.analysisDone = true;
+    App._historySaveToken = null; // 历史详情不重复保存
+    previewReport();
+}
+
+async function deleteHistory(id) {
+    if (!confirm('确定删除这条分析记录吗？')) return;
+    const { error } = await supabase.from('history').delete().eq('id', id);
+    if (error) showToast('删除失败: ' + error.message, 'error');
+    else { showToast('已删除', 'success'); refreshHistory(); }
+}
+
 // ============ 导航栏 ============
 function initNavbar() {
     const navbar = $('#navbar');
@@ -408,6 +614,9 @@ function startAnalysis() {
             progress.style.display = 'none';
             result.style.display = 'block';
             App.analysisDone = true;
+            // 分析完成标记：previewReport 首次打开时保存历史（防重复）
+            App._historySaveToken = Date.now();
+            App._historySavedForToken = false;
 
             btn.disabled = false;
             btn.innerHTML = '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12a9 9 0 1 1-9-9c2.5 0 4.8 1 6.4 2.6L21 8"/><path d="M21 3v5h-5"/></svg> 重新分析';
@@ -1060,6 +1269,12 @@ ${suggestionHtml}
 
     // 渲染报告内雷达图（真实维度得分；PDF 导出时 toDataURL 复用）
     renderReportRadar(scoreData);
+
+    // 分析完成首次打开报告 → 保存历史到 Supabase（已登录用户）
+    if (App._historySaveToken && !App._historySavedForToken) {
+        App._historySavedForToken = true;
+        saveHistoryToSupabase();
+    }
 }
 
 /**
@@ -1454,6 +1669,9 @@ document.addEventListener('DOMContentLoaded', () => {
     if (typeof Chart !== 'undefined') {
         Charts.initHeroRadar();
     }
+
+    // Supabase 认证 + 历史（v=70）
+    initSupabase();
 
     // 点击模态框外部关闭
     $$('.modal-overlay').forEach(overlay => {

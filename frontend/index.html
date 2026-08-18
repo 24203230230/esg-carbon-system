@@ -13,6 +13,7 @@
     <script src="vendor/purify.min.js"></script>
     <script src="vendor/pdfmake.min.js"></script>
     <script src="vendor/vfs_cn.js"></script>
+    <script src="vendor/supabase.min.js"></script>
 </head>
 <body>
 
@@ -33,9 +34,12 @@
             <a href="#analysis" class="nav-link" data-section="analysis">数据提取</a>
             <a href="#scoring" class="nav-link" data-section="scoring">评分画像</a>
             <a href="#finance" class="nav-link" data-section="finance">金融机构端</a>
+            <a href="#history" class="nav-link" data-section="history" id="navHistoryLink" style="display:none" onclick="openHistoryPage(); return false;">我的分析</a>
         </nav>
         <div class="nav-actions">
             <button class="btn btn-ghost" onclick="scrollToSection('finance')">标准规则</button>
+            <span id="navUserInfo" style="display:none; font-size:13px; color:var(--color-text-secondary);"></span>
+            <button class="btn btn-outline" id="navAuthBtn" onclick="openAuthModal()">登录</button>
             <button class="btn btn-primary" onclick="scrollToSection('upload')">开始评估</button>
         </div>
         <button class="nav-toggle" id="navToggle" aria-label="菜单">
@@ -1014,12 +1018,61 @@
     </div>
 </div>
 
+<!-- ============ 登录/注册弹窗（v=70） ============ -->
+<div class="modal-overlay" id="authModal">
+    <div class="modal-content modal-sm">
+        <div class="modal-header">
+            <h3 id="authModalTitle">登录</h3>
+            <button class="modal-close" onclick="closeModal('authModal')">&times;</button>
+        </div>
+        <div class="modal-body">
+            <form id="authForm" onsubmit="return false;">
+                <div class="form-group">
+                    <label class="form-label">邮箱</label>
+                    <input type="email" class="form-input" id="authEmail" placeholder="you@example.com" required>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">密码</label>
+                    <input type="password" class="form-input" id="authPassword" placeholder="至少 6 位" required minlength="6">
+                </div>
+                <div class="form-group" id="authNicknameGroup" style="display:none;">
+                    <label class="form-label">昵称（中英文均可）</label>
+                    <input type="text" class="form-input" id="authNickname" placeholder="如：志豪 / Zihao">
+                </div>
+                <div class="auth-error" id="authError" style="display:none;"></div>
+                <button class="btn btn-primary btn-block" id="authSubmitBtn" onclick="handleAuthSubmit()">登录</button>
+            </form>
+            <div class="auth-switch">
+                <span id="authSwitchText">还没有账号？</span>
+                <a href="javascript:void(0)" id="authSwitchLink" onclick="toggleAuthMode()">注册</a>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- ============ 我的分析（历史记录，v=70） ============ -->
+<section class="section-finance" id="history" style="display:none;">
+    <div class="container">
+        <div class="section-header">
+            <span class="section-tag">历史记录</span>
+            <h2 class="section-title">我的分析</h2>
+            <p class="section-subtitle">登录后可查看全部历史分析记录，点击可重新查看完整报告</p>
+        </div>
+        <div class="history-toolbar">
+            <button class="btn btn-outline" onclick="refreshHistory()">刷新列表</button>
+        </div>
+        <div class="history-list" id="historyList">
+            <div class="history-empty" id="historyEmpty" style="display:none;">暂无分析记录 —— 上传报告并完成分析后，结果会自动保存到这里</div>
+        </div>
+    </div>
+</section>
+
 <!-- ============ Toast 提示 ============ -->
 <div class="toast-container" id="toastContainer"></div>
 
-<script src="js/config.js?v=69"></script>
-<script src="js/mock-data.js?v=69"></script>
-<script src="js/app.js?v=69"></script>
-<script src="js/charts.js?v=69"></script>
+<script src="js/config.js?v=70"></script>
+<script src="js/mock-data.js?v=70"></script>
+<script src="js/app.js?v=70"></script>
+<script src="js/charts.js?v=70"></script>
 </body>
 </html>

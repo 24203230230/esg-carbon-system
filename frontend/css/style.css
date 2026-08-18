@@ -1519,3 +1519,44 @@ section[class^="section-"]:not(.section-hero) {
 }
 .adp-report tr:nth-child(even) td { background: #fafafa; }
 .adp-report img { max-width: 100%; }
+
+/* ===== 登录弹窗 + 我的分析页（v=70）===== */
+.modal-sm { max-width: 400px; }
+.form-group { margin-bottom: 14px; }
+.form-label { display: block; font-size: 13px; color: var(--color-text-secondary); margin-bottom: 5px; font-weight: 600; }
+.form-input {
+  width: 100%; padding: 9px 12px; border: 1px solid var(--color-border);
+  border-radius: 8px; font-size: 14px; background: var(--color-card-bg); color: var(--color-text);
+  box-sizing: border-box; outline: none; transition: border-color .2s;
+}
+.form-input:focus { border-color: var(--color-blue); }
+.btn-block { width: 100%; margin-top: 6px; }
+.auth-error {
+  background: #FEF2F2; color: #DC2626; border: 1px solid #FECACA;
+  padding: 8px 12px; border-radius: 8px; font-size: 13px; margin-bottom: 12px;
+}
+.auth-switch { text-align: center; margin-top: 16px; font-size: 13px; color: var(--color-text-muted); }
+.auth-switch a { color: var(--color-blue); font-weight: 600; margin-left: 4px; }
+
+/* 我的分析 */
+.history-toolbar { margin-bottom: 16px; }
+.history-list { display: flex; flex-direction: column; gap: 12px; }
+.history-card {
+  background: var(--color-card-bg); border: 1px solid var(--color-border);
+  border-radius: 10px; padding: 14px 18px; display: flex; align-items: center;
+  gap: 16px; transition: box-shadow .2s, transform .2s;
+}
+.history-card:hover { box-shadow: 0 4px 14px rgba(0,0,0,.08); transform: translateY(-1px); }
+.history-card-main { flex: 1; min-width: 0; }
+.history-card-name { font-size: 15px; font-weight: 700; margin-bottom: 4px; }
+.history-card-meta { font-size: 12.5px; color: var(--color-text-muted); }
+.history-card-score { text-align: center; min-width: 80px; }
+.history-card-score-num { font-size: 22px; font-weight: 900; color: var(--color-green); }
+.history-card-score-label { font-size: 11px; color: var(--color-text-muted); }
+.history-card-grade { display: inline-block; padding: 2px 10px; border-radius: 10px; font-size: 11.5px; font-weight: 700; background: var(--color-green-bg); color: var(--color-green); margin-bottom: 6px; }
+.history-card-actions { display: flex; gap: 8px; }
+.history-empty {
+  text-align: center; color: var(--color-text-muted); font-size: 14px;
+  padding: 40px 20px; border: 1px dashed var(--color-border); border-radius: 10px;
+}
+.history-loading { text-align: center; color: var(--color-text-muted); padding: 30px; }

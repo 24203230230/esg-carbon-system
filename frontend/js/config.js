@@ -19,5 +19,10 @@ const API_CONFIG = {
     ADP_API: 'http://localhost/api/suggest',
 
     // 当前模式: 'mock' 用模拟数据演示 | 'live' 真实API
-    MODE: 'live'
+    MODE: 'live',
+
+    // Supabase（用户体系 + 分析历史存储，v=70 新增）
+    // publishable key 公开安全（RLS 行级安全保护数据），勿放 service_role 密钥
+    SUPABASE_URL: 'https://dtxwciejvxcpzvglhqvj.supabase.co',
+    SUPABASE_ANON_KEY: 'sb_publishable_JSz0wfsr2A3h_X_66dDeyA_qUkqDubn'
 };
