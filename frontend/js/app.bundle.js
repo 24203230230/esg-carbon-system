@@ -294,10 +294,17 @@ function hidePasswordEditor() {
 async function savePassword() {
     const p1 = $('#newPasswordInput');
     const p2 = $('#confirmPasswordInput');
-    const v1 = p1 ? p1.value : '';
-    const v2 = p2 ? p2.value : '';
-    if (v1.length < 6) { showToast('密码至少 6 位', 'error'); return; }
-    if (v1 !== v2) { showToast('两次输入不一致', 'error'); return; }
+    console.log('[savePassword] p1=', p1, 'p2=', p2, 'p1.value=', p1 && p1.value, 'p2.value=', p2 && p2.value);
+    if (!p1 || !p2) {
+        showToast('密码输入框未找到，请刷新页面', 'error');
+        return;
+    }
+    const v1 = (p1.value || '').trim();
+    const v2 = (p2.value || '').trim();
+    if (v1.length === 0) { showToast('请输入新密码', 'error'); p1.focus(); return; }
+    if (v1.length < 6) { showToast('密码至少 6 位（当前 ' + v1.length + ' 位）', 'error'); p1.focus(); return; }
+    if (v2.length === 0) { showToast('请确认新密码', 'error'); p2.focus(); return; }
+    if (v1 !== v2) { showToast('两次输入不一致', 'error'); p2.focus(); return; }
     try {
         const { error } = await supaClient.auth.updateUser({ password: v1 });
         if (error) throw error;
