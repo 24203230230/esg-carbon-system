@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>ESG碳治理能力画像系统</title>
     <meta name="description" content="面向企业与金融机构的碳治理能力评估工具 — 自动提取ESG报告碳信息，量化评估碳管理能力，生成可视化画像">
-    <link rel="stylesheet" href="css/style.css?v=69">
+    <link rel="stylesheet" href="css/style.css?v=75&t=1787052846">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <!-- 第三方库（本地化 vendor，离线可用） -->
     <script src="vendor/chart.umd.min.js"></script>
@@ -38,7 +38,61 @@
         </nav>
         <div class="nav-actions">
             <button class="btn btn-ghost" onclick="scrollToSection('finance')">标准规则</button>
-            <span id="navUserInfo" style="display:none; font-size:13px; color:var(--color-text-secondary);"></span>
+            <div class="user-menu-wrap" id="userMenuWrap" style="display:none;">
+                <span id="navUserInfo" class="user-menu-trigger" onclick="toggleUserMenu()"></span>
+                <div class="user-menu" id="userMenu" style="display:none;">
+                    <!-- ① 账户信息 -->
+                    <div class="user-menu-header">
+                        <div class="user-avatar" id="userAvatar">?</div>
+                        <div class="user-menu-identity">
+                            <div class="user-menu-name" id="userMenuName">—</div>
+                            <div class="user-menu-email" id="userMenuEmail">—</div>
+                            <div class="user-menu-joined" id="userMenuJoined">注册于 —</div>
+                        </div>
+                    </div>
+                    <!-- ② 账户安全 -->
+                    <div class="user-menu-section">
+                        <div class="user-menu-label">账户安全</div>
+                        <div class="user-menu-item" id="userMenuEditNickname" onclick="showNicknameEditor()">
+                            <span>✏️ 修改昵称</span><span class="user-menu-arrow">›</span>
+                        </div>
+                        <div class="user-menu-item" id="userMenuEditPassword" onclick="showPasswordEditor()">
+                            <span>🔒 修改密码</span><span class="user-menu-arrow">›</span>
+                        </div>
+                        <!-- 内联编辑区：昵称 -->
+                        <div class="user-menu-editor" id="nicknameEditor" style="display:none;">
+                            <input type="text" class="form-input" id="nicknameInput" placeholder="新昵称" maxlength="32">
+                            <div class="user-menu-editor-actions">
+                                <button class="btn btn-outline btn-sm" onclick="hideNicknameEditor()">取消</button>
+                                <button class="btn btn-primary btn-sm" onclick="saveNickname()">保存</button>
+                            </div>
+                        </div>
+                        <!-- 内联编辑区：密码 -->
+                        <div class="user-menu-editor" id="passwordEditor" style="display:none;">
+                            <input type="password" class="form-input" id="newPasswordInput" placeholder="新密码（至少6位）" minlength="6">
+                            <input type="password" class="form-input" id="confirmPasswordInput" placeholder="确认新密码" minlength="6" style="margin-top:8px;">
+                            <div class="user-menu-editor-actions">
+                                <button class="btn btn-outline btn-sm" onclick="hidePasswordEditor()">取消</button>
+                                <button class="btn btn-primary btn-sm" onclick="savePassword()">保存</button>
+                            </div>
+                        </div>
+                        <div class="user-menu-item user-menu-item-danger" onclick="handleLogout()">
+                            <span>🚪 退出登录</span><span class="user-menu-arrow">›</span>
+                        </div>
+                    </div>
+                    <!-- ③ 分析记录 -->
+                    <div class="user-menu-section">
+                        <div class="user-menu-label">分析记录</div>
+                        <div class="user-menu-stats">
+                            <span class="user-menu-stats-num" id="userMenuHistoryCount">0</span>
+                            <span class="user-menu-stats-text">条已保存</span>
+                        </div>
+                        <div class="user-menu-item" onclick="openHistoryPage(); closeUserMenu();">
+                            <span>📊 查看我的分析</span><span class="user-menu-arrow">›</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
             <button class="btn btn-outline" id="navAuthBtn" onclick="openAuthModal()">登录</button>
             <button class="btn btn-primary" onclick="scrollToSection('upload')">开始评估</button>
         </div>
@@ -1070,9 +1124,9 @@
 <!-- ============ Toast 提示 ============ -->
 <div class="toast-container" id="toastContainer"></div>
 
-<script src="js/config.js?v=70"></script>
-<script src="js/mock-data.js?v=70"></script>
-<script src="js/app.js?v=70"></script>
-<script src="js/charts.js?v=70"></script>
+<script src="js/config.js?v=75&t=1787052846"></script>
+<script src="js/mock-data.js?v=75&t=1787052846"></script>
+<script src="js/app.bundle.js?v=75&t=1787052846"></script>
+<script src="js/charts.js?v=75&t=1787052846"></script>
 </body>
 </html>

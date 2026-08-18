@@ -44,3 +44,7 @@ create policy "profiles_insert_own" on public.profiles
 drop policy if exists "history_manage_own" on public.history;
 create policy "history_manage_own" on public.history
   for all using (auth.uid() = user_id) with check (auth.uid() = user_id);
+
+-- 4. profiles 表 UPDATE policy（v=75 用户卡片·修改昵称用）
+create policy "profiles_update_own" on public.profiles
+  for update using (auth.uid() = id) with check (auth.uid() = id);

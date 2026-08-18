@@ -1560,3 +1560,67 @@ section[class^="section-"]:not(.section-hero) {
   padding: 40px 20px; border: 1px dashed var(--color-border); border-radius: 10px;
 }
 .history-loading { text-align: center; color: var(--color-text-muted); padding: 30px; }
+
+/* ===== 用户下拉卡片（v=75）===== */
+.user-menu-wrap { position: relative; display: inline-block; }
+.user-menu-trigger {
+  display: inline-flex; align-items: center; gap: 4px;
+  font-size: 13px; color: var(--color-text-secondary);
+  cursor: pointer; padding: 6px 10px; border-radius: 8px;
+  transition: background .2s, color .2s; user-select: none;
+}
+.user-menu-trigger:hover { background: var(--color-border); color: var(--color-text); }
+
+.user-menu {
+  position: absolute; right: 0; top: calc(100% + 8px);
+  width: 300px; background: var(--color-card-bg);
+  border: 1px solid var(--color-border); border-radius: 12px;
+  box-shadow: 0 12px 32px rgba(0,0,0,.14); z-index: 1000;
+  overflow: hidden;
+}
+.user-menu::before {
+  content: ''; position: absolute; top: -6px; right: 24px;
+  width: 12px; height: 12px; background: var(--color-card-bg);
+  border-left: 1px solid var(--color-border); border-top: 1px solid var(--color-border);
+  transform: rotate(45deg);
+}
+
+/* ① 账户信息 */
+.user-menu-header {
+  display: flex; align-items: center; gap: 12px;
+  padding: 18px 18px 14px; border-bottom: 1px solid var(--color-border);
+}
+.user-avatar {
+  width: 44px; height: 44px; border-radius: 50%; flex-shrink: 0;
+  background: linear-gradient(135deg, #10b981, #059669);
+  color: #fff; font-size: 20px; font-weight: 700;
+  display: flex; align-items: center; justify-content: center;
+}
+.user-menu-identity { min-width: 0; }
+.user-menu-name { font-size: 15px; font-weight: 700; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.user-menu-email { font-size: 12.5px; color: var(--color-text-muted); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; margin-top: 2px; }
+.user-menu-joined { font-size: 12px; color: var(--color-text-muted); margin-top: 3px; }
+
+/* ② 账户安全 */
+.user-menu-section { padding: 8px 0; border-bottom: 1px solid var(--color-border); }
+.user-menu-section:last-child { border-bottom: none; }
+.user-menu-label { font-size: 11px; color: var(--color-text-muted); padding: 6px 18px 4px; font-weight: 600; letter-spacing: .5px; }
+.user-menu-item {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 10px 18px; font-size: 13.5px; cursor: pointer;
+  transition: background .15s;
+}
+.user-menu-item:hover { background: var(--color-border); }
+.user-menu-arrow { color: var(--color-text-muted); font-size: 16px; }
+.user-menu-item-danger:hover { background: #FEF2F2; color: #DC2626; }
+.user-menu-item-danger .user-menu-arrow { color: inherit; }
+
+/* 内联编辑区 */
+.user-menu-editor { padding: 8px 18px 12px; background: var(--color-card-bg); }
+.user-menu-editor-actions { display: flex; gap: 8px; margin-top: 10px; }
+.btn-sm { padding: 5px 14px; font-size: 12.5px; }
+
+/* ③ 分析记录 */
+.user-menu-stats { display: flex; align-items: baseline; gap: 6px; padding: 8px 18px 2px; }
+.user-menu-stats-num { font-size: 22px; font-weight: 900; color: var(--color-green); }
+.user-menu-stats-text { font-size: 13px; color: var(--color-text-muted); }
