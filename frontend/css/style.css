@@ -1573,14 +1573,14 @@ section[class^="section-"]:not(.section-hero) {
 
 .user-menu {
   position: absolute; right: 0; top: calc(100% + 8px);
-  width: 300px; background: var(--color-card-bg);
+  width: 300px; background: #ffffff;
   border: 1px solid var(--color-border); border-radius: 12px;
   box-shadow: 0 12px 32px rgba(0,0,0,.14); z-index: 1000;
   overflow: hidden;
 }
 .user-menu::before {
   content: ''; position: absolute; top: -6px; right: 24px;
-  width: 12px; height: 12px; background: var(--color-card-bg);
+  width: 12px; height: 12px; background: #ffffff;
   border-left: 1px solid var(--color-border); border-top: 1px solid var(--color-border);
   transform: rotate(45deg);
 }
@@ -1616,7 +1616,7 @@ section[class^="section-"]:not(.section-hero) {
 .user-menu-item-danger .user-menu-arrow { color: inherit; }
 
 /* 内联编辑区 */
-.user-menu-editor { padding: 8px 18px 12px; background: var(--color-card-bg); }
+.user-menu-editor { padding: 8px 18px 12px; background: #ffffff; }
 .user-menu-editor-actions { display: flex; gap: 8px; margin-top: 10px; }
 .btn-sm { padding: 5px 14px; font-size: 12.5px; }
 
