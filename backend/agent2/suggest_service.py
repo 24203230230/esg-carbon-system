@@ -53,58 +53,21 @@ def load_file(path: str) -> str:
         return f.read()
 
 
-# ============================== DeepSeek 直调（自主可控） ==============================
+# ============================== LLM 直调（one-api 网关，v=78） ==============================
 def call_deepseek(system_prompt: str, user_text: str, max_retries: int = 2) -> dict:
-    """调用 DeepSeek API，强制 JSON 输出（v3.0 提示词要求严格 JSON）"""
-    if not DEEPSEEK_API_KEY:
-        raise RuntimeError("DEEPSEEK_API_KEY 环境变量未设置")
-
-    url = f"{DEEPSEEK_BASE_URL.rstrip('/')}/chat/completions"
-    headers = {
-        "Authorization": f"Bearer {DEEPSEEK_API_KEY}",
-        "Content-Type": "application/json",
-    }
-    payload = {
-        "model": DEEPSEEK_MODEL,
-        "messages": [
-            {"role": "system", "content": system_prompt},
-            {"role": "user", "content": user_text}
-        ],
-        "max_tokens": 16384,
-        "response_format": {"type": "json_object"}  # 强制 JSON（提示词含"严格JSON"字样，满足要求）
-    }
-    if DEEPSEEK_THINKING == 'enabled':
-        payload["thinking"] = {"type": "enabled"}
-        payload["reasoning_effort"] = os.environ.get('DEEPSEEK_REASONING_EFFORT', 'low')
-    else:
-        payload["thinking"] = {"type": "disabled"}
-        payload["temperature"] = 0.1
-
-    last_error = None
-    for attempt in range(max_retries + 1):
-        try:
-            logger.info(f"DeepSeek 调用（尝试 {attempt + 1}/{max_retries + 1}）")
-            resp = requests.post(url, headers=headers, json=payload, timeout=240)
-            resp.raise_for_status()
-            data = resp.json()
-            content = data['choices'][0]['message']['content']
-            tokens_used = data.get('usage', {}).get('total_tokens', 0)
-            logger.info(f"DeepSeek 返回成功，tokens={tokens_used}，content_len={len(content)}")
-            return {"content": content, "tokens_used": tokens_used, "model": data.get('model', DEEPSEEK_MODEL)}
-        except requests.exceptions.RequestException as e:
-            last_error = e
-            logger.warning(f"DeepSeek 调用失败（第{attempt+1}次）: {e}")
-            if attempt < max_retries:
-                time.sleep(2 ** attempt)
-        except (KeyError, ValueError) as e:
-            last_error = f"响应解析失败: {e}"
-            logger.error(f"DeepSeek 响应格式异常: {resp.text[:300]}")
-            break
-    raise RuntimeError(f"DeepSeek API 调用失败（重试{max_retries+1}次）: {last_error}")
+    """调用 one-api 网关（deepseek 轨，按 model 路由）。"""
+    from models import call_llm
+    return call_llm(system_prompt, user_text, model_id='deepseek-v4-flash', max_retries=max_retries)
 
 
 def call_deepseek_suggest(esg_json: dict, company_type: str) -> dict:
     """DeepSeek 直调：内置双提示词 + 增强 JSON → 根因分析严格 JSON"""
+    return call_deepseek_suggest_model(esg_json, company_type, 'deepseek-v4-flash')
+
+
+def call_deepseek_suggest_model(esg_json: dict, company_type: str, model_id: str) -> dict:
+    """LLM 直调（v=78 多模型）：内置双提示词 + 增强 JSON → 根因分析严格 JSON"""
+    from models import call_llm
     system_prompt = load_file(SYSTEM_PROMPT_FILE)
     user_template = load_file(USER_PROMPT_FILE)
     user_text = (
@@ -112,8 +75,8 @@ def call_deepseek_suggest(esg_json: dict, company_type: str) -> dict:
         + "\n\n【实际输入 esg_json】\n"
         + json.dumps({"company_type": company_type, "esg_json": esg_json}, ensure_ascii=False)
     )
-    logger.info(f"📤 DeepSeek 直调（系统提示词 {len(system_prompt)} 字符 + 用户提示词 {len(user_template)} 字符）")
-    return call_deepseek(system_prompt, user_text)
+    logger.info(f"📤 LLM 直调 [{model_id}]（系统提示词 {len(system_prompt)} 字符 + 用户提示词 {len(user_template)} 字符）")
+    return call_llm(system_prompt, user_text, model_id=model_id)
 
 
 # ============================== ADP 对话流（比赛展示·可选） ==============================
@@ -261,27 +224,29 @@ def suggest():
             return jsonify({"success": False, "error": "请求体为空（非 JSON）"}), 400
         esg_json = req.get('esg_json') or req.get('extract_data') or req.get('user')
         company_type = req.get('company_type', 'listed')
+        # v=78：模型选择（one-api 网关按 model 路由）
+        model_id = req.get('model', 'deepseek-v4-flash')
         if not esg_json:
             return jsonify({"success": False, "error": "缺少 esg_json 字段"}), 400
 
         backend = ADP_BACKEND
 
         if backend == 'deepseek':
-            # ---- 轨2：DeepSeek 直调（自主可控）----
-            if not DEEPSEEK_API_KEY:
-                return jsonify({"success": False, "error": "DEEPSEEK_API_KEY 未配置"}), 503
+            # ---- 轨2：LLM 直调（one-api 网关，按 model 路由）----
+            if not os.environ.get('LLM_GATEWAY_KEY'):
+                return jsonify({"success": False, "error": "LLM_GATEWAY_KEY 未配置（one-api 分发 token）"}), 503
             try:
-                result = call_deepseek_suggest(esg_json, company_type)
+                result = call_deepseek_suggest_model(esg_json, company_type, model_id)
             except RuntimeError as e:
                 return jsonify({"success": False, "error": str(e)}), 503
             suggestion = parse_suggestion_text(result['content'])
             duration = round(time.time() - start, 2)
-            logger.info(f"📥 [deepseek] 完成: tokens={result['tokens_used']} | {duration}s")
+            logger.info(f"📥 [{model_id}] 完成: tokens={result['tokens_used']} | {duration}s")
             return jsonify({
                 "success": True,
                 "suggestion": suggestion,
                 "raw_text": result['content'][:8000],
-                "backend": "deepseek",
+                "backend": model_id,
                 "tokens_used": result['tokens_used'],
                 "model": result['model'],
                 "company_type": company_type,

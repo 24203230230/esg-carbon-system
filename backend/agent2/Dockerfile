@@ -13,6 +13,8 @@ RUN pip install --no-cache-dir -r requirements.txt
 COPY suggest_service.py /app/
 COPY system_prompt.md /app/
 COPY user_prompt.md /app/
+# LLM 网关多模型支持（v=78：one-api 统一接入）
+COPY models.py /app/
 
 # 容器内端口（宿主机映射 8083）
 EXPOSE 8083

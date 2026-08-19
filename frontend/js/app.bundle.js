@@ -548,6 +548,7 @@ function uploadToExtractService(fileObj) {
 
     const formData = new FormData();
     formData.append('file', fileObj.file);
+    formData.append('model', getSelectedModel());   // v=78 多模型
 
     // 进度条模拟（fetch不支持上传进度，用递增模拟）
     const progressTimer = setInterval(() => {
@@ -741,7 +742,7 @@ function startAnalysis() {
         ? Promise.resolve(doneFile.extractResult)
         : fetch(`${API_CONFIG.EXTRACT_API}/extract`, {
             method: 'POST',
-            body: (() => { const fd = new FormData(); fd.append('file', doneFile.file); fd.append('company_type', companyType); return fd; })()
+            body: (() => { const fd = new FormData(); fd.append('file', doneFile.file); fd.append('company_type', companyType); fd.append('model', getSelectedModel()); return fd; })()
           }).then(res => res.json());
 
     runExtract
@@ -803,6 +804,42 @@ function getCompanyType() {
     return checked ? checked.value : 'listed';
 }
 
+// ============ 分析模型选择（v=78 多模型，one-api 网关路由） ============
+function getSelectedModel() {
+    // localStorage 记忆，默认 deepseek-v4-flash
+    const saved = localStorage.getItem('esg.selectedModel');
+    const models = (API_CONFIG.MODELS || []).map(m => m.id);
+    if (saved && models.includes(saved)) return saved;
+    return API_CONFIG.DEFAULT_MODEL || 'deepseek-v4-flash';
+}
+
+function setSelectedModel(modelId) {
+    localStorage.setItem('esg.selectedModel', modelId);
+    // 更新 UI 高亮
+    document.querySelectorAll('#modelOptions .company-type-option').forEach(el => {
+        el.classList.toggle('active', el.dataset.model === modelId);
+    });
+    const model = (API_CONFIG.MODELS || []).find(m => m.id === modelId);
+    showToast(`已切换分析模型：${model ? model.label : modelId}`, 'info');
+}
+
+function initModelSelector() {
+    const container = $('#modelOptions');
+    if (!container) return;
+    const models = API_CONFIG.MODELS || [];
+    if (!models.length) return;
+    const current = getSelectedModel();
+    container.innerHTML = models.map(m => `
+        <label class="company-type-option ${m.id === current ? 'active' : ''}" data-model="${m.id}"
+               onclick="setSelectedModel('${m.id}')">
+            <span class="option-card">
+                <span class="option-name">${m.label}</span>
+                <span class="option-desc">${m.desc}</span>
+            </span>
+        </label>
+    `).join('');
+}
+
 /**
  * 调用ADP评分API（智能体二）
  * 输入: 提取JSON → 输出: 评分JSON（总分+障碍度+建议）
@@ -858,6 +895,7 @@ function callScoringAPI(extractData, companyType) {
             company_type: ctype,           // 平铺（条件判断1 直接读）
             esg_json: enrichedJson,        // 平铺（ADP 开始节点期望的字段名）
             extract_data: enrichedJson,    // 兜底老字段名
+            model: getSelectedModel(),     // v=78 多模型（one-api 网关路由）
             user: {                        // 嵌套（部分 ADP 工作流用 user.* 命名空间）
                 company_type: ctype,
                 esg_json: enrichedJson
@@ -1809,12 +1847,17 @@ document.addEventListener('DOMContentLoaded', () => {
     initComparison();
 
     // 公司类型选择器交互（高亮当前选中的方案卡片）
+    // 排除模型选择器（#modelOptions 由 initModelSelector 独立管理）
     $$('.company-type-option').forEach(opt => {
+        if (opt.closest('#modelOptions')) return;
         opt.addEventListener('click', () => {
             $$('.company-type-option').forEach(o => o.classList.remove('active'));
             opt.classList.add('active');
         });
     });
+
+    // 分析模型选择器（v=78 多模型）
+    initModelSelector();
 
     // Hero 雷达图（小型预览）
     if (typeof Chart !== 'undefined') {

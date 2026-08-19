@@ -72,6 +72,31 @@ services:
       retries: 3
       start_period: 20s
 
+  # LLM API 网关（one-api，v=78 新增）
+  # 统一管理 DeepSeek/GLM/Kimi/MiniMax 等多平台渠道，前端下拉切模型由网关路由
+  esg-one-api:
+    image: ghcr.io/songquanpeng/one-api:latest
+    container_name: esg-one-api
+    ports:
+      # 宿主机 3001 → 容器 3000（管理 UI；容器内 esg-extractor/agent2 用 http://esg-one-api:3000）
+      - "3001:3000"
+    volumes:
+      - esg-one-api-data:/data   # SQLite 持久化（渠道配置/用户/token）
+    environment:
+      - TZ=Asia/Shanghai
+    networks:
+      - ai-network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "wget -q -O - http://localhost:3000/api/status | grep -o '\"success\":\\s*true' | awk -F: '{print $2}'"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 20s
+
 networks:
   ai-network:
     external: true
+
+volumes:
+  esg-one-api-data:

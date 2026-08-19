@@ -24,5 +24,17 @@ const API_CONFIG = {
     // Supabase（用户体系 + 分析历史存储，v=70 新增）
     // publishable key 公开安全（RLS 行级安全保护数据），勿放 service_role 密钥
     SUPABASE_URL: 'https://dtxwciejvxcpzvglhqvj.supabase.co',
-    SUPABASE_ANON_KEY: 'sb_publishable_JSz0wfsr2A3h_X_66dDeyA_qUkqDubn'
+    SUPABASE_ANON_KEY: 'sb_publishable_JSz0wfsr2A3h_X_66dDeyA_qUkqDubn',
+
+    // 分析模型列表（v=78 多模型，one-api 网关路由）
+    // id 与后端 models.py SUPPORTED_MODELS 保持一致
+    MODELS: [
+        { id: 'deepseek-v4-flash', label: 'DeepSeek V4 Flash', desc: '快速 · 默认' },
+        { id: 'deepseek-v4-pro',   label: 'DeepSeek V4 Pro',   desc: '深度推理' },
+        { id: 'glm-5.2',           label: 'GLM 5.2',           desc: '智谱' },
+        { id: 'glm-5v-turbo',      label: 'GLM 5V Turbo',      desc: '多模态' },
+        { id: 'kimi-k3',           label: 'Kimi K3',           desc: '月之暗面' },
+        { id: 'minimax-m3',        label: 'MiniMax M3',        desc: 'MiniMax' }
+    ],
+    DEFAULT_MODEL: 'deepseek-v4-flash'
 };

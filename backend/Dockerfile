@@ -13,6 +13,8 @@ RUN pip install --no-cache-dir \
 # 复制代码和提示词
 COPY extract_service.py /app/
 COPY extraction_prompt.md /app/
+# LLM 网关多模型支持（v=78：one-api 统一接入）
+COPY models.py /app/
 # 评分查表数据（42指标权重+行业基准库+全市场中位数+评分规则）
 COPY weights.json /app/
 COPY weights_logic.py /app/

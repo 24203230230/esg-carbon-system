@@ -142,62 +142,13 @@ def extract_text_from_file(filename: str, file_bytes: bytes) -> str:
         raise ValueError(f"不支持的文件类型: .{ext}（仅支持 .pdf/.docx/.doc）")
 
 
-# ============================== DeepSeek API调用 ==============================
+# ============================== LLM 调用（one-api 网关，v=78） ==============================
+# 统一走 models.py 的 call_llm → http://esg-one-api:3000/v1 → 按 model 路由到对应 provider
+# 保留 call_deepseek 作为兼容别名（历史调用点），实际走 one-api 网关
 def call_deepseek(system_prompt: str, user_text: str, max_retries: int = 2) -> dict:
-    """调用DeepSeek API，输出结构化JSON"""
-    if not DEEPSEEK_API_KEY:
-        raise RuntimeError("DEEPSEEK_API_KEY 环境变量未设置")
-
-    url = f"{DEEPSEEK_BASE_URL.rstrip('/')}/chat/completions"
-    headers = {
-        "Authorization": f"Bearer {DEEPSEEK_API_KEY}",
-        "Content-Type": "application/json",
-    }
-    # 构建 payload（V4 模型支持 thinking 控制）
-    payload = {
-        "model": DEEPSEEK_MODEL,
-        "messages": [
-            {"role": "system", "content": system_prompt},
-            {"role": "user", "content": user_text}
-        ],
-        "max_tokens": 16384,
-        "response_format": {"type": "json_object"}  # 强制JSON输出
-    }
-
-    # 深度思考模式控制（V4 专用参数）
-    # 注意：thinking=enabled 时 temperature/top_p 参数会失效（官方文档）
-    if DEEPSEEK_THINKING == 'enabled':
-        payload["thinking"] = {"type": "enabled"}
-        payload["reasoning_effort"] = os.environ.get('DEEPSEEK_REASONING_EFFORT', 'low')
-    else:
-        payload["thinking"] = {"type": "disabled"}
-        payload["temperature"] = 0.1
-
-    last_error = None
-    for attempt in range(max_retries + 1):
-        try:
-            logger.info(f"DeepSeek API 调用（尝试 {attempt + 1}/{max_retries + 1}）")
-            resp = requests.post(url, headers=headers, json=payload, timeout=180)
-            resp.raise_for_status()
-            data = resp.json()
-            content = data['choices'][0]['message']['content']
-            tokens_used = data.get('usage', {}).get('total_tokens', 0)
-            logger.info(f"DeepSeek 返回成功，tokens={tokens_used}")
-            return {
-                "content": content,
-                "tokens_used": tokens_used,
-                "model": data.get('model', DEEPSEEK_MODEL)
-            }
-        except requests.exceptions.RequestException as e:
-            last_error = e
-            logger.warning(f"DeepSeek 调用失败（第{attempt+1}次）: {e}")
-            if attempt < max_retries:
-                time.sleep(2 ** attempt)  # 指数退避
-        except (KeyError, ValueError) as e:
-            last_error = f"响应解析失败: {e}"
-            logger.error(f"DeepSeek 响应格式异常: {resp.text[:200]}")
-            break
-    raise RuntimeError(f"DeepSeek API 调用失败（重试{max_retries+1}次）: {last_error}")
+    """兼容别名：调用 one-api 网关（默认 deepseek-v4-flash）"""
+    from models import call_llm
+    return call_llm(system_prompt, user_text, model_id='deepseek-v4-flash', max_retries=max_retries)
 
 
 # ============================== 4 维度结构兜底 ==============================
@@ -358,11 +309,13 @@ def extract():
 - 严格按提示词的输出格式返回，不要添加任何解释
 """
 
-    # 5. 调用 DeepSeek
+    # 5. 调用 LLM（one-api 网关，按 model 路由；默认 deepseek-v4-flash）
+    model_id = request.form.get('model', 'deepseek-v4-flash')
     try:
-        result = call_deepseek(EXTRACTION_PROMPT, user_text)
+        from models import call_llm
+        result = call_llm(EXTRACTION_PROMPT, user_text, model_id=model_id)
     except Exception as e:
-        logger.error(f"DeepSeek 调用失败: {e}")
+        logger.error(f"LLM 调用失败: {e}")
         return jsonify({"error": f"LLM调用失败: {str(e)}"}), 500
 
     # 6. 解析LLM返回的JSON
