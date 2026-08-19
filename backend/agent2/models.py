@@ -25,6 +25,15 @@ logger = logging.getLogger('llm')
 # ============================== 模型列表（前端下拉同步） ==============================
 DEFAULT_MODEL = 'deepseek-v4-flash'
 
+# 模型映射：前端语义化名 → one-api 网关/上游 provider 真实模型名
+# 原因：DeepSeek 官方实际 API 是 deepseek-chat / deepseek-reasoner
+#       前端用 v4 语义化展示，后端做映射对接渠道真实名
+MODEL_MAPPING = {
+    'deepseek-v4-flash': 'deepseek-chat',       # V4 Flash → DeepSeek V3 Chat（等价）
+    'deepseek-v4-pro':   'deepseek-reasoner',   # V4 Pro → DeepSeek V3 Reasoner（等价）
+    # 其他 provider 名字一致，不映射：glm-5.2 / glm-5v-turbo / kimi-k3 / minimax-m3
+}
+
 SUPPORTED_MODELS = [
     {'id': 'deepseek-v4-flash', 'label': 'DeepSeek V4 Flash', 'desc': '快速 · 默认'},
     {'id': 'deepseek-v4-pro',   'label': 'DeepSeek V4 Pro',   'desc': '深度推理'},
@@ -66,6 +75,9 @@ def call_llm(system_prompt: str, user_text: str, model_id: str = None,
     if model_id not in valid_ids:
         raise RuntimeError(f"不支持的模型: {model_id}（可选: {', '.join(sorted(valid_ids))}）")
 
+    # 应用模型映射：前端语义化名 → one-api 渠道真实模型名
+    real_model = MODEL_MAPPING.get(model_id, model_id)
+
     base_url, api_key = get_gateway_config()
     if not api_key:
         raise RuntimeError("LLM_GATEWAY_KEY 未配置（请在 one-api Web UI 生成分发 token 后写入 .env）")
@@ -76,7 +88,7 @@ def call_llm(system_prompt: str, user_text: str, model_id: str = None,
         "Content-Type": "application/json",
     }
     payload = {
-        "model": model_id,
+        "model": real_model,
         "messages": [
             {"role": "system", "content": system_prompt},
             {"role": "user", "content": user_text}
