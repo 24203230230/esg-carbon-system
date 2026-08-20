@@ -921,7 +921,7 @@ section[class^="section-"]:not(.section-hero) {
 /* ---- 评分图表 ---- */
 .score-charts {
     display: grid;
-    grid-template-columns: 1fr 1fr;
+    grid-template-columns: 1fr;
     gap: 24px;
     margin-bottom: 32px;
 }

@@ -338,6 +338,7 @@ async function saveHistoryToSupabase() {
         const meta = ext['报告元数据'] || {};
         const sd = ext['评分增强数据'] || {};
         const { error } = await supaClient.from('history').insert({
+            user_id: user.id,                // v=79：RLS policy 要求 user_id = auth.uid()，必须显式传
             company_name: meta['企业名称'] || '未命名企业',
             industry: meta['所属行业'] || '',
             report_year: meta['报告年份'] || '',
@@ -1133,6 +1134,75 @@ function fillScoreCards(extractData) {
             }
         });
 
+        // === 7. 四维度详情卡片动态化（v=79）===
+        // 维度 → 卡片 id 映射（与 index.html 占位符对应）
+        const dimCardMap = {
+            '企业内部碳管理': { nameId: 'detail-name-internal', scoreId: 'detail-score-internal', listId: 'detail-list-internal', cls: 'green' },
+            '供应链碳管理':   { nameId: 'detail-name-supply',   scoreId: 'detail-score-supply',   listId: 'detail-list-supply',   cls: 'yellow' },
+            '透明度':         { nameId: 'detail-name-disclosure', scoreId: 'detail-score-disclosure', listId: 'detail-list-disclosure', cls: 'green' },
+            '金融化情况':     { nameId: 'detail-name-finance',  scoreId: 'detail-score-finance',  listId: 'detail-list-finance',  cls: 'blue' },
+        };
+        // 从 ADP 改进建议（App.scoreResult）取按维度的建议列表
+        let suggestionsByDim = {};
+        try {
+            const sRes = (App.scoreResult && App.scoreResult.评分结果) || App.scoreResult || {};
+            const advList = sRes.改进建议 || [];
+            advList.forEach((s, i) => {
+                // 建议条目无"维度"字段时，尝试从指标名反查 L4 计算结果
+                let dim = s['维度'];
+                if (!dim && s['指标']) {
+                    const l4r = l4Results[s['指标']];
+                    if (l4r && l4r['维度']) dim = l4r['维度'];
+                }
+                if (!dim) {
+                    // 兜底：按关键词归类
+                    const kw = s['指标'] || s['建议'] || '';
+                    if (kw.includes('供应链') || kw.includes('供应商') || kw.includes('采购') || kw.includes('范围3')) dim = '供应链碳管理';
+                    else if (kw.includes('披露') || kw.includes('报告') || kw.includes('审计') || kw.includes('GRI') || kw.includes('SASB') || kw.includes('TCFD')) dim = '透明度';
+                    else if (kw.includes('金融') || kw.includes('信贷') || kw.includes('债券') || kw.includes('碳交易') || kw.includes('碳资产')) dim = '金融化情况';
+                    else dim = '企业内部碳管理';
+                }
+                if (!suggestionsByDim[dim]) suggestionsByDim[dim] = [];
+                suggestionsByDim[dim].push(s);
+            });
+        } catch (e) { console.warn('四维度建议归类失败:', e); }
+
+        Object.entries(dimCardMap).forEach(([dim, cfg]) => {
+            // 分数
+            const score = dimScores[dim];
+            const scoreEl = document.getElementById(cfg.scoreId);
+            if (scoreEl && score !== undefined) {
+                scoreEl.textContent = `${Number(score).toFixed(1)} / 10`;
+                scoreEl.classList.add(cfg.cls);
+            }
+            // 列表：优先用改进建议（每条取 建议 字段，最多 3 条）
+            const listEl = document.getElementById(cfg.listId);
+            if (listEl) {
+                const dimAdvs = (suggestionsByDim[dim] || []).slice(0, 3);
+                if (dimAdvs.length > 0) {
+                    listEl.innerHTML = dimAdvs.map((s, i) => {
+                        const cls = i === 0 ? cfg.cls : 'yellow';
+                        return `<li><span class="dot ${cls}"></span>${s['指标'] || '指标'}：${(s['建议'] || s['现状'] || '待完善').slice(0, 60)}</li>`;
+                    }).join('');
+                } else {
+                    // 无建议时：显示该维度障碍度 top3 指标（若有 L4 结果）
+                    const dimL4 = Object.entries(l4Results)
+                        .filter(([k, v]) => v['维度'] === dim)
+                        .sort((a, b) => (b[1]['障碍度'] || 0) - (a[1]['障碍度'] || 0))
+                        .slice(0, 3);
+                    if (dimL4.length > 0) {
+                        listEl.innerHTML = dimL4.map(([name, r], i) => {
+                            const cls = i === 0 ? cfg.cls : 'yellow';
+                            const status = r['失分类型'] === '完整度失分' ? '未披露' : (r['值'] || '待完善');
+                            return `<li><span class="dot ${cls}"></span>${name}：${status}</li>`;
+                        }).join('');
+                    } else {
+                        listEl.innerHTML = '<li><span class="dot gray"></span>该维度暂无重点指标</li>';
+                    }
+                }
+            }
+        });
+
         console.log(`✅ [fillScoreCards] 完成：总分=${total} 等级=${level}`);
     } catch (e) {
         console.error('❌ fillScoreCards 失败:', e);
@@ -1722,10 +1792,37 @@ function buildPdfReport() {
         }
     };
 
-    // ADP 建议 → pdfmake 节点
-    const adpNodes = App._adpRawText ? mdToPdfMake(App._adpRawText) : [];
+    // 优化建议 → pdfmake 节点（v=79：兼容 Markdown 报告 与 结构化 JSON 建议）
+    let adpNodes = [];
+    const rawText = App._adpRawText || '';
+    // 1) 尝试把 raw_text 当 JSON 解析 → 结构化建议（DeepSeek 直调是 strict JSON）
+    let structuredAdv = null;
+    try {
+        const parsed = JSON.parse(rawText);
+        if (parsed && Array.isArray(parsed['改进建议'])) structuredAdv = parsed['改进建议'];
+        else if (parsed && parsed['Output'] && Array.isArray(parsed['Output']['改进建议'])) structuredAdv = parsed['Output']['改进建议'];
+    } catch (e) { /* 非 JSON（Markdown）→ 走 mdToPdfMake */ }
+    // 2) 兜底：从 App.scoreResult 拿建议数组
+    if (!structuredAdv || !structuredAdv.length) {
+        try {
+            const sRes = (App.scoreResult && App.scoreResult.评分结果) || App.scoreResult || {};
+            if (Array.isArray(sRes['改进建议']) && sRes['改进建议'].length) structuredAdv = sRes['改进建议'];
+        } catch (e) { /* ignore */ }
+    }
+    if (structuredAdv && structuredAdv.length > 0) {
+        adpNodes = structuredAdv.map((s, i) => ({
+            stack: [
+                { text: `${i + 1}. ${s['指标'] || '指标'}（${s['优先级'] || '-'}优先级）`, bold: true, margin: [0, 6, 0, 2] },
+                { text: `失分类型：${s['失分类型'] || '—'}`, fontSize: 9, color: '#6b7280', margin: [0, 0, 0, 1] },
+                { text: `根源：${s['根源分析'] || '—'}`, margin: [0, 0, 0, 2] },
+                { text: `建议：${s['建议'] || '—'}`, margin: [0, 0, 0, 4] }
+            ]
+        }));
+    } else if (rawText) {
+        adpNodes = mdToPdfMake(rawText);
+    }
     const fallbackNodes = adpNodes.length ? [] : [{
-        text: '（ADP 分析尚未生成，可重新分析获取建议）', color: '#9ca3af', margin: [0, 4, 0, 6]
+        text: '（分析建议尚未生成，可重新分析获取建议）', color: '#9ca3af', margin: [0, 4, 0, 6]
     }];
 
     const docDefinition = {
@@ -1763,8 +1860,8 @@ function buildPdfReport() {
                 ],
                 lineHeight: 1.7, margin: [0, 2, 0, 6]
             },
-            // 四、优化建议（ADP）
-            { text: '四、优化建议（ADP 智能分析）', fontSize: 14, bold: true, color: '#1a3a6e', margin: [0, 20, 0, 8] },
+            // 四、优化建议（智能分析）
+            { text: '四、优化建议（智能分析）', fontSize: 14, bold: true, color: '#1a3a6e', margin: [0, 20, 0, 8] },
             ...(adpNodes.length ? adpNodes : fallbackNodes)
         ]
     };
