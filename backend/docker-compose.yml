@@ -3,7 +3,8 @@ services:
     build: .
     container_name: esg-extractor
     ports:
-      - "8082:8082"
+      # v=83：只绑 localhost，防局域网直连消耗 token（nginx 容器内走 esg-extractor:8082 不受影响）
+      - "127.0.0.1:8082:8082"
     volumes:
       # 共享输出目录（供 ADP 评分容器读取）
       - ./output:/app/output
@@ -48,7 +49,8 @@ services:
     build: ./agent2
     container_name: esg-agent2
     ports:
-      - "8083:8083"
+      # v=83：只绑 localhost（nginx 容器内走 esg-agent2:8083 不受影响）
+      - "127.0.0.1:8083:8083"
     environment:
       # 后端切换：deepseek（自主可控）| adp（比赛展示）
       - ADP_BACKEND=${ADP_BACKEND:-deepseek}
@@ -79,7 +81,8 @@ services:
     container_name: esg-one-api
     ports:
       # 宿主机 3001 → 容器 3000（管理 UI；容器内 esg-extractor/agent2 用 http://esg-one-api:3000）
-      - "3001:3000"
+      # v=83：只绑 localhost，管理 UI 不对外
+      - "127.0.0.1:3001:3000"
     volumes:
       - esg-one-api-data:/data   # SQLite 持久化（渠道配置/用户/token）
     environment:

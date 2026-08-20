@@ -45,6 +45,8 @@ logging.basicConfig(level=logging.INFO, format='%(asctime)s [%(levelname)s] %(me
 logger = logging.getLogger('agent2')
 
 app = Flask(__name__)
+# v=83：请求体上限 50MB（防超大 body 打崩内存；正常增强 JSON 远小于此）
+app.config['MAX_CONTENT_LENGTH'] = 50 * 1024 * 1024
 
 
 # ============================== 提示词加载 ==============================
@@ -288,6 +290,12 @@ def health():
         "deepseek_key": bool(DEEPSEEK_API_KEY),
         "adp_key": bool(ADP_APP_KEY),
     })
+
+
+@app.errorhandler(413)
+def too_large(e):
+    """v=83：请求体超限（MAX_CONTENT_LENGTH）→ 明确 413，避免被通用 except 包成 500"""
+    return jsonify({"success": False, "error": "请求体过大（超过50MB上限）"}), 413
 
 
 # ============================== 启动 ==============================

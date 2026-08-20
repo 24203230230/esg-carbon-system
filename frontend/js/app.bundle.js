@@ -15,6 +15,11 @@ const App = {
 function $(selector) { return document.querySelector(selector); }
 function $$(selector) { return document.querySelectorAll(selector); }
 
+// HTML 转义（v=83：XSS 防护，所有 innerHTML 拼接的用户/LLM 数据必须先转义）
+function escapeHtml(s) {
+    return String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+}
+
 function scrollToSection(id) {
     const el = document.getElementById(id);
     if (el) {
@@ -387,11 +392,11 @@ async function refreshHistory() {
     listEl.innerHTML = data.map(h => `
         <div class="history-card">
             <div class="history-card-main" style="cursor:pointer;" onclick="openHistoryDetail('${h.id}')">
-                <div class="history-card-name">${h.company_name || '未命名企业'}</div>
-                <div class="history-card-meta">${h.report_year || '—'} 年度 · ${h.industry || '—'} · ${formatTime(h.created_at)}</div>
+                <div class="history-card-name">${escapeHtml(h.company_name) || '未命名企业'}</div>
+                <div class="history-card-meta">${escapeHtml(h.report_year) || '—'} 年度 · ${escapeHtml(h.industry) || '—'} · ${formatTime(h.created_at)}</div>
             </div>
             <div class="history-card-score">
-                <div class="history-card-grade">${h.grade || '—'}</div>
+                <div class="history-card-grade">${escapeHtml(h.grade) || '—'}</div>
                 <div class="history-card-score-num">${h.total_score != null ? Number(h.total_score).toFixed(2) : '—'}</div>
                 <div class="history-card-score-label">综合评分</div>
             </div>
@@ -642,7 +647,7 @@ function renderProgressList() {
                 </svg>
             </div>
             <div class="progress-info">
-                <div class="progress-name">${f.name}</div>
+                <div class="progress-name">${escapeHtml(f.name)}</div>
                 <div class="progress-bar-wrap">
                     <div class="progress-bar" style="width:${f.progress}%"></div>
                 </div>
@@ -677,7 +682,7 @@ function renderFileList() {
             <div class="file-item" data-id="${f.id}">
                 <div class="file-icon-sm ${iconClass}">${iconSvg}</div>
                 <div class="file-info">
-                    <div class="file-name">${f.name}</div>
+                    <div class="file-name">${escapeHtml(f.name)}</div>
                     <div class="file-meta">${formatFileSize(f.size)} · ${f.type.toUpperCase().replace('.', '')} · 已上传</div>
                 </div>
                 <div class="file-actions">
@@ -1522,7 +1527,7 @@ function previewReport() {
         <div style="padding: 8px 0;">
             <div style="text-align:center; margin-bottom: 32px;">
                 <h2 style="font-size:24px; margin-bottom:8px;">碳治理能力画像报告</h2>
-                <p style="color:var(--color-text-muted);">${data.name} · ${data.reportYear}年度ESG报告</p>
+                <p style="color:var(--color-text-muted);">${escapeHtml(data.name)} · ${escapeHtml(data.reportYear)}年度ESG报告</p>
             </div>
 
             <div style="display:grid; grid-template-columns:repeat(4,1fr); gap:16px; margin-bottom:32px;">
