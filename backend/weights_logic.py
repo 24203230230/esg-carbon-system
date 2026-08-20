@@ -20,9 +20,12 @@ ESG碳治理能力评分计算模块（Python 确定性计算，无 LLM 参与�
   - 无公开证据：取全市场中位数得分
 """
 import json
+import logging
 import re
 import statistics
 from pathlib import Path
+
+logger = logging.getLogger('weights_logic')
 
 # ============================== 常量 ==============================
 WEIGHTS_PATH = Path(__file__).parent / 'weights.json'
@@ -35,6 +38,23 @@ DIM_SUB_MAP = {
     "金融化情况": ["碳金融", "碳资产管理"],
 }
 
+# v=84（M4）：LLM 输出维度名变体 → 标准维度名（防止变体静默归入错误维度导致分数错位）
+DIM_NAME_NORMALIZE = {
+    "企业内部碳管理": "企业内部碳管理", "内部碳管理": "企业内部碳管理", "企业内部管理": "企业内部碳管理",
+    "内部管理": "企业内部碳管理", "企业碳管理": "企业内部碳管理",
+    "供应链碳管理": "供应链碳管理", "供应链管理": "供应链碳管理", "供应链": "供应链碳管理",
+    "供应商碳管理": "供应链碳管理",
+    "透明度": "透明度", "透明度披露": "透明度", "披露透明度": "透明度", "信息披露": "透明度",
+    "碳金融化": "金融化情况", "金融化情况": "金融化情况", "碳金融": "金融化情况", "碳金融转化": "金融化情况",
+    "碳资产管理": "金融化情况",
+}
+
+def normalize_dim_name(dim_name: str) -> str:
+    """维度名归一化（v=84）：LLM 变体 → 标准名；无法识别时返回原值（交给兜底）"""
+    if not dim_name:
+        return dim_name
+    return DIM_NAME_NORMALIZE.get(str(dim_name).strip(), str(dim_name).strip())
+
 # 多年迹象关键词（质量分3档判定）
 MULTI_YEAR_KEYWORDS = [
     "2020", "2021", "2022", "2023", "2024", "2025", "2026",
@@ -44,9 +64,19 @@ MULTI_YEAR_KEYWORDS = [
 
 # ============================== 数据加载 ==============================
 def load_weights() -> dict:
-    """加载 weights.json（权重+行业基准库+中位数+评分规则）"""
-    with open(WEIGHTS_PATH, encoding='utf-8') as f:
-        return json.load(f)
+    """加载 weights.json（权重+行业基准库+中位数+评分规则）
+
+    v=84：文件缺失/损坏时不崩，返回空结构（评分走 0 权重兜底，提取链路不受影响）
+    """
+    try:
+        with open(WEIGHTS_PATH, encoding='utf-8') as f:
+            return json.load(f)
+    except FileNotFoundError:
+        logger.warning(f"⚠️ weights.json 不存在（{WEIGHTS_PATH}），使用空权重兜底")
+        return {"全局权重": {}, "行业基准库": {}, "全市场中位数": {}}
+    except json.JSONDecodeError as e:
+        logger.error(f"❌ weights.json 解析失败: {e}，使用空权重兜底")
+        return {"全局权重": {}, "行业基准库": {}, "全市场中位数": {}}
 
 WEIGHTS = load_weights()
 GLOBAL_WEIGHTS = WEIGHTS.get('全局权重', {})
@@ -301,6 +331,7 @@ def score_all(extracted: dict, industry: str, company_type: str = 'listed') -> d
     for dim_name, dim_data in dims.items():
         if not isinstance(dim_data, dict):
             continue
+        dim_name = normalize_dim_name(dim_name)   # v=84（M4）：LLM 变体 → 标准名
         indicators = dim_data.get('指标', {})
         for sub_name, sub_data in indicators.items():
             if not isinstance(sub_data, dict):
@@ -322,7 +353,7 @@ def score_all(extracted: dict, industry: str, company_type: str = 'listed') -> d
         dim_scores[dim_name] = 0.0
         dim_weights[dim_name] = 0.0
     for ind_name, result in l4_results.items():
-        dim = result.get('维度', '企业内部碳管理')
+        dim = normalize_dim_name(result.get('维度', '企业内部碳管理'))   # v=84（M4）：聚合时也归一化
         w = result.get('权重', 0)
         dim_scores[dim] = dim_scores.get(dim, 0) + result['L4得分'] * w
         dim_weights[dim] = dim_weights.get(dim, 0) + w

@@ -101,6 +101,7 @@ def call_llm(system_prompt: str, user_text: str, model_id: str = None,
         payload["response_format"] = {"type": "json_object"}
 
     last_error = None
+    resp = None  # v=84：初始化，防止 except 分支引用未定义变量（UnboundLocalError 掩盖真错误）
     for attempt in range(max_retries + 1):
         try:
             logger.info(f"[LLM] {model_id} 调用（尝试 {attempt + 1}/{max_retries + 1}）→ {base_url}")
@@ -128,6 +129,8 @@ def call_llm(system_prompt: str, user_text: str, model_id: str = None,
                 time.sleep(2 ** attempt)
         except (KeyError, ValueError) as e:
             last_error = f"响应解析失败: {e}"
-            logger.error(f"[LLM] {model_id} 响应格式异常: {resp.text[:300]}")
+            # v=84：resp 可能为 None（异常发生在 post 之前），防御访问
+            err_body = resp.text[:300] if resp is not None else '(请求未发出)'
+            logger.error(f"[LLM] {model_id} 响应格式异常: {err_body}")
             break
     raise RuntimeError(f"[LLM] {model_id} 调用失败（重试{max_retries+1}次）: {last_error}")

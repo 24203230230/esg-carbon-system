@@ -20,6 +20,14 @@ function escapeHtml(s) {
     return String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#39;');
 }
 
+// fetch 超时包装（v=84：M1，LLM 卡死时明确报错，不无限转圈）
+function fetchWithTimeout(url, options = {}, timeoutMs = 120000) {
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), timeoutMs);
+    return fetch(url, { ...options, signal: controller.signal })
+        .finally(() => clearTimeout(timer));
+}
+
 function scrollToSection(id) {
     const el = document.getElementById(id);
     if (el) {
@@ -584,10 +592,10 @@ function uploadToExtractService(fileObj) {
         }
     }, 300);
 
-    fetch(`${API_CONFIG.EXTRACT_API}/extract`, {
+    fetchWithTimeout(`${API_CONFIG.EXTRACT_API}/extract`, {
         method: 'POST',
         body: formData
-    })
+    }, 240000)   // v=84：提取最长 240s（LLM 处理大报告）
     .then(res => {
         if (!res.ok) throw new Error(`提取服务响应异常: ${res.status}`);
         return res.json();
@@ -766,10 +774,10 @@ function startAnalysis() {
     // 步骤1：如果没有提取结果，先调提取服务（带上公司类型用于评分分流）
     const runExtract = doneFile.extractResult
         ? Promise.resolve(doneFile.extractResult)
-        : fetch(`${API_CONFIG.EXTRACT_API}/extract`, {
+        : fetchWithTimeout(`${API_CONFIG.EXTRACT_API}/extract`, {
             method: 'POST',
             body: (() => { const fd = new FormData(); fd.append('file', doneFile.file); fd.append('company_type', companyType); fd.append('model', getSelectedModel()); return fd; })()
-          }).then(res => res.json());
+          }, 240000).then(res => res.json());   // v=84：提取最长 240s
 
     runExtract
         .then(extractData => {
@@ -910,7 +918,7 @@ function callScoringAPI(extractData, companyType) {
         ? extractData.extracted
         : extractData || {};
 
-    return fetch(endpoint, {
+    return fetchWithTimeout(endpoint, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         // 请求体对齐 ADP 工作流「开始」节点定义的两个变量：
@@ -927,7 +935,7 @@ function callScoringAPI(extractData, companyType) {
                 esg_json: enrichedJson
             }
         })
-    }).then(res => {
+    }, 180000).then(res => {   // v=84：根因分析最长 180s
         if (!res.ok) throw new Error(`评分服务响应异常: ${res.status}`);
         return res.json();
     }).then(scoreData => {
