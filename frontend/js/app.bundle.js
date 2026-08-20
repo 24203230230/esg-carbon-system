@@ -1224,6 +1224,8 @@ function fillScoreCards(extractData) {
         });
 
         console.log(`✅ [fillScoreCards] 完成：总分=${total} 等级=${level}`);
+        // v=80：保存 scoreData 全局，供 buildPdfReport 使用（无需先调 previewReport）
+        App._reportScoreData = scoreData;
     } catch (e) {
         console.error('❌ fillScoreCards 失败:', e);
     }
@@ -1456,6 +1458,7 @@ function previewReport() {
     let adpRawTextForPdf = '';
     let structuredAdvs = null;  // 结构化建议数组（{指标/失分类型/根源分析/建议/优先级/验证理由}）
     let structuredSummary = '';   // 结构化诊断摘要
+    const escapeHtml = s => String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');  // v=80：提到顶部，三个分支共用
 
     if (suggestions.length === 1 && suggestions[0] && suggestions[0].__adp_raw_text) {
         const rawText = suggestions[0].__adp_raw_text;
@@ -1493,7 +1496,6 @@ function previewReport() {
             suggestionHtml = `<div class="adp-report adp-report-structured">${summaryHtml}<div class="adp-list">${itemsHtml}</div></div>`;
         } else {
             // Markdown 渲染（ADP 模式）
-            const escapeHtml = s => String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
             let mdHtml;
             try {
                 if (typeof marked !== 'undefined' && typeof DOMPurify !== 'undefined') {
