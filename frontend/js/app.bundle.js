@@ -337,6 +337,10 @@ async function saveHistoryToSupabase() {
         const ext = (App.extractResult && App.extractResult.extracted) || App.extractResult || {};
         const meta = ext['报告元数据'] || {};
         const sd = ext['评分增强数据'] || {};
+        // v=80：同时保存当时的 ADP/DeepSeek 建议（让历史查看能完整恢复）
+        const suggestionObj = (App.scoreResult && App.scoreResult.评分结果) || App.scoreResult || null;
+        const scoreDataForRestore = App._reportScoreData || null;
+        const rawTextForRestore = App._adpRawText || (App.scoreResult && App.scoreResult.raw_text) || '';
         const { error } = await supaClient.from('history').insert({
             user_id: user.id,                // v=79：RLS policy 要求 user_id = auth.uid()，必须显式传
             company_name: meta['企业名称'] || '未命名企业',
@@ -344,7 +348,12 @@ async function saveHistoryToSupabase() {
             report_year: meta['报告年份'] || '',
             total_score: sd['总分'] || 0,
             grade: sd['评分等级'] || '',
-            result_json: ext
+            result_json: {
+                extracted: ext,
+                scoreData: scoreDataForRestore,
+                suggestion: suggestionObj,
+                rawText: rawTextForRestore
+            }
         });
         if (error) console.warn('历史保存失败:', error.message);
         else showToast('分析记录已保存', 'success');
@@ -406,8 +415,19 @@ async function openHistoryDetail(id) {
     const { data, error } = await supaClient.from('history').select('*').eq('id', id).single();
     if (error || !data) { showToast('记录加载失败', 'error'); return; }
     // 设置全局数据复用 previewReport（不触发重复保存）
-    App.extractResult = { extracted: data.result_json };
-    App.scoreResult = null;
+    // v=80：result_json 现在是 {extracted, scoreData, suggestion, rawText} 包裹结构
+    const rj = data.result_json || {};
+    const ext = rj.extracted || (data.result_json && data.result_json['报告元数据'] ? data.result_json : {});
+    App.extractResult = { extracted: ext };
+    // 恢复当时的评分/建议数据 → previewReport 能展示当时的完整建议（而不是模板 fallback）
+    if (rj.scoreData) App._reportScoreData = rj.scoreData;
+    if (rj.suggestion) {
+        App.scoreResult = { 评分结果: rj.suggestion };
+        if (rj.rawText) App.scoreResult.raw_text = rj.rawText;
+    } else {
+        App.scoreResult = null;
+    }
+    App._adpRawText = rj.rawText || '';  // 给 previewReport/PDF 用
     App.analysisDone = true;
     App._historySaveToken = null; // 历史详情不重复保存
     previewReport();
@@ -1431,32 +1451,66 @@ function previewReport() {
         ];
     }
 
-    // 生成改进建议列表
-    // 如果第一条是 __adp_raw_text 标记（ADP 真实 Markdown 报告），整体渲染
+    // 生成改进建议列表（v=80：兼容 Markdown / 结构化 JSON / 模板）
     let suggestionHtml;
     let adpRawTextForPdf = '';
+    let structuredAdvs = null;  // 结构化建议数组（{指标/失分类型/根源分析/建议/优先级/验证理由}）
+    let structuredSummary = '';   // 结构化诊断摘要
+
     if (suggestions.length === 1 && suggestions[0] && suggestions[0].__adp_raw_text) {
         const rawText = suggestions[0].__adp_raw_text;
         adpRawTextForPdf = rawText;
-        // 完整 Markdown 渲染：marked 解析 + DOMPurify 防 XSS（ADP 是 LLM 生成内容，必须 sanitize）
-        const escapeHtml = s => String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
-        let mdHtml;
+        // 1) 尝试解析为结构化 JSON（DeepSeek 直调返回 strict JSON）
         try {
-            if (typeof marked !== 'undefined' && typeof DOMPurify !== 'undefined') {
-                mdHtml = DOMPurify.sanitize(marked.parse(rawText, { gfm: true, breaks: true }));
-            } else {
-                // 库未加载兜底：纯文本转义（不渲染 Markdown）
+            const parsed = JSON.parse(rawText);
+            if (parsed && Array.isArray(parsed['改进建议'])) {
+                structuredAdvs = parsed['改进建议'];
+                structuredSummary = parsed['诊断摘要'] || '';
+            } else if (parsed && parsed['Output'] && Array.isArray(parsed['Output']['改进建议'])) {
+                structuredAdvs = parsed['Output']['改进建议'];
+                structuredSummary = (parsed['Output']['诊断摘要']) || '';
+            }
+        } catch (e) { /* 非 JSON → 当 Markdown 走 */ }
+
+        if (structuredAdvs && structuredAdvs.length) {
+            // 结构化渲染（v=80：漂亮表格化）
+            const summaryHtml = structuredSummary
+                ? `<div class="adp-summary">${escapeHtml(structuredSummary)}</div>`
+                : '';
+            const itemsHtml = structuredAdvs.map((s, i) => `
+                <div class="adp-item">
+                    <div class="adp-item-head">
+                        <span class="adp-item-idx">${i + 1}</span>
+                        <span class="adp-item-name">${escapeHtml(s['指标'] || '指标')}</span>
+                        <span class="adp-item-pri adp-pri-${escapeHtml((s['优先级'] || '中').toLowerCase())}">${escapeHtml(s['优先级'] || '中')}</span>
+                    </div>
+                    ${s['失分类型'] ? `<div class="adp-item-meta">失分类型：<b>${escapeHtml(s['失分类型'])}</b></div>` : ''}
+                    ${s['根源分析'] ? `<div class="adp-item-row"><span class="adp-row-label">根源：</span>${escapeHtml(s['根源分析'])}</div>` : ''}
+                    ${s['建议']     ? `<div class="adp-item-row"><span class="adp-row-label">建议：</span>${escapeHtml(s['建议'])}</div>` : ''}
+                    ${s['验证理由'] ? `<div class="adp-item-row"><span class="adp-row-label adp-row-why">为何有效：</span>${escapeHtml(s['验证理由'])}</div>` : ''}
+                </div>
+            `).join('');
+            suggestionHtml = `<div class="adp-report adp-report-structured">${summaryHtml}<div class="adp-list">${itemsHtml}</div></div>`;
+        } else {
+            // Markdown 渲染（ADP 模式）
+            const escapeHtml = s => String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+            let mdHtml;
+            try {
+                if (typeof marked !== 'undefined' && typeof DOMPurify !== 'undefined') {
+                    mdHtml = DOMPurify.sanitize(marked.parse(rawText, { gfm: true, breaks: true }));
+                } else {
+                    mdHtml = rawText.split('\n').map(l => `<p>${escapeHtml(l)}</p>`).join('');
+                }
+            } catch (e) {
+                console.error('Markdown 渲染失败，回退纯文本:', e);
                 mdHtml = rawText.split('\n').map(l => `<p>${escapeHtml(l)}</p>`).join('');
             }
-        } catch (e) {
-            console.error('Markdown 渲染失败，回退纯文本:', e);
-            mdHtml = rawText.split('\n').map(l => `<p>${escapeHtml(l)}</p>`).join('');
+            suggestionHtml = `<div class="adp-report">${mdHtml}</div>`;
         }
-        suggestionHtml = `<div class="adp-report">${mdHtml}</div>`;
     } else if (suggestions.length > 0) {
         suggestionHtml = suggestions.map(s => {
             if (typeof s === 'string') return `                    <li>• ${s}</li>`;
-            return `                    <li>• ${s.建议 || JSON.stringify(s)}</li>`;
+            return `                    <li>• ${s.建议 || s.建议内容 || ''}</li>`;
         }).join('\n');
     } else {
         suggestionHtml = '                    <li>暂无改进建议</li>';
