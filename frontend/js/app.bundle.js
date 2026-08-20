@@ -574,7 +574,7 @@ function uploadToExtractService(fileObj) {
     // 进度条模拟（fetch不支持上传进度，用递增模拟）
     const progressTimer = setInterval(() => {
         if (fileObj.progress < 90) {
-            fileObj.progress += Math.random() * 10 + 3;
+            fileObj.progress = Math.min(100, fileObj.progress + Math.random() * 10 + 3);   // v=82：上限 100，避免 102% 这种 bug
             renderProgressList();
         }
     }, 300);
