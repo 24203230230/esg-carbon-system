@@ -49,7 +49,20 @@ except ImportError:
     DOCX_SUPPORT = False
 
 import requests
-from flask import Flask, request, jsonify
+from flask import Flask, request, jsonify, send_file
+
+# v=85：WeasyPrint PDF 报告渲染（HTML→PDF）
+try:
+    from weasyprint import HTML
+    WEASYPRINT_SUPPORT = True
+except ImportError:
+    WEASYPRINT_SUPPORT = False
+
+try:
+    from jinja2 import Template
+    JINJA_SUPPORT = True
+except ImportError:
+    JINJA_SUPPORT = False
 
 # ============================== 日志 ==============================
 logging.basicConfig(
@@ -403,6 +416,80 @@ def extract_score():
     })
 
 
+
+
+@app.route('/api/report', methods=['POST'])
+def generate_report():
+    """v=85：WeasyPrint 生成精美 PDF 报告（替代前端 pdfmake 单调排版）
+
+    请求体 JSON：
+      company:     企业名称
+      report_year: 报告年份
+      total_score: 总分
+      grade:       评分等级
+      dim_scores:  {'企业内部碳管理': 7.46, ...} 四维度得分
+      suggestions: [{'指标','失分类型','根源分析','建议','优先级','验证理由'}, ...]
+      radar_img:   可选，雷达图 base64 PNG
+    返回：application/pdf 文件流
+    """
+    start = time.time()
+    try:
+        if not WEASYPRINT_SUPPORT or not JINJA_SUPPORT:
+            return jsonify({"error": "WeasyPrint/Jinja2 未安装，无法生成报告"}), 503
+
+        req = request.get_json(force=True, silent=True)
+        if not req:
+            return jsonify({"error": "请求体为空（需 JSON）"}), 400
+
+        # 加载 Jinja2 模板（容器内 /app/templates/report.html）
+        template_path = os.path.join(os.path.dirname(__file__), 'templates', 'report.html')
+        if not os.path.exists(template_path):
+            return jsonify({"error": f"报告模板不存在: {template_path}"}), 500
+        with open(template_path, encoding='utf-8') as f:
+            template_str = f.read()
+
+        # 维度得分（保证 4 维度都有值）
+        dim_scores = req.get('dim_scores') or {}
+        DIM_ORDER = ['企业内部碳管理', '供应链碳管理', '透明度', '金融化情况']
+        dim_scores_ordered = {}
+        for dim in DIM_ORDER:
+            val = dim_scores.get(dim, 0)
+            dim_scores_ordered[dim] = round(float(val), 2) if val is not None else 0.0
+
+        total = req.get('total_score', 0)
+        try:
+            total = round(float(total), 2)
+        except (TypeError, ValueError):
+            total = 0.0
+
+        render_ctx = {
+            'company': str(req.get('company') or '待评估企业'),
+            'report_year': str(req.get('report_year') or '—'),
+            'total_score': total,
+            'grade': str(req.get('grade') or '—'),
+            'dim_scores': dim_scores_ordered,
+            'suggestions': req.get('suggestions') or [],
+            'generated_at': time.strftime('%Y-%m-%d %H:%M:%S'),
+            'radar_img': req.get('radar_img') or '',
+        }
+
+        html_content = Template(template_str).render(**render_ctx)
+
+        # WeasyPrint 渲染（base_url 指向模板目录，支持相对资源）
+        pdf_bytes = HTML(string=html_content, base_url=os.path.dirname(template_path)).write_pdf()
+
+        import io
+        duration = round(time.time() - start, 2)
+        logger.info(f"📄 [report] PDF 生成成功: {render_ctx['company']} | {duration}s | {len(pdf_bytes)/1024:.1f}KB")
+        return send_file(
+            io.BytesIO(pdf_bytes),
+            mimetype='application/pdf',
+            as_attachment=True,
+            download_name=f"碳治理画像报告-{render_ctx['company']}.pdf"
+        )
+    except Exception as e:
+        logger.error(f"❌ [report] PDF 生成失败: {e}", exc_info=True)
+        return jsonify({"error": f"PDF 生成失败: {str(e)}"}), 500
 
 
 @app.errorhandler(413)

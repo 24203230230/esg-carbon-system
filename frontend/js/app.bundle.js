@@ -1944,18 +1944,72 @@ function downloadReport() {
     btn.disabled = true;
     btn.innerHTML = '<div class="loader-ring" style="width:20px;height:20px;border:2px solid rgba(255,255,255,0.3);border-top-color:#fff;border-radius:50%;display:inline-block;animation:spin 1s linear infinite;"></div> 生成中...';
 
-    setTimeout(() => {
-        try {
-            buildPdfReport();
-            showToast('画像报告 PDF 已生成', 'success');
-        } catch (e) {
-            console.error('PDF 生成失败，回退打印:', e);
-            showToast('PDF 生成失败，回退打印', 'error');
-            window.print();
-        } finally {
-            btn.disabled = false;
-            btn.innerHTML = original;
+    // v=85：优先 WeasyPrint 后端渲染（精美版），失败回退 pdfmake
+    const genWithWeasyPrint = async () => {
+        const scoreData = App._reportScoreData || {};
+        const ext = (App.extractResult && App.extractResult.extracted) || App.extractResult || {};
+        const meta = ext['报告元数据'] || {};
+        const sd = ext['评分增强数据'] || {};
+        const advList = ((App.scoreResult && App.scoreResult.评分结果) || App.scoreResult || {})['改进建议'] || [];
+
+        // 雷达图（reportRadar canvas → base64 PNG，传给后端）
+        let radarImg = '';
+        const radarCanvas = document.getElementById('reportRadar');
+        if (radarCanvas) {
+            try { radarImg = radarCanvas.toDataURL('image/png'); } catch (e) { radarImg = ''; }
         }
+
+        const reportData = {
+            company: meta['企业名称'] || '待评估企业',
+            report_year: meta['报告年份'] || '—',
+            total_score: sd['总分'] || 0,
+            grade: sd['评分等级'] || '—',
+            dim_scores: sd['维度得分'] || {},
+            suggestions: advList,
+            radar_img: radarImg
+        };
+
+        const r = await fetchWithTimeout('/api/report', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(reportData)
+        }, 120000);
+        if (!r.ok) {
+            const err = await r.json().catch(() => ({}));
+            throw new Error(err.error || ('报告服务异常: ' + r.status));
+        }
+        const blob = await r.blob();
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `碳治理画像报告-${reportData.company}.pdf`;
+        document.body.appendChild(a);
+        a.click();
+        a.remove();
+        URL.revokeObjectURL(url);
+        return 'weasyprint';
+    };
+
+    setTimeout(() => {
+        genWithWeasyPrint()
+            .then(() => {
+                showToast('画像报告 PDF 已生成（v=85 精美版）', 'success');
+            })
+            .catch(e => {
+                console.warn('WeasyPrint 报告生成失败，回退 pdfmake:', e);
+                try {
+                    buildPdfReport();
+                    showToast('已用兼容模式生成 PDF', 'info');
+                } catch (e2) {
+                    console.error('pdfmake 也失败，回退打印:', e2);
+                    showToast('PDF 生成失败，回退打印', 'error');
+                    window.print();
+                }
+            })
+            .finally(() => {
+                btn.disabled = false;
+                btn.innerHTML = original;
+            });
     }, 100);
 }
 
