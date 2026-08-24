@@ -1950,7 +1950,25 @@ function downloadReport() {
         const ext = (App.extractResult && App.extractResult.extracted) || App.extractResult || {};
         const meta = ext['报告元数据'] || {};
         const sd = ext['评分增强数据'] || {};
-        const advList = ((App.scoreResult && App.scoreResult.评分结果) || App.scoreResult || {})['改进建议'] || [];
+        // v=86：建议数据提取（与 previewReport v=80 同款：JSON.parse(raw_text) 优先）
+        let advList = [];
+        try {
+            const sRes = (App.scoreResult && App.scoreResult.评分结果) || {};
+            if (Array.isArray(sRes['改进建议']) && sRes['改进建议'].length) {
+                advList = sRes['改进建议'];
+            } else {
+                const rawText = App.scoreResult && App.scoreResult.raw_text;
+                if (rawText) {
+                    const parsed = JSON.parse(rawText);
+                    if (parsed && Array.isArray(parsed['改进建议'])) advList = parsed['改进建议'];
+                    else if (parsed && parsed['Output'] && Array.isArray(parsed['Output']['改进建议'])) advList = parsed['Output']['改进建议'];
+                }
+            }
+        } catch (e) { console.warn('v=86 提取建议失败:', e); }
+        // 兜底：raw_text 直接当 markdown
+        if (!advList.length && App.scoreResult && App.scoreResult.raw_text) {
+            advList = [{ '__raw_md': App.scoreResult.raw_text }];
+        }
 
         // 雷达图（reportRadar canvas → base64 PNG，传给后端）
         let radarImg = '';

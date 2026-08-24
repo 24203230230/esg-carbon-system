@@ -4,22 +4,37 @@
 <meta charset="UTF-8">
 <title>碳治理画像报告</title>
 <style>
-/* ===== WeasyPrint 报告模板 v=85（品牌色 + 评分色带 + 渐变）===== */
+/* ===== WeasyPrint 报告模板 v=86（绿色 ESG 主题）===== */
+:root {
+    /* 品牌色体系（绿色 ESG 主题） */
+    --primary: #047857;          /* 主翠绿（深） */
+    --primary-light: #10b981;    /* 主翠绿（中） */
+    --primary-lighter: #34d399;  /* 主翠绿（浅） */
+    --accent: #059669;            /* 强调绿 */
+    --bg-green-50: #ecfdf5;
+    --bg-green-100: #d1fae5;
+    --bg-warm: #fef3c7;
+    --bg-cool: #dbeafe;
+    --text-main: #064e3b;        /* 主文字（深绿） */
+    --text-soft: #374151;
+    --text-muted: #6b7280;
+    --border: #d1fae5;
+}
 @page {
     size: A4;
     margin: 2cm 1.8cm;
     @bottom-center {
         content: "ESG碳治理能力画像系统 · 第 " counter(page) " / " counter(pages) " 页";
         font-size: 8pt;
-        color: #9ca3af;
+        color: #6b7280;
     }
     @top-right {
-        content: "碳治理能力画像报告";
+        content: "碳治理能力画像报告 · " counter(page);
         font-size: 8pt;
-        color: #9ca3af;
+        color: #047857;
     }
 }
-/* v=85：中文字体（思源黑体子集，fontconfig 注册名为 Noto Sans CJK SC）*/
+/* v=86：中文字体（思源黑体子集，fontconfig 注册名 Noto Sans CJK SC）*/
 @font-face {
     font-family: 'Noto Sans CJK SC';
     font-style: normal;
@@ -33,140 +48,153 @@
     src: url('NotoSansSC-Bold.ttf') format('truetype');
 }
 * { margin: 0; padding: 0; box-sizing: border-box; }
-body { font-family: "Noto Sans CJK SC", "Noto Sans SC", "Microsoft YaHei", sans-serif; color: #1f2937; font-size: 10pt; line-height: 1.7; }
+body { font-family: "Noto Sans CJK SC", "Noto Sans SC", sans-serif; color: var(--text-soft); font-size: 10pt; line-height: 1.7; }
 
-/* ===== 封面页 ===== */
+/* ===== 封面页（绿色主题）===== */
 .cover {
     text-align: center;
-    padding: 120px 0 60px;
+    padding: 100px 0 60px;
     page-break-after: always;
+    background: linear-gradient(180deg, #ecfdf5 0%, #ffffff 60%);
+    margin: -2cm -1.8cm;
+    padding: 130px 1.8cm 60px;
 }
 .cover .brand {
     display: inline-block;
-    background: linear-gradient(135deg, #1a3a6e, #2563eb);
+    background: linear-gradient(135deg, #047857, #10b981);
     color: #fff;
     padding: 6px 18px;
     border-radius: 20px;
     font-size: 9pt;
     font-weight: 600;
     margin-bottom: 30px;
+    box-shadow: 0 2px 6px rgba(4, 120, 87, .2);
 }
-.cover h1 { font-size: 26pt; font-weight: 700; color: #1a3a6e; margin-bottom: 10px; }
-.cover .subtitle { font-size: 13pt; color: #6b7280; margin-bottom: 40px; }
+.cover h1 { font-size: 28pt; font-weight: 700; color: #064e3b; margin-bottom: 8px; line-height: 1.2; }
+.cover .subtitle { font-size: 13pt; color: #059669; margin-bottom: 40px; font-weight: 500; }
 .cover .meta {
-    font-size: 10.5pt; color: #4b5563;
-    border: 1px solid #e5e7eb;
-    border-radius: 12px;
+    font-size: 10.5pt; color: var(--text-soft);
+    border: 1px solid #a7f3d0;
+    border-radius: 14px;
     padding: 18px 30px;
-    max-width: 380px;
+    max-width: 420px;
     margin: 0 auto 40px;
-    background: #f9fafb;
+    background: #ffffff;
+    box-shadow: 0 4px 16px rgba(4, 120, 87, .08);
 }
-.cover .meta div { margin: 6px 0; }
-.cover .foot { font-size: 8.5pt; color: #9ca3af; margin-top: 80px; }
+.cover .meta div { margin: 7px 0; text-align: left; }
+.cover .meta strong { color: #047857; font-weight: 700; }
+.cover .foot { font-size: 8.5pt; color: #6b7280; margin-top: 80px; }
 
 /* ===== 章节 ===== */
 .section-title {
     font-size: 14pt;
     font-weight: 700;
-    color: #1a3a6e;
-    border-left: 5px solid #2563eb;
+    color: #047857;
+    border-left: 5px solid #10b981;
     padding-left: 10px;
     margin: 24px 0 12px;
+    background: linear-gradient(90deg, #ecfdf5 0%, transparent 100%);
+    padding-top: 6px; padding-bottom: 6px;
 }
-.sub-title { font-size: 11pt; font-weight: 700; color: #374151; margin: 14px 0 8px; }
+.sub-title { font-size: 11pt; font-weight: 700; color: #064e3b; margin: 14px 0 8px; }
 
-/* ===== 综合评分卡片 ===== */
+/* ===== 综合评分卡（绿色渐变）===== */
 .total-card {
-    background: linear-gradient(135deg, #1a3a6e, #2563eb);
+    background: linear-gradient(135deg, #047857, #10b981);
     border-radius: 14px;
     color: #fff;
     padding: 22px 26px;
     margin-bottom: 18px;
     page-break-inside: avoid;
+    box-shadow: 0 4px 12px rgba(4, 120, 87, .2);
 }
-.total-card .label { font-size: 10pt; opacity: .85; margin-bottom: 6px; }
+.total-card .label { font-size: 10pt; opacity: .9; margin-bottom: 6px; }
 .total-card .big { font-size: 30pt; font-weight: 800; }
-.total-card .big span { font-size: 13pt; font-weight: 400; opacity: .85; }
+.total-card .big span { font-size: 13pt; font-weight: 400; opacity: .9; }
 .total-card .grade {
     display: inline-block;
-    background: rgba(255,255,255,.2);
+    background: rgba(255,255,255,.22);
     padding: 3px 14px;
     border-radius: 12px;
     font-size: 10pt;
     margin-left: 10px;
     vertical-align: middle;
+    border: 1px solid rgba(255,255,255,.3);
 }
 
 /* ===== 四维度评分表 ===== */
 .dim-table { width: 100%; border-collapse: collapse; margin: 8px 0 16px; page-break-inside: avoid; }
 .dim-table th {
-    background: #eff6ff; color: #1e3a5f;
+    background: linear-gradient(135deg, #047857, #059669);
+    color: #fff;
     font-weight: 700; font-size: 9.5pt;
-    padding: 8px 12px; border: 1px solid #dbeafe; text-align: left;
+    padding: 8px 12px; border: 1px solid #a7f3d0; text-align: left;
 }
 .dim-table td {
-    padding: 8px 12px; border: 1px solid #e5e7eb; font-size: 10pt;
+    padding: 8px 12px; border: 1px solid #d1fae5; font-size: 10pt;
 }
-.dim-table tr:nth-child(even) td { background: #fafafa; }
-.score-excellent { color: #059669; font-weight: 700; }   /* ≥8 绿 */
-.score-good { color: #d97706; font-weight: 700; }         /* 6-7.9 黄 */
+.dim-table tr:nth-child(even) td { background: #f0fdf4; }
+.score-excellent { color: #047857; font-weight: 700; }   /* ≥8 翠绿 */
+.score-good { color: #d97706; font-weight: 700; }         /* 6-7.9 琥珀 */
 .score-poor { color: #dc2626; font-weight: 700; }         /* <6 红 */
 
 /* ===== 评估结论 ===== */
 .conclusion {
-    background: #f0fdf4;
-    border-left: 4px solid #10b981;
+    background: var(--bg-green-50);
+    border-left: 4px solid var(--primary-light);
     border-radius: 0 8px 8px 0;
     padding: 12px 16px;
     margin: 8px 0 16px;
     font-size: 10pt;
     page-break-inside: avoid;
+    color: #064e3b;
 }
 
-/* ===== 改进建议卡片 ===== */
+/* ===== 改进建议卡片（绿色主题）===== */
 .adp-item {
-    border: 1px solid #e5e7eb;
-    border-left: 4px solid #2563eb;
+    border: 1px solid var(--border);
+    border-left: 4px solid var(--primary-light);
     border-radius: 8px;
-    padding: 10px 14px;
-    margin: 8px 0;
+    padding: 12px 16px;
+    margin: 10px 0;
     page-break-inside: avoid;
     background: #fefefe;
 }
-.adp-item .head { display: flex; align-items: center; margin-bottom: 4px; }
+.adp-item .head { display: flex; align-items: center; margin-bottom: 6px; padding-bottom: 4px; border-bottom: 1px dashed var(--border); }
 .adp-item .idx {
-    background: #2563eb; color: #fff;
-    width: 20px; height: 20px; border-radius: 50%;
+    background: linear-gradient(135deg, #047857, #10b981);
+    color: #fff;
+    width: 22px; height: 22px; border-radius: 50%;
     font-size: 8.5pt; font-weight: 700;
-    text-align: center; line-height: 20px;
+    text-align: center; line-height: 22px;
     margin-right: 8px; flex-shrink: 0;
 }
-.adp-item .name { font-size: 10pt; font-weight: 700; color: #1e3a5f; flex: 1; }
+.adp-item .name { font-size: 10pt; font-weight: 700; color: #064e3b; flex: 1; }
 .adp-item .pri {
     font-size: 8pt; padding: 1px 10px; border-radius: 10px; font-weight: 600;
 }
 .pri-高, .pri-high { background: #fee2e2; color: #dc2626; }
-.pri-中, .pri-med  { background: #fef3c7; color: #d97706; }
-.pri-低, .pri-low  { background: #d1fae5; color: #059669; }
-.adp-item .meta { font-size: 8.5pt; color: #6b7280; margin: 2px 0; }
+.pri-中, .pri-med  { background: var(--bg-warm); color: #d97706; }
+.pri-低, .pri-low  { background: var(--bg-green-100); color: #047857; }
+.adp-item .meta { font-size: 8.5pt; color: var(--text-muted); margin: 3px 0; }
 .adp-item .meta b { color: #d97706; }
-.adp-item .row { font-size: 9.5pt; margin: 2px 0; }
-.adp-item .row .lbl { font-weight: 700; color: #1a3a6e; }
+.adp-item .row { font-size: 9.5pt; margin: 3px 0; line-height: 1.6; }
+.adp-item .row .lbl { font-weight: 700; color: #047857; }
 
 /* ===== 雷达图 ===== */
 .radar-wrap { text-align: center; margin: 10px 0 16px; page-break-inside: avoid; }
 .radar-wrap img { max-width: 380px; }
 
 /* ===== 页脚 ===== */
-.footer { text-align: center; font-size: 8.5pt; color: #9ca3af; margin-top: 30px; padding-top: 10px; border-top: 1px solid #e5e7eb; }
+.footer { text-align: center; font-size: 8.5pt; color: #6b7280; margin-top: 30px; padding-top: 10px; border-top: 1px solid #d1fae5; }
 </style>
 </head>
 <body>
 
 <!-- ===== 封面页 ===== -->
 <div class="cover">
-    <div class="brand">ESG 碳治理能力画像系统</div>
+    <div class="brand">🌱 ESG 碳治理能力画像系统</div>
     <h1>碳治理能力画像报告</h1>
     <p class="subtitle">{{ company }} · {{ report_year }}年度ESG报告智能分析</p>
     <div class="meta">
@@ -208,10 +236,13 @@ body { font-family: "Noto Sans CJK SC", "Noto Sans SC", "Microsoft YaHei", sans-
     </tbody>
 </table>
 
-<!-- ===== 三、改进建议（智能分析） ===== -->
-<div class="section-title">三、改进建议（根因分析 Top{{ suggestions|length }}）</div>
-{% if suggestions %}
+<!-- ===== 三、改进建议（根因分析）===== -->
+<div class="section-title">三、改进建议（根因分析）</div>
+{% if suggestions and suggestions|length > 0 %}
     {% for s in suggestions %}
+    {% if s['__raw_md'] %}
+        <div class="conclusion">{{ s['__raw_md'] }}</div>
+    {% else %}
     <div class="adp-item">
         <div class="head">
             <span class="idx">{{ loop.index }}</span>
@@ -222,13 +253,16 @@ body { font-family: "Noto Sans CJK SC", "Noto Sans SC", "Microsoft YaHei", sans-
         {% if s['根源分析'] %}<div class="row"><span class="lbl">根源：</span>{{ s['根源分析'] }}</div>{% endif %}
         {% if s['建议'] %}<div class="row"><span class="lbl">建议：</span>{{ s['建议'] }}</div>{% endif %}
     </div>
+    {% endif %}
     {% endfor %}
 {% else %}
-    <div class="conclusion">暂无改进建议 —— 该企业碳治理表现均衡。</div>
+    <div class="conclusion">
+        暂无根因分析建议——该企业碳治理表现均衡，未触发严重障碍指标（总分 ≥ 6 分即视为无关键失分点）。
+    </div>
 {% endif %}
 
 <div class="footer">
-    ESG碳治理能力画像系统 · 4 维度 × 42 指标 · 基于 one-api 多模型网关
+    ESG碳治理能力画像系统 · 4 维度 × 42 指标 · 基于 one-api 多模型网关 · WeasyPrint 精美渲染
 </div>
 
 </body>
