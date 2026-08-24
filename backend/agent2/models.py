@@ -37,14 +37,15 @@ MODEL_MAPPING = {
 SUPPORTED_MODELS = [
     {'id': 'deepseek-v4-flash', 'label': 'DeepSeek V4 Flash', 'desc': '快速 · 默认'},
     {'id': 'deepseek-v4-pro',   'label': 'DeepSeek V4 Pro',   'desc': '深度推理'},
+    {'id': 'deepseek-v4-flash-vision-exp', 'label': 'DeepSeek V4 Vision', 'desc': '多模态视觉'},
     {'id': 'glm-5.2',           'label': 'GLM 5.2',           'desc': '智谱'},
-    {'id': 'glm-5v-turbo',      'label': 'GLM 5V Turbo',      'desc': '多模态'},
     {'id': 'kimi-k3',           'label': 'Kimi K3',           'desc': '月之暗面'},
     {'id': 'minimax-m3',        'label': 'MiniMax M3',        'desc': 'MiniMax'},
 ]
 
 # 支持 JSON 输出模式的模型（one-api 透传 response_format）
-JSON_MODE_MODELS = {'deepseek-v4-flash', 'deepseek-v4-pro', 'glm-5.2', 'glm-5v-turbo'}
+# v=87：vision 模型按官方文档推测支持（多模态输出可能受限），先启用；不兼容会自动报错
+JSON_MODE_MODELS = {'deepseek-v4-flash', 'deepseek-v4-pro', 'deepseek-v4-flash-vision-exp', 'glm-5.2'}
 
 
 def get_gateway_config() -> tuple:
