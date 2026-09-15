@@ -55,7 +55,11 @@
 * { margin: 0; padding: 0; box-sizing: border-box; }
 *::before, *::after { box-sizing: border-box; }
 
-html { scroll-behavior: smooth; }
+/* v=98：html 也声明 overflow-x，与 body 双保险。
+   只给 body 设 overflow-x:hidden 时，该值会按规范"传播"到视口、body 自身反而变回 visible，
+   于是 body 内的超宽内容仍会把文档 scrollWidth 撑大 —— 在部分移动端内核（微信 X5）表现为
+   整页可左右拖动、右侧留白。html/body 同时声明可消除该传播路径。 */
+html { scroll-behavior: smooth; overflow-x: hidden; }
 
 body {
     font-family: var(--font-sans);
@@ -643,6 +647,7 @@ section[class^="section-"]:not(.section-hero) {
     padding: 4px 8px;
     border-radius: var(--radius-sm);
     flex-shrink: 0;
+    white-space: nowrap;   /* v=93：OCR 提示文案不折行 */
 }
 .progress-status.uploading { color: var(--color-blue); background: var(--color-blue-bg); }
 .progress-status.done { color: var(--color-green); background: var(--color-green-bg); }
@@ -939,8 +944,20 @@ section[class^="section-"]:not(.section-hero) {
 }
 .chart-card-header h4 { font-size: 16px; font-weight: 700; }
 .chart-hint { font-size: 12px; color: var(--color-text-muted); }
-.chart-body { height: 300px; position: relative; }
+.chart-body { height: 300px; position: relative; min-width: 0; }
 .chart-body-lg { height: 400px; }
+
+/* v=98 移动端修复：canvas 未初始化（或初始化时容器尚不可测量）时会保留
+   HTML 默认宽度 300px，窄屏下横向溢出（实测 104px），并沿
+   chart-body → chart-card → comparison-chart-wrap → comparison-section
+   → container 一路传到文档层，造成 360px 视口下 22px 横向滚动。
+   max-width 约束对已由 Chart.js 正常渲染的 canvas 无副作用（其内联宽度本就 ≤ 100%），
+   只在 canvas 仍是默认尺寸时把它按比例缩回容器内。 */
+.chart-body canvas,
+.comparison-chart-wrap canvas {
+    max-width: 100%;
+    height: auto;
+}
 
 /* ---- 评分详情 ---- */
 .score-details {
@@ -1080,7 +1097,12 @@ section[class^="section-"]:not(.section-hero) {
     margin-bottom: 24px;
 }
 .comparison-header h3 { font-size: 20px; font-weight: 700; }
-.comparison-actions { display: flex; gap: 8px; }
+/* v=98：≤768px 时 .comparison-header 转为纵向 flex，子项宽度按内容撑开，
+   标题（10 字 ×20px ≈ 200px）与「下拉 + 切换图表」按钮组（≈260px）
+   在 320px 极窄屏下均超出父容器（内容宽约 191px），实测溢出 69px 并传导
+   到文档层造成 12px 横向滚动。限制子项不超过容器宽 + 允许按钮组换行即可收敛。 */
+.comparison-header > * { max-width: 100%; }
+.comparison-actions { display: flex; gap: 8px; flex-wrap: wrap; min-width: 0; }
 .compare-select {
     padding: 8px 14px;
     border: 1px solid var(--color-border);
@@ -1092,6 +1114,7 @@ section[class^="section-"]:not(.section-hero) {
     cursor: pointer;
     outline: none;
     transition: all var(--transition);
+    max-width: 100%;
 }
 .compare-select:hover, .compare-select:focus { border-color: var(--color-green); }
 .comparison-table-wrap {
@@ -1134,7 +1157,7 @@ section[class^="section-"]:not(.section-hero) {
 .score-badge.blue { background: var(--color-blue-bg); color: var(--color-blue); }
 .score-badge.teal { background: var(--color-teal-bg); color: var(--color-teal); }
 .score-badge.gray { background: var(--color-gray-light); color: var(--color-gray); }
-.comparison-chart-wrap { margin-top: 24px; }
+.comparison-chart-wrap { margin-top: 24px; min-width: 0; }
 
 /* ---- Footer ---- */
 .footer {
@@ -1289,8 +1312,61 @@ section[class^="section-"]:not(.section-hero) {
 }
 
 @media (max-width: 768px) {
-    .nav-menu, .nav-actions { display: none; }
-    .nav-toggle { display: flex; }
+    /* v=99：移动端导航抽屉。
+       原实现直接把 .nav-menu/.nav-actions 设为 display:none，而 #navToggle 没有任何 JS 绑定，
+       结果是手机上导航项和「登录」入口全部消失、登录弹窗无处唤出（桌面端正常）。
+       现改为：默认收起，点汉堡按钮把原生导航展开成纵向抽屉 —— 复用原有 DOM，
+       登录态仍由 updateAuthUI() 单点驱动，不存在两份状态不同步的问题。 */
+    .nav-container {
+        flex-wrap: wrap;
+        height: auto;
+        min-height: 64px;
+        align-items: center;
+    }
+    .nav-logo { order: 1; }
+    .nav-toggle { display: flex; order: 3; }
+    .nav-menu, .nav-actions {
+        order: 4;
+        flex-basis: 100%;
+        display: none;
+    }
+    .navbar.nav-open {
+        background: rgba(255,255,255,0.98);
+        border-bottom-color: var(--color-border);
+        box-shadow: 0 10px 30px rgba(0,0,0,.10);
+    }
+    .navbar.nav-open .nav-container { padding-bottom: 16px; }
+    .navbar.nav-open .nav-menu {
+        display: flex;
+        flex-direction: column;
+        align-items: stretch;
+        gap: 2px;
+        margin-top: 8px;
+        padding-top: 10px;
+        border-top: 1px solid var(--color-border);
+    }
+    .navbar.nav-open .nav-menu .nav-link { padding: 12px; border-radius: 8px; }
+    .navbar.nav-open .nav-actions {
+        display: flex;
+        flex-direction: column;
+        align-items: stretch;
+        gap: 8px;
+        margin-top: 10px;
+    }
+    .navbar.nav-open .nav-actions > .btn { width: 100%; justify-content: center; }
+    /* 用户下拉卡片：桌面端 300px 固定宽 + 绝对定位，窄屏会跑出画布，抽屉内改为常规块 */
+    .navbar.nav-open .user-menu {
+        position: static;
+        width: 100%;
+        margin-top: 8px;
+        box-shadow: none;
+        border-radius: 10px;
+    }
+    .navbar.nav-open .user-menu::before { display: none; }
+    /* 汉堡图标 → 展开态（☰ 变 ✕） */
+    .navbar.nav-open .nav-toggle span:nth-child(1) { transform: translateY(6px) rotate(45deg); }
+    .navbar.nav-open .nav-toggle span:nth-child(2) { opacity: 0; }
+    .navbar.nav-open .nav-toggle span:nth-child(3) { transform: translateY(-6px) rotate(-45deg); }
     .hero-title { font-size: 28px; }
     .hero-actions { flex-direction: column; }
     .hero-actions .btn { width: 100%; justify-content: center; }
@@ -1375,14 +1451,22 @@ section[class^="section-"]:not(.section-hero) {
     color: #1a3c6e;
     white-space: nowrap;
 }
+/* v=98 移动端修复：原为 display:flex + 子项 flex:1 且未显式声明 min-width，
+   flex 项默认 min-width:auto = 内容最小宽度，无法收缩 → 6 个模型卡片
+   （DeepSeek V4 Flash/Pro/Vision、GLM 5.2、Kimi K3、MiniMax M3）在窄屏上
+   横向排成一列把文档撑到 600px 以上（实测 360px 视口溢出 263px）。
+   改用 auto-fit 网格：容器宽就多列、窄就自动折行，从根本上不会横向溢出。 */
 .company-type-options {
-    display: flex;
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
     gap: 10px;
     flex: 1;
+    min-width: 0;
 }
 .company-type-option {
-    flex: 1;
+    min-width: 0;
     max-width: 220px;
+    position: relative;
     cursor: pointer;
 }
 .company-type-option input {
@@ -1417,6 +1501,25 @@ section[class^="section-"]:not(.section-hero) {
 }
 .company-type-option.active .option-name {
     color: #059669;
+}
+
+/* v=98 移动端：标签独占一行 + 卡片两列，避免标签与卡片争抢宽度导致挤压换行 */
+@media (max-width: 640px) {
+    .company-type-selector {
+        flex-direction: column;
+        align-items: stretch;
+        gap: 12px;
+        padding: 14px 16px;
+    }
+    .company-type-label {
+        white-space: normal;
+        font-size: 13px;
+    }
+    .company-type-options { gap: 8px; }
+    .company-type-option { max-width: none; }
+    .company-type-option .option-card { padding: 9px 12px; }
+    .company-type-option .option-name { font-size: 14px; }
+    .company-type-option .option-desc { font-size: 11px; }
 }
 
 /* ===== 评分徽章（两段式渲染第一段：分数卡片）===== */

@@ -26,12 +26,22 @@ logger = logging.getLogger('llm')
 DEFAULT_MODEL = 'deepseek-v4-flash'
 
 # 模型映射：前端语义化名 → one-api 网关/上游 provider 真实模型名
-# 原因：DeepSeek 官方实际 API 是 deepseek-chat / deepseek-reasoner
-#       前端用 v4 语义化展示，后端做映射对接渠道真实名
+# v=98：改为**直通**。原映射把 deepseek-v4-flash→deepseek-chat、
+#   deepseek-v4-pro→deepseek-reasoner，而这两个名字在 DeepSeek 最新官方文档中
+#   **已不再列出**（文档只列 deepseek-flash / deepseek-v4-pro）→ 潜在断供点。
+#
+# 实测（2026-09-12 经网关逐个探针调用）：
+#   deepseek-v4-flash  → OK，上游返回 model=deepseek-flash（官方已路由到 V4.1-Flash）
+#   deepseek-chat      → OK，上游同样返回 model=deepseek-flash（官方仍兼容旧名）
+#   deepseek-v4-pro    → OK
+#   deepseek-flash     → 403「该令牌无权使用模型」（网关 token 未勾选，非渠道缺失）
+# ⇒ 直通 v4 名少一跳依赖、更贴近官方口径，且**无需改动 one-api 配置**。
+#
+# ⚠️ 官方推荐名 `deepseek-flash` 若要启用，需先在 one-api：
+#    ① 渠道「模型」字段加入 deepseek-flash；② 分发 token 勾选该模型。
 MODEL_MAPPING = {
-    'deepseek-v4-flash': 'deepseek-chat',       # V4 Flash → DeepSeek V3 Chat（等价）
-    'deepseek-v4-pro':   'deepseek-reasoner',   # V4 Pro → DeepSeek V3 Reasoner（等价）
-    # 其他 provider 名字一致，不映射：glm-5.2 / glm-5v-turbo / kimi-k3 / minimax-m3
+    # 留空 = 直通：前端 id 即网关模型名，不再二次映射。
+    # 其他 provider 名字一致，同样直通：glm-5.2 / glm-5v-turbo / kimi-k3 / minimax-m3
 }
 
 SUPPORTED_MODELS = [
@@ -97,6 +107,14 @@ def call_llm(system_prompt: str, user_text: str, model_id: str = None,
         "max_tokens": 16384,
         "temperature": 0.1,
     }
+    # v=99：DeepSeek V4.1 系列**思考模式默认开启**（effort=high），思维链经
+    # reasoning_content 返回且与 content **共享 max_tokens 预算**。实测影响：
+    #   同一 prompt  completion_tokens  23（deepseek-chat）→ 186（deepseek-v4-flash）
+    #   生产批跑      JSON 解析失败率 ~3% → 17%（5/30，content 被腰斩）
+    # 抽取任务是"读原文→填结构"，不需要思维链，显式关闭（实测 186 → 24，8 倍差）。
+    # 仅对 DeepSeek 系生效，避免给 GLM/Kimi/MiniMax 透传未知字段。
+    if real_model.startswith('deepseek'):
+        payload["thinking"] = {"type": "disabled"}
     # JSON 输出：仅支持 json_mode 的模型透传 response_format（one-api 透传给上游）
     if model_id in JSON_MODE_MODELS:
         payload["response_format"] = {"type": "json_object"}
@@ -111,6 +129,14 @@ def call_llm(system_prompt: str, user_text: str, model_id: str = None,
             data = resp.json()
             content = data['choices'][0]['message']['content']
             tokens_used = data.get('usage', {}).get('total_tokens', 0)
+            # v=99：截断可见化。截断会让 JSON 不完整（表现为"LLM返回非JSON格式"），
+            # 只有落日志才能区分"模型输出语法错"与"输出被 max_tokens 腰斩"。
+            finish_reason = data['choices'][0].get('finish_reason')
+            if finish_reason == 'length':
+                logger.warning(
+                    f"[LLM] ⚠️ 输出被 max_tokens 截断（finish_reason=length，"
+                    f"content_len={len(content)}），JSON 可能不完整"
+                )
             logger.info(f"[LLM] {model_id} 返回成功，tokens={tokens_used}，content_len={len(content)}")
             return {
                 "content": content,

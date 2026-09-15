@@ -97,6 +97,11 @@ def call_llm(system_prompt: str, user_text: str, model_id: str = None,
         "max_tokens": 16384,
         "temperature": 0.1,
     }
+    # v=99：与 extractor 同步 —— DeepSeek V4.1 思考模式默认开启，思维链与 content
+    # 共享 max_tokens 预算。Agent2 当前映射到 deepseek-chat（非思考）本无此问题，
+    # 但显式声明可防止将来把映射改成直通名时重踩同一个坑；仅对 DeepSeek 系生效。
+    if real_model.startswith('deepseek'):
+        payload["thinking"] = {"type": "disabled"}
     # JSON 输出：仅支持 json_mode 的模型透传 response_format（one-api 透传给上游）
     if model_id in JSON_MODE_MODELS:
         payload["response_format"] = {"type": "json_object"}

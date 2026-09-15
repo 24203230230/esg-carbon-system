@@ -17,6 +17,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
         libcairo2 \
         libgdk-pixbuf-2.0-0 \
         shared-mime-info \
+        libgomp1 \
     && rm -rf /var/lib/apt/lists/*
 
 # v=85：中文思源黑体子集 → /usr/share/fonts/truetype/noto/（fontconfig 标准路径）
@@ -35,6 +36,17 @@ RUN pip install --no-cache-dir \
         python-docx \
         weasyprint \
         jinja2
+
+# v=93：扫描件 OCR 兜底（RapidOCR + onnxruntime，完全离线，评委现场断网也能跑）
+#   ⚠️ 坑1：必须用 opencv-python-headless —— slim 镜像无 libGL.so.1，普通版直接 ImportError
+#   ⚠️ 坑2：rapidocr 的依赖写死 opencv_python，故装完须卸载再补 headless 版
+#   ⚠️ 坑3：onnxruntime 依赖 libgomp1（OpenMP），见上方 apt 安装列表
+#   ⚠️ 坑4：走清华源 —— 校园网直连 PyPI 官方源易超时
+RUN pip install --no-cache-dir -i https://pypi.tuna.tsinghua.edu.cn/simple \
+        rapidocr-onnxruntime \
+    && pip uninstall -y opencv-python \
+    && pip install --no-cache-dir -i https://pypi.tuna.tsinghua.edu.cn/simple \
+        opencv-python-headless
 
 # 复制代码和提示词
 COPY extract_service.py /app/

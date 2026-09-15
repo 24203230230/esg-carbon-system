@@ -5,15 +5,17 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>ESG碳治理能力画像系统</title>
     <meta name="description" content="面向企业与金融机构的碳治理能力评估工具 — 自动提取ESG报告碳信息，量化评估碳管理能力，生成可视化画像">
-    <link rel="stylesheet" href="css/style.css?v=91&t=1787578323">
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <!-- 第三方库（本地化 vendor，离线可用） -->
-    <script src="vendor/chart.umd.min.js"></script>
-    <script src="vendor/marked.min.js"></script>
-    <script src="vendor/purify.min.js"></script>
-    <script src="vendor/pdfmake.min.js"></script>
-    <script src="vendor/vfs_cn.js"></script>
-    <script src="vendor/supabase.min.js"></script>
+    <link rel="stylesheet" href="css/style.css?v=99&t=1789318169">
+    <link rel="icon" type="image/svg+xml" href="favicon.svg?v=92">
+    <!-- v=92：移除 fonts.googleapis.com preconnect —— 全站未引用 Google Fonts，
+         国内网络下该预连接必然失败，只白白占用一个连接槽。字体走系统字体栈。 -->
+    <!-- 第三方库（本地化 vendor，离线可用，全部带版本号以便长缓存失效） -->
+    <script src="vendor/chart.umd.min.js?v=92"></script>
+    <script src="vendor/marked.min.js?v=92"></script>
+    <script src="vendor/purify.min.js?v=92"></script>
+    <script src="vendor/supabase.min.js?v=92"></script>
+    <!-- v=92：pdfmake.min.js(1.3MB) + vfs_cn.js(8.5MB 中文字体) 已改为懒加载，
+         仅在「下载画像报告」走客户端兜底路径时才注入，首屏不再下载这 9.8MB。 -->
 </head>
 <body>
 
@@ -1120,9 +1122,9 @@
 <!-- ============ Toast 提示 ============ -->
 <div class="toast-container" id="toastContainer"></div>
 
-<script src="js/config.js?v=91&t=1787578323"></script>
-<script src="js/mock-data.js?v=91&t=1787578323"></script>
-<script src="js/app.bundle.js?v=91&t=1787578323"></script>
-<script src="js/charts.js?v=91&t=1787578323"></script>
+<script src="js/config.js?v=97&t=1789282683"></script>
+<script src="js/mock-data.js?v=92&t=1787578323"></script>
+<script src="js/app.bundle.js?v=97&t=1789318169"></script>
+<script src="js/charts.js?v=92&t=1787578323"></script>
 </body>
 </html>

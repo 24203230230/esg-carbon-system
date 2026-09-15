@@ -1,0 +1,10 @@
+flask>=3.1.1
+requests>=2.32.4
+pdfplumber>=0.10.0
+python-docx>=1.0.0
+
+# v=93：扫描件 OCR 兜底（文字层提不出内容时自动识别，离线可跑）
+# ⚠️ opencv 必须用 headless 版：slim 镜像无 libGL.so.1，普通 opencv-python 会 ImportError
+#    实际安装见 Dockerfile（需「先装 rapidocr 再卸载 opencv-python 补 headless」两步）
+rapidocr-onnxruntime>=1.3.0
+opencv-python-headless>=4.8.1.78

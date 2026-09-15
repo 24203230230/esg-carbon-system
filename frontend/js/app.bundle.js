@@ -28,6 +28,222 @@ function fetchWithTimeout(url, options = {}, timeoutMs = 120000) {
         .finally(() => clearTimeout(timer));
 }
 
+/**
+ * v=93：统一解析后端响应，把后端返回的「中文原因」透出到界面
+ *
+ * 背景（bug 修复）：
+ *   原先只抛 `提取服务响应异常: 400`，用户看到 400 完全不知道发生了什么。
+ *   而后端其实回了明确原因，例如扫描件 PDF 会回：
+ *     {"error": "提取文本过短，可能为扫描件PDF，建议用OCR"}
+ *   该信息被前端丢弃 → 用户只能看到一个无意义的数字。
+ *
+ * @param {Response} res   fetch 响应
+ * @param {string} label   业务名称（用于拼错误前缀，如「提取」「根因分析」）
+ * @returns {Promise<any>} 成功则返回解析后的 JSON
+ */
+async function parseJsonResponse(res, label) {
+    if (res.ok) return res.json();
+
+    // 失败：尽最大努力从 body 里挖出人能看懂的原因
+    let detail = '';
+    try {
+        const raw = await res.text();
+        try {
+            const j = JSON.parse(raw);
+            detail = j.error || j.message || j.detail || j.msg || '';
+        } catch (_) {
+            // 非 JSON（如 nginx 的 HTML 错误页）→ 去掉标签取纯文本
+            detail = String(raw || '').replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim();
+        }
+    } catch (_) { /* body 读不出来就只报状态码 */ }
+
+    detail = String(detail || '').trim().slice(0, 150);
+
+    // 兜底：后端没给原因时，按状态码给一句人话
+    if (!detail) {
+        if (res.status === 413) detail = '文件超过服务端上传大小限制';
+        else if (res.status === 502 || res.status === 504) detail = '后端服务无响应或超时，请稍后重试';
+        else if (res.status === 524) detail = '边缘网关等待超时，请重试（长任务已改走异步接口）';
+        else detail = `HTTP ${res.status}`;
+    }
+
+    throw new Error(`${label}失败：${detail}`);
+}
+
+// ============ 分片上传（v=96）============
+// 背景：单次 POST 提交大文件的耗时 = 体积 / 上行带宽。
+//   实测（2026-09-12，公网 60MB 分片实测）：真实上行仅 **139 KB/s**，
+//   且抖动极大（单片 4MB 最快 ~15s、最慢 84.9s，相差 5.7 倍）。
+//   ⚠️ 此前用「98.4MB 在 126.9s 断连」反推出的 449KB/s 是错的 ——
+//      126.9s 是被 Cloudflare 掐断的时刻，不是上传完成的时刻，速度被高估约 3 倍。
+//   → 真实 100s 边缘超时边界约 **14MB**（不是 44MB）；4MB 的大分片在抖动时
+//     会逼近甚至撞上超时线，故 v=96 定稿为「1MB 小分片」：
+//     单片 1MB 在 139KB/s 下约 7.5s，最坏抖动按 3 倍算也仅 ~22s，安全余量 ~4.5 倍。
+const UPLOAD_CHUNK_SIZE = 1 * 1024 * 1024;        // 单片 1MB（抗抖动，最坏 ~22s ≪ 100s 边缘超时）
+const UPLOAD_CHUNK_THRESHOLD = 6 * 1024 * 1024;   // 超过 6MB 走分片（6MB 一次性提交需 ~44s，已接近危险区）
+const UPLOAD_MAX_CHUNKS = 400;                    // 与后端上限一致（400MB 覆盖上限）
+const UPLOAD_CHUNK_RETRY = 3;                     // 单片失败重试次数（实测上行抖动极大，单片重传远划算）
+
+/** 生成 32 位十六进制上传 ID（与后端白名单正则 ^[0-9a-f]{32}$ 一致） */
+function genUploadId() {
+    const bytes = new Uint8Array(16);
+    const c = window.crypto || window.msCrypto;
+    if (c && c.getRandomValues) {
+        c.getRandomValues(bytes);
+    } else {
+        for (let i = 0; i < 16; i++) bytes[i] = Math.floor(Math.random() * 256);
+    }
+    return Array.from(bytes).map(b => b.toString(16).padStart(2, '0')).join('');
+}
+
+/**
+ * 大文件分片上传：逐片提交 → 合并 → 返回 task_id
+ *
+ * 逐片串行上传（并行只会争抢本就有限的上行带宽，反而更容易触发超时）。
+ * @param {File} file   待上传文件
+ * @param {Object} meta {companyType, model}
+ * @param {Function} onUploadProgress (doneChunks, totalChunks)
+ * @returns {Promise<string>} task_id
+ */
+async function uploadFileInChunks(file, meta, onUploadProgress) {
+    const uploadId = genUploadId();
+    const totalChunks = Math.ceil(file.size / UPLOAD_CHUNK_SIZE);
+    if (totalChunks > UPLOAD_MAX_CHUNKS) {
+        throw new Error(`文件过大（${formatFileSize(file.size)}），超过分片上传上限（${UPLOAD_MAX_CHUNKS * 4}MB）`);
+    }
+
+    try {
+        for (let i = 0; i < totalChunks; i++) {
+            const start = i * UPLOAD_CHUNK_SIZE;
+            const blob = file.slice(start, Math.min(file.size, start + UPLOAD_CHUNK_SIZE));
+
+            // v=96：单片失败重试（实测上行 5-18s 抖动明显，单片重传远比整个文件重来划算）
+            //       后端同 chunk_index 为覆盖写 → 重试天然幂等，不会重复拼接
+            let lastErr = null;
+            for (let attempt = 1; attempt <= UPLOAD_CHUNK_RETRY; attempt++) {
+                try {
+                    const fd = new FormData();
+                    fd.append('upload_id', uploadId);
+                    fd.append('chunk_index', String(i));
+                    fd.append('file', blob, file.name);
+                    const res = await fetchWithTimeout(
+                        `${API_CONFIG.EXTRACT_API}/upload_chunk`, { method: 'POST', body: fd }, 120000
+                    );
+                    await parseJsonResponse(res, `上传第 ${i + 1}/${totalChunks} 片`);
+                    lastErr = null;
+                    break;
+                } catch (e) {
+                    lastErr = e;
+                    if (attempt < UPLOAD_CHUNK_RETRY) {
+                        await new Promise(r => setTimeout(r, 1000 * attempt));   // 递增退避
+                    }
+                }
+            }
+            if (lastErr) throw lastErr;
+
+            if (typeof onUploadProgress === 'function') onUploadProgress(i + 1, totalChunks);
+        }
+
+        const res = await fetchWithTimeout(`${API_CONFIG.EXTRACT_API}/upload_complete`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                upload_id: uploadId,
+                total_chunks: totalChunks,
+                filename: file.name,
+                company_type: meta && meta.companyType ? meta.companyType : 'listed',
+                model: meta && meta.model ? meta.model : ''
+            })
+        }, 180000);
+        const data = await parseJsonResponse(res, '合并分片');
+        if (!data || !data.task_id) throw new Error('合并分片失败：服务端未返回任务ID');
+        return data.task_id;
+    } catch (err) {
+        // best-effort 清理服务端残留分片（清理失败不影响主流程与错误提示）
+        try {
+            fetch(`${API_CONFIG.EXTRACT_API}/upload_abort`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ upload_id: uploadId })
+            }).catch(() => { /* 忽略 */ });
+        } catch (_) { /* 忽略 */ }
+
+        // fetch 超时/中断抛的是英文 AbortError，这里换成看得懂的话
+        if (err && (err.name === 'AbortError' || /aborted|failed to fetch|network/i.test(err.message || ''))) {
+            throw new Error('分片上传中断或超时（网络较慢），请检查网络后重试');
+        }
+        throw err;
+    }
+}
+
+/**
+ * 提交提取任务：按文件大小自动选择「分片上传」或「一次性提交」，统一返回 task_id
+ * @param {FormData} formData 含 file / company_type / model
+ * @param {Function} onProgress 进度回调
+ * @returns {Promise<string>} task_id
+ */
+async function submitExtraction(formData, onProgress) {
+    const fileObj = formData.get('file');
+    const size = (fileObj && typeof fileObj.size === 'number') ? fileObj.size : 0;
+
+    // 大文件 → 分片上传（每片请求都很小，不会被边缘超时掐断）
+    if (size > UPLOAD_CHUNK_THRESHOLD) {
+        const totalChunks = Math.ceil(size / UPLOAD_CHUNK_SIZE);
+        const report = (cur) => {
+            if (typeof onProgress === 'function') {
+                try { onProgress({ status: 'uploading', stage: 'upload', current: cur, total: totalChunks }); } catch (_) { }
+            }
+        };
+        report(0);
+        return await uploadFileInChunks(fileObj, {
+            companyType: formData.get('company_type') || 'listed',
+            model: formData.get('model') || ''
+        }, report);
+    }
+
+    // 小文件 → 保持原有一次性提交逻辑不变
+    const submitRes = await fetchWithTimeout(
+        `${API_CONFIG.EXTRACT_API}/extract_async`, { method: 'POST', body: formData }, 600000
+    );
+    const submitData = await parseJsonResponse(submitRes, '提交提取任务');
+    const taskId = submitData && submitData.task_id;
+    if (!taskId) throw new Error('提交提取任务失败：服务端未返回任务ID');
+    return taskId;
+}
+
+/**
+ * 异步提取：提交任务 → 轮询进度 → 取回结果（v=94，v=96 扩展分片上传）
+ *
+ * 背景：扫描件触发 OCR 兜底时约需 355s，而 Cloudflare 免费版边缘等待约 100s
+ *       就返回 524（实测 127.9s 触发），同步长请求必然失败。
+ *       改为「提交即返回 + 轮询」后，每个 HTTP 请求都远短于边缘超时。
+ *       v=96：大文件（>10MB）的「提交」一步本身也会超时，故改为分片上传后再合并。
+ *
+ * @param {FormData} formData   含 file / model / company_type
+ * @param {Function} onProgress 可选回调 ({status, stage, current, total})
+ * @returns {Promise<Object>}   提取结果（与旧的同步接口返回体完全一致）
+ */
+async function requestExtraction(formData, onProgress) {
+    // 步骤1：提交任务（大文件走分片上传，小文件一次提交；都只做接收+落盘，不等解析）
+    const taskId = await submitExtraction(formData, onProgress);
+
+    // 步骤2：轮询（每 2s 一次，单次响应极小；总上限 30 分钟防死循环）
+    const deadline = Date.now() + 1800000;
+    while (Date.now() < deadline) {
+        await new Promise(r => setTimeout(r, 2000));
+        const stRes = await fetchWithTimeout(
+            `${API_CONFIG.EXTRACT_API}/extract_status/${taskId}`, {}, 60000
+        );
+        const st = await parseJsonResponse(stRes, '查询提取进度');
+        if (typeof onProgress === 'function') {
+            try { onProgress(st); } catch (_) { /* 渲染异常绝不影响主流程 */ }
+        }
+        if (st.status === 'done') return st.result;
+        if (st.status === 'error') throw new Error(st.error || '提取失败');
+    }
+    throw new Error('提取超时（超过30分钟），请改用文字版报告或减少页数');
+}
+
 function scrollToSection(id) {
     const el = document.getElementById(id);
     if (el) {
@@ -573,7 +789,7 @@ function handleFiles(fileList) {
  * 真实上传：调提取服务（DeepSeek API + 智能体一提示词）
  * 文件 → 提取服务 → 精简JSON
  */
-function uploadToExtractService(fileObj) {
+async function uploadToExtractService(fileObj) {
     // 模拟模式下走旧逻辑（演示用）
     if (API_CONFIG.MODE === 'mock') {
         simulateUpload(fileObj);
@@ -584,23 +800,49 @@ function uploadToExtractService(fileObj) {
     formData.append('file', fileObj.file);
     formData.append('model', getSelectedModel());   // v=78 多模型
 
+    // v=94：改走异步任务 + 轮询（同步长请求会被 Cloudflare 边缘 ~100s 掐成 524）
+    // v=96：>10MB 的大文件改走分片上传，上传阶段回报真实片数进度
+    const uploadStartAt = Date.now();
+    fileObj.ocrHint = false;
+    fileObj.ocrProgress = '';
+    fileObj.uploadHint = '';
+
     // 进度条模拟（fetch不支持上传进度，用递增模拟）
     const progressTimer = setInterval(() => {
-        if (fileObj.progress < 90) {
+        // v=96：分片上传阶段由真实片数驱动进度条，此处不再叠加模拟值
+        if (!fileObj.uploadHint && fileObj.progress < 90) {
             fileObj.progress = Math.min(100, fileObj.progress + Math.random() * 10 + 3);   // v=82：上限 100，避免 102% 这种 bug
+            renderProgressList();
+        }
+        // 兜底提示：若服务端进度未回报（如旧后端），超过 60s 也切换 OCR 文案安抚用户
+        if (!fileObj.uploadHint && !fileObj.ocrHint && (Date.now() - uploadStartAt) > 60000) {
+            fileObj.ocrHint = true;
             renderProgressList();
         }
     }, 300);
 
-    fetchWithTimeout(`${API_CONFIG.EXTRACT_API}/extract`, {
-        method: 'POST',
-        body: formData
-    }, 240000)   // v=84：提取最长 240s（LLM 处理大报告）
-    .then(res => {
-        if (!res.ok) throw new Error(`提取服务响应异常: ${res.status}`);
-        return res.json();
-    })
-    .then(data => {
+    try {
+        const data = await requestExtraction(formData, (st) => {
+            // 服务端真实阶段回报（优先级高于时间兜底）
+            if (st.stage === 'upload') {
+                // v=96：分片上传阶段 → 真实片数进度（进度条走前 30%，其余留给解析/OCR）
+                fileObj.uploadHint = st.total > 0 ? `上传中 ${st.current}/${st.total} 片` : '上传中';
+                if (st.total > 0) {
+                    fileObj.progress = Math.min(30, Math.round(st.current / st.total * 30));
+                }
+                fileObj.ocrHint = false;
+                fileObj.ocrProgress = '';
+            } else if (st.stage === 'ocr') {
+                fileObj.uploadHint = '';
+                fileObj.ocrHint = true;
+                fileObj.ocrProgress = st.total > 0 ? `${st.current}/${st.total} 页` : '';
+            } else if (st.stage === 'parse') {
+                fileObj.uploadHint = '';
+                fileObj.ocrHint = false;
+                fileObj.ocrProgress = '';
+            }
+            renderProgressList();
+        });
         clearInterval(progressTimer);
         fileObj.progress = 100;
         fileObj.status = 'done';
@@ -609,15 +851,14 @@ function uploadToExtractService(fileObj) {
         renderFileList();
         checkUploadAction();
         showToast(`${fileObj.name} 提取完成`, 'success');
-    })
-    .catch(err => {
+    } catch (err) {
         clearInterval(progressTimer);
         fileObj.status = 'error';
         fileObj.error = err.message;
         renderProgressList();
         renderFileList();
         showToast(`${fileObj.name} 提取失败: ${err.message}`, 'error');
-    });
+    }
 }
 
 function simulateUpload(fileObj) {
@@ -661,7 +902,7 @@ function renderProgressList() {
                 </div>
             </div>
             <span class="progress-percent">${Math.floor(f.progress)}%</span>
-            <span class="progress-status uploading">上传中</span>
+            <span class="progress-status uploading" title="${f.uploadHint ? '正在分片上传大文件，请勿关闭页面' : (f.ocrHint ? '检测到扫描件，正在逐页 OCR 识别（约3-6分钟），请勿关闭页面' : '正在上传并解析文档')}">${f.uploadHint ? escapeHtml(f.uploadHint) : (f.ocrHint ? escapeHtml(`OCR识别中 ${f.ocrProgress || ''}`.trim()) : '上传中')}</span>
         </div>
     `).join('');
 }
@@ -772,12 +1013,26 @@ function startAnalysis() {
     status.textContent = `正在提交提取结果到ADP评分（${companyType === 'listed' ? '上市公司' : '非上市公司'}方案）...`;
 
     // 步骤1：如果没有提取结果，先调提取服务（带上公司类型用于评分分流）
+    // v=94：改走异步任务 + 轮询，避免公网长请求被 Cloudflare 边缘 524 掐断
     const runExtract = doneFile.extractResult
         ? Promise.resolve(doneFile.extractResult)
-        : fetchWithTimeout(`${API_CONFIG.EXTRACT_API}/extract`, {
-            method: 'POST',
-            body: (() => { const fd = new FormData(); fd.append('file', doneFile.file); fd.append('company_type', companyType); fd.append('model', getSelectedModel()); return fd; })()
-          }, 240000).then(res => res.json());   // v=84：提取最长 240s
+        : requestExtraction(
+            (() => { const fd = new FormData(); fd.append('file', doneFile.file); fd.append('company_type', companyType); fd.append('model', getSelectedModel()); return fd; })(),
+            (st) => {
+                if (st.stage === 'upload') {
+                    // v=96：分片上传阶段
+                    status.textContent = st.total > 0
+                        ? `正在分片上传大文件（${st.current}/${st.total} 片）...`
+                        : '正在上传文件...';
+                } else if (st.stage === 'ocr') {
+                    status.textContent = st.total > 0
+                        ? `检测到扫描件，正在 OCR 识别（${st.current}/${st.total} 页，约3-6分钟）...`
+                        : '检测到扫描件，正在 OCR 识别（约3-6分钟）...';
+                } else if (st.stage === 'parse') {
+                    status.textContent = '正在解析文档文本...';
+                }
+            }
+          );
 
     runExtract
         .then(extractData => {
@@ -935,10 +1190,8 @@ function callScoringAPI(extractData, companyType) {
                 esg_json: enrichedJson
             }
         })
-    }, 180000).then(res => {   // v=84：根因分析最长 180s
-        if (!res.ok) throw new Error(`评分服务响应异常: ${res.status}`);
-        return res.json();
-    }).then(scoreData => {
+    }, 180000).then(res => parseJsonResponse(res, '根因分析'))   // v=84：根因分析最长 180s ｜ v=93：透出后端中文原因
+    .then(scoreData => {
         // ADP 结束节点输出为 Output.finalreport，兼容两种返回格式：
         //   - 直接 finalreport 字段
         //   - 嵌套 Output.finalreport 字段
@@ -1799,10 +2052,58 @@ function mdToPdfMake(text) {
 }
 
 /**
+ * v=92：pdfmake + vfs_cn（中文字体）懒加载
+ *
+ * 背景：这两个库合计约 9.8MB（pdfmake.min.js 1.3MB + vfs_cn.js 8.5MB），
+ *      仅在本函数所在的「客户端兜底导出」路径使用（主路径走 /api/report 的
+ *      WeasyPrint 后端渲染）。原先在 <head> 同步阻塞加载，导致首屏白白
+ *      多传 9.8MB —— 在隧道吞吐仅 ~115KB/s 的情况下就是 80 秒起步。
+ * 现改为：首次真正需要时才注入 script，加载一次后长期驻留。
+ */
+let _pdfLibsPromise = null;
+function ensurePdfLibs() {
+    // 已就绪（含 vfs 字体虚拟文件系统）直接返回
+    if (typeof pdfMake !== 'undefined' && pdfMake.vfs) return Promise.resolve();
+    if (_pdfLibsPromise) return _pdfLibsPromise;
+
+    const V = '?v=92';
+    const inject = (src) => new Promise((resolve, reject) => {
+        const s = document.createElement('script');
+        s.src = src;
+        s.async = false;   // 保证 pdfmake 先于 vfs_cn 执行（vfs_cn 依赖 pdfMake）
+        s.onload = () => resolve();
+        s.onerror = () => reject(new Error('资源加载失败: ' + src));
+        document.head.appendChild(s);
+    });
+
+    _pdfLibsPromise = inject('vendor/pdfmake.min.js' + V)
+        .then(() => inject('vendor/vfs_cn.js' + V))
+        .catch(err => {
+            _pdfLibsPromise = null;   // 失败后允许重试
+            throw err;
+        });
+
+    return _pdfLibsPromise;
+}
+
+/**
  * 构建 PDF 报告（pdfmake 原生绘制）
  * 结构：评分总览表 + 雷达图 + 评估结论 + ADP 优化建议
+ * v=92：改为 async —— 入口先 await 懒加载 pdfmake 与中文字体
  */
-function buildPdfReport() {
+async function buildPdfReport() {
+    // 首次导出需要现下 9.8MB 组件，给个提示避免用户以为卡死
+    if (typeof pdfMake === 'undefined' && !_pdfLibsPromise) {
+        showToast('首次导出需加载 PDF 组件（约 9.8MB），请稍候…', 'info');
+    }
+    try {
+        await ensurePdfLibs();
+    } catch (e) {
+        console.error('PDF 组件加载失败，回退打印:', e);
+        showToast('PDF 组件加载失败，回退打印', 'error');
+        window.print();
+        return;
+    }
     if (typeof pdfMake === 'undefined') {
         showToast('PDF 库未加载，回退打印', 'error');
         window.print();
@@ -2015,9 +2316,15 @@ function downloadReport() {
             })
             .catch(e => {
                 console.warn('WeasyPrint 报告生成失败，回退 pdfmake:', e);
+                // v=92：buildPdfReport 已改为 async，必须用 catch 承接（try/catch 抓不到 Promise 拒绝）
                 try {
-                    buildPdfReport();
-                    showToast('已用兼容模式生成 PDF', 'info');
+                    Promise.resolve(buildPdfReport())
+                        .then(() => showToast('已用兼容模式生成 PDF', 'info'))
+                        .catch(e2 => {
+                            console.error('pdfmake 也失败，回退打印:', e2);
+                            showToast('PDF 生成失败，回退打印', 'error');
+                            window.print();
+                        });
                 } catch (e2) {
                     console.error('pdfmake 也失败，回退打印:', e2);
                     showToast('PDF 生成失败，回退打印', 'error');
@@ -2121,3 +2428,56 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     });
 });
+
+// ============ 移动端导航抽屉（v=99） ============
+/**
+ * 背景（bug 修复）：
+ *   style.css 的 @media (max-width:768px) 把 .nav-menu / .nav-actions 设成了 display:none，
+ *   而 #navToggle 这个汉堡按钮从来没有绑定过任何事件 —— 于是手机上导航项和「登录」按钮
+ *   全部消失，☰ 点了也没反应，用户根本找不到登录弹窗的入口（桌面端不受影响，所以一直没暴露）。
+ *
+ * 做法：
+ *   点汉堡按钮给 .navbar 加/去 .nav-open，由 CSS 把「原生」导航展开为纵向抽屉。
+ *   刻意不新增第二套导航 DOM —— 登录态仍由 updateAuthUI() 单点驱动（它管的是
+ *   #navAuthBtn / #userMenuWrap / #navHistoryLink 的显隐），登录/退出后抽屉内自动同步。
+ *
+ * 注：脚本在 </body> 前引入，DOM 已解析完毕，故无需等 DOMContentLoaded。
+ */
+(function initMobileNavDrawer() {
+    const navbar = document.getElementById('navbar');
+    const toggle = document.getElementById('navToggle');
+    if (!navbar || !toggle) return;
+
+    const closeDrawer = () => navbar.classList.remove('nav-open');
+
+    toggle.addEventListener('click', (e) => {
+        e.stopPropagation(); // 别让下面的「点外部收起」立刻把它关掉
+        navbar.classList.toggle('nav-open');
+    });
+
+    // 点抽屉里的导航项 / 顶部操作按钮后自动收起。
+    // '.nav-actions > .btn' 用直接子选择器，避免误伤用户下拉卡片内部的「保存/取消」按钮
+    // （那些按钮也在 .nav-actions 内，但父级不是 .nav-actions）。
+    navbar.addEventListener('click', (e) => {
+        if (!e.target || !e.target.closest) return;
+        if (e.target.closest('.nav-toggle')) return;
+        if (e.target.closest('.nav-link, .nav-actions > .btn')) closeDrawer();
+    });
+
+    // 点抽屉外部收起
+    document.addEventListener('click', (e) => {
+        if (!navbar.classList.contains('nav-open')) return;
+        if (navbar.contains(e.target)) return;
+        closeDrawer();
+    });
+
+    // Esc 收起
+    document.addEventListener('keydown', (e) => {
+        if (e.key === 'Escape') closeDrawer();
+    });
+
+    // 切回桌面尺寸时收起，避免宽屏残留 .nav-open
+    window.addEventListener('resize', () => {
+        if (window.innerWidth > 768) closeDrawer();
+    });
+})();

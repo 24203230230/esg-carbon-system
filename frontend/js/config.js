@@ -9,22 +9,27 @@
 
 const API_CONFIG = {
     // 提取服务（Docker沙箱，DeepSeek API + 智能体一提示词）
-    // 走 nginx 反代（80 端口），同源避免 CORS
+    // ⚠️ 必须用同源相对路径 '/api'，不要写 http://localhost
+    //    写死 localhost 时：公网用户浏览器会把 localhost 解析成"自己的电脑"，
+    //    且 HTTPS 页面请求 HTTP 属混合内容，会被直接拦截（CORS + ERR_FAILED 400）
+    // 相对路径的好处：本机 http://localhost 和公网 https://esg.[DEPLOY_HOST] 都能用
     // 路径含 /api 前缀，fetch 拼接时只加 /extract 即可
-    EXTRACT_API: 'http://localhost/api',
+    EXTRACT_API: '/api',
 
     // ADP 建议生成（容器内代理 → 腾讯云 ADP 对话流）
-    // 走 nginx 反代（80 端口），同源避免 CORS
+    // ⚠️ 同上：同源相对路径，勿写死域名/主机
     // 后端用 AppKey 鉴权，前端不接触密钥
-    ADP_API: 'http://localhost/api/suggest',
+    ADP_API: '/api/suggest',
 
     // 当前模式: 'mock' 用模拟数据演示 | 'live' 真实API
     MODE: 'live',
 
     // Supabase（用户体系 + 分析历史存储，v=70 新增）
     // publishable key 公开安全（RLS 行级安全保护数据），勿放 service_role 密钥
-    SUPABASE_URL: 'https://dtxwciejvxcpzvglhqvj.supabase.co',
-    SUPABASE_ANON_KEY: 'sb_publishable_JSz0wfsr2A3h_X_66dDeyA_qUkqDubn',
+    // v=97：旧项目 dtxwciejvxcpzvglhqvj 已因免费版不活跃被暂停下线（公共 DNS 无解析），
+    //       迁移至新项目 ucejlpyxhxpaqmgkjepa（ap-southeast-1 新加坡），schema 与 RLS 已重建
+    SUPABASE_URL: 'https://ucejlpyxhxpaqmgkjepa.supabase.co',
+    SUPABASE_ANON_KEY: 'sb_publishable_-Jz_B8guFeHMJAVhxCkwoA_AKPtaBUn',
 
     // 分析模型列表（v=78 多模型，one-api 网关路由）
     // id 与后端 models.py SUPPORTED_MODELS 保持一致

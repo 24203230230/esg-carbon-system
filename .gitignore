@@ -2,11 +2,24 @@
 .env
 *.env.local
 *.env.*.local
+# 隧道 / 平台密钥的本地实配（仅入库 .example 模板）
+deploy/*.secret.yml
 
 # ===== Python 缓存 =====
 __pycache__/
 *.pyc
 *.pyo
+
+# ===== 运行产物 =====
+output/
+*.log
+*.tmp
+~$*
+
+# ===== 容器 / 构建产物 =====
+*.tgz
+*.tar
+*.tar.gz
 
 # ===== 系统文件 =====
 .DS_Store
@@ -17,10 +30,6 @@ desktop.ini
 .vscode/
 .idea/
 
-# ===== 临时文件 =====
-*.tmp
-*.log
-~$*
-
-# ===== 容器/构建产物 =====
-*.tgz
+# ===== 本地开发辅助（性能诊断、版本备份、临时脚本）=====
+_perf/
+cloudflared-temp/
