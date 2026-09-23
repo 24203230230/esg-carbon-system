@@ -523,6 +523,34 @@ function closeModal(id) {
     document.body.style.overflow = '';
 }
 
+// ============ 使用须知公告（v=115） ============
+// 频率：每会话一次（sessionStorage）+ 勾选「不再提示」后永久静默（localStorage）。
+// storage 在隐私模式下可能抛异常 —— 一律吃掉异常，宁可多弹一次也不能让首屏 JS 崩掉。
+const NOTICE_SESSION_KEY = 'esg.noticeSeen';
+const NOTICE_MUTE_KEY = 'esg.noticeMuted';
+
+function maybeShowNotice() {
+    try {
+        if (localStorage.getItem(NOTICE_MUTE_KEY) === '1') return;
+        if (sessionStorage.getItem(NOTICE_SESSION_KEY) === '1') return;
+    } catch (_) { /* 忽略 */ }
+    // 延迟一拍弹，避免和首屏图表初始化抢帧造成抖动
+    setTimeout(() => {
+        const box = $('#noticeMuteCheck');
+        if (box) box.checked = false;
+        openModal('noticeModal');
+    }, 400);
+}
+
+function closeNotice() {
+    try {
+        const box = $('#noticeMuteCheck');
+        if (box && box.checked) localStorage.setItem(NOTICE_MUTE_KEY, '1');
+        sessionStorage.setItem(NOTICE_SESSION_KEY, '1');
+    } catch (_) { /* 忽略 */ }
+    closeModal('noticeModal');
+}
+
 // ============ Supabase 认证 + 历史记录（v=70） ============
 let supaClient = null;
 let authMode = 'login'; // 'login' | 'register'
@@ -535,8 +563,20 @@ function initSupabase() {
     supaClient = window.supabase.createClient(API_CONFIG.SUPABASE_URL, API_CONFIG.SUPABASE_ANON_KEY);
     supaClient.auth.onAuthStateChange((event) => {
         updateAuthUI();
-        if (event === 'SIGNED_IN') showToast('登录成功', 'success');
-        if (event === 'SIGNED_OUT') showToast('已退出登录', 'info');
+        if (event === 'SIGNED_IN') {
+            // v=115：若这次登录是被「提取需登录」门禁弹出来的，登录后明确告诉用户可以继续了，
+            //   否则用户只看到"登录成功"，不知道刚才被拦下的动作现在能做了。
+            if (App._loginPromptedFor) {
+                showToast(`已登录，可以继续${App._loginPromptedFor}了`, 'success');
+                App._loginPromptedFor = null;
+            } else {
+                showToast('登录成功', 'success');
+            }
+        }
+        if (event === 'SIGNED_OUT') {
+            App._loginPromptedFor = null;
+            showToast('已退出登录', 'info');
+        }
     });
     updateAuthUI();
 }
@@ -547,6 +587,52 @@ async function getCurrentUser() {
         const { data } = await supaClient.auth.getUser();
         return data.user || null;
     } catch (e) { return null; }
+}
+
+/**
+ * v=115：登录门禁 —— 数据提取功能必须登录后才能使用
+ *
+ * 为什么拦在「选文件」而不是「开始数据提取」：
+ *   本系统是选中文件即调提取接口（uploadToExtractService），
+ *   拦在 startAnalysis() 上等于让用户白传一次几十上百 MB 的文件。
+ *
+ * 兜底原则（不破原链路）：
+ *   supaClient 未就绪（Supabase 组件没加载 / 被网络阻断）时**放行**并打警告。
+ *   鉴权组件抽风绝不能把整个提取功能一起拖死。
+ *
+ * @param {string} where 触发场景，仅用于记录与文案
+ * @returns {Promise<boolean>} true=可继续；false=已拦下并弹出登录
+ */
+async function requireLogin(where) {
+    if (!supaClient) {
+        console.warn('[v115] Supabase 未就绪，登录门禁兜底放行：', where);
+        return true;
+    }
+    const user = await getCurrentUser();
+    if (user) return true;
+    App._loginPromptedFor = where || '提取';
+    showToast('数据提取需先登录，请登录或注册后再上传报告', 'error');
+    openAuthModal();
+    return false;
+}
+
+/**
+ * v=115：上传区未登录态视觉
+ * 刻意不做成「禁用」——禁用会让用户找不到路，这里给一个明确的登录入口。
+ * @param {object} [userArg] 已知的当前用户（updateAuthUI 已经查过，避免重复请求）
+ */
+async function refreshUploadLockUI(userArg) {
+    const zone = $('#uploadZone');
+    const hint = $('#uploadLoginHint');
+    if (!zone && !hint) return;
+    let logged = true;   // 兜底：鉴权不可用时不算锁定态
+    if (supaClient) {
+        const u = (typeof userArg !== 'undefined') ? userArg : await getCurrentUser();
+        logged = !!u;
+    }
+    const locked = !logged;
+    if (zone) zone.classList.toggle('is-locked', locked);
+    if (hint) hint.style.display = locked ? 'block' : 'none';
 }
 
 function openAuthModal() {
@@ -633,6 +719,8 @@ async function updateAuthUI() {
         info.textContent = `👤 ${nickname} ▾`;
         histLink.style.display = '';
         menuWrap.style.display = 'block';
+        // v=115：登录态同步上传区（解锁 + 隐藏"请先登录"提示）
+        refreshUploadLockUI(user);
         // 刷新下拉卡片内容（含历史条数）
         loadUserMenu(user, nickname);
     } else {
@@ -643,6 +731,8 @@ async function updateAuthUI() {
         histLink.style.display = 'none';
         menuWrap.style.display = 'none';
         closeUserMenu();
+        // v=115：未登录态 → 上传区上锁
+        refreshUploadLockUI(null);
     }
 }
 
@@ -951,6 +1041,20 @@ function initUpload() {
 
     // 点击上传
     zone.addEventListener('click', (e) => {
+        // v=115：点「请先登录」里的链接就别再往下走（那个链接自己会开登录弹窗）
+        if (e.target.closest && e.target.closest('#uploadLoginHint')) return;
+
+        // v=115 登录门禁（最前一道）：未登录时连文件选择器都不打开。
+        //   让用户白挑一次文件、等选完才告诉他"要登录"，体验很差。
+        //   这里必须同步判断 —— requireLogin() 是异步的，来不及拦 click 的默认行为，
+        //   故读 refreshUploadLockUI() 维护的 .is-locked 类。
+        if (zone.classList.contains('is-locked')) {
+            e.preventDefault();
+            e.stopPropagation();
+            requireLogin('上传提取');
+            return;
+        }
+
         if (e.target.tagName !== 'LABEL') fileInput.click();
     });
 
@@ -973,12 +1077,32 @@ function initUpload() {
     });
 }
 
-function handleFiles(fileList) {
+async function handleFiles(fileList) {
+    // ---- v=115 门禁①：数据提取必须登录后才能使用 ----
+    // 本系统「选中文件即调提取接口」，所以拦截点必须在这里；
+    // 若拦在 startAnalysis()，用户已经白传了整份几十上百 MB 的文件。
+    if (!await requireLogin('上传提取')) return;
+
+    // ---- v=115 门禁②：一次一份 ----
+    // 已存在任何一条记录（上传中 / 上传失败 / 已完成）都拒收：
+    // 失败文件在服务端同样留下了 uploadId 分片目录，不算占位就等于留了个绕过口子。
+    if (App.uploadedFiles.length > 0) {
+        showToast('当前每次仅支持 1 份报告，请先删除已上传的报告再上传新的', 'error');
+        return;
+    }
+
     const validTypes = ['.pdf', '.doc', '.docx'];
     let added = 0;
     let rejected = 0;
 
-    Array.from(fileList).forEach(file => {
+    // 拖拽多份时只取第一份，并明确告知其余被忽略 —— 静默丢弃比报错更让人困惑
+    let files = Array.from(fileList);
+    if (files.length > 1) {
+        showToast(`一次只能上传 1 份报告，已忽略其余 ${files.length - 1} 个文件`, 'info');
+        files = files.slice(0, 1);
+    }
+
+    files.forEach(file => {
         const ext = '.' + file.name.split('.').pop().toLowerCase();
         if (!validTypes.includes(ext)) {
             rejected++;
@@ -1013,7 +1137,7 @@ function handleFiles(fileList) {
         showToast(`${rejected}个文件格式不支持`, 'error');
     }
     if (added > 0) {
-        showToast(`已添加${added}个文件，正在上传...`, 'success');
+        showToast('正在上传并提取，请稍候...', 'success');
     }
 }
 
@@ -1255,7 +1379,11 @@ function deleteFile(id) {
     renderFileList();
     renderProgressList();
     checkUploadAction();
-    showToast(`已删除 ${file.name}`, 'success');
+    // v=115：删文件必须同步清空页面上的提取结果与评分画像。
+    //   否则「删掉旧报告 → 还没传新报告」这个窗口期里，页面仍挂着上一份的评分，
+    //   用户很容易把它当成新报告的结果 —— 这正是讨论中要根治的误导点。
+    resetAnalysisView();
+    showToast(`已删除 ${file.name}，评分预览已同步清空`, 'success');
 }
 
 function checkUploadAction() {
@@ -1264,8 +1392,65 @@ function checkUploadAction() {
     action.style.display = hasDone ? 'block' : 'none';
 }
 
+/**
+ * v=115：清空「上一份报告」留在页面上的提取结果与评分画像。
+ * 触发时机：deleteFile() —— 用户删除当前报告时（配合「一次一份」的约束）。
+ *
+ * ⚠️ 为什么只 destroy 图表、不 Charts.refresh()：
+ *   charts.js 的 _getScoreData() 取不到真实评分时会**回退 MOCK 假数据**，
+ *   清空后刷新图表等于把 Mock 的 7.8 分画出来，比"显示上一份"更误导。
+ *   所以用新增的 Charts.reset()：只销毁实例、不重建。
+ *
+ * ⚠️ 为什么 #scoring 是整段隐藏而不是逐字段置空：
+ *   该区块内带着硬编码默认值（#overallScore=7.8、"优秀 (A)"、整段评估结论），
+ *   逐字段清空既清不干净、又可能与下次 fillScoreCards() 打架；整段隐藏最干净。
+ */
+function resetAnalysisView() {
+    // 1) 隐藏并清空结果区（Step2 提取结果 / Step3 评分画像）
+    const analysis = $('#analysis');
+    const scoring = $('#scoring');
+    if (analysis) analysis.style.display = 'none';
+    if (scoring) scoring.style.display = 'none';
+
+    const resultBox = $('#extractResult');
+    if (resultBox) { resultBox.style.display = 'none'; resultBox.innerHTML = ''; }
+    const progressBox = $('#extractProgress');
+    if (progressBox) progressBox.style.display = 'none';
+    const modalBody = $('#reportModalBody');
+    if (modalBody) modalBody.innerHTML = '';
+
+    // 2) 销毁图表实例（不重建，避免 MOCK 兜底把假数据画出来）
+    if (typeof Charts !== 'undefined' && Charts.reset) {
+        try { Charts.reset(); } catch (e) { console.warn('图表重置失败:', e); }
+    }
+
+    // 3) 复位应用状态 —— 不留下任何「还属于上一份报告」的引用
+    App.extractResult = null;
+    App.scoreResult = null;
+    App.companyType = null;
+    App.analysisDone = false;
+    App._historySaveToken = null;
+    App._historySavedForToken = false;
+    App._reportScoreData = null;
+    App._adpRawText = '';
+
+    // 4) 按钮复位（下次上传完成后由 checkUploadAction() 重新显示）
+    const btn = $('#analyzeBtn');
+    if (btn) {
+        btn.disabled = false;
+        btn.innerHTML = '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12a9 9 0 1 1-9-9c2.5 0 4.8 1 6.4 2.6L21 8"/><path d="M21 3v5h-5"/></svg> 开始数据提取';
+    }
+
+    // 5) Supabase 的 history 记录**不删** —— 历史是用户资产，删本地文件不该删掉「我的分析」。
+}
+
 // ============ 数据分析 ============
-function startAnalysis() {
+async function startAnalysis() {
+    // ---- v=115 门禁：数据提取（首次会真调提取接口）必须登录 ----
+    // handleFiles() 已拦过一次，这里再拦一次属防御：页面刷新后虽取不到文件，
+    // 但仍有人可能从控制台直接调 startAnalysis()。
+    if (!await requireLogin('数据提取')) return;
+
     const analysisSection = $('#analysis');
     analysisSection.style.display = 'block';
 
@@ -1286,12 +1471,14 @@ function startAnalysis() {
         return;
     }
 
-    // 真实模式：取第一个已上传文件
-    const doneFile = App.uploadedFiles.find(f => f.status === 'done');
-    if (!doneFile) {
+    // 真实模式：v=115 起一次只允许 1 份，直接取数组首项。
+    //   原来用 find(status==='done') 取「第一个完成的」，多份并存时与用户以为的
+    //   「最后上传的那份」不一致，是造成「传了新报告、结果还是上一份」误导的根因之一。
+    const doneFile = App.uploadedFiles[0];
+    if (!doneFile || doneFile.status !== 'done') {
         showToast('请先上传并完成提取的报告', 'error');
         btn.disabled = false;
-        btn.innerHTML = '开始分析';
+        btn.innerHTML = '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12a9 9 0 1 1-9-9c2.5 0 4.8 1 6.4 2.6L21 8"/><path d="M21 3v5h-5"/></svg> 开始数据提取';
         return;
     }
 
@@ -3083,6 +3270,12 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // Supabase 认证 + 历史（v=70）
     initSupabase();
+
+    // v=115：上传区登录态视觉（initSupabase → updateAuthUI 内也会刷一次，这里是首屏兜底）
+    refreshUploadLockUI();
+
+    // v=115：进入页面弹「使用须知」公告（每会话一次；勾选「不再提示」后永久静默）
+    maybeShowNotice();
 
     // 点击模态框外部关闭
     $$('.modal-overlay').forEach(overlay => {

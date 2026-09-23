@@ -412,6 +412,23 @@ const Charts = {
         this.initCompareChart();
     },
 
+    // v=115：清空当前报告时的图表重置 —— **只销毁不重建**。
+    //   原因：_getScoreData() 在取不到真实评分时会**回退 MOCK 假数据**，
+    //   此处若调 refresh() 就会把 Mock 的分数画到界面上，比"残留上一份报告"更误导。
+    //   下次有新评分时由 refresh() 正常销毁重建。
+    //
+    //   ⚠️ 只清与「当前报告」相关的三张图（radar / bar / compare）：
+    //   heroRadar 是首屏装饰性预览、与上传的报告无关，一起销毁会造成
+    //   "删个文件首屏雷达图也没了"的副作用（原逻辑里删文件不碰图表）。
+    reset() {
+        ['radar', 'bar', 'compare'].forEach(k => {
+            const inst = this._instances[k];
+            if (!inst) return;
+            try { inst.destroy(); } catch (e) { /* 忽略 */ }
+            delete this._instances[k];
+        });
+    },
+
     // 分数更新后刷新所有图表（销毁重建，用真实评分数据）
     refresh() {
         Object.values(this._instances).forEach(i => {

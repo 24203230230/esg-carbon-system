@@ -1777,3 +1777,92 @@ section[class^="section-"]:not(.section-hero) {
     font-weight: 700; color: var(--color-primary); margin-right: 4px;
 }
 .adp-row-why { color: #059669; }
+
+/* ============================================================
+   v=115：使用须知公告 + 一次一份 + 登录门禁
+   ============================================================ */
+
+/* ---- 公告弹窗（复用 .modal-overlay / .modal-content 基座） ---- */
+.modal-md { max-width: 620px; }
+.notice-body { display: flex; flex-direction: column; gap: 18px; }
+.notice-sec h4 {
+    font-size: 15px; font-weight: 700; color: var(--color-text);
+    margin: 0 0 8px; padding-left: 10px; position: relative;
+}
+.notice-sec h4::before {
+    content: ''; position: absolute; left: 0; top: 3px;
+    width: 3px; height: 14px; border-radius: 2px;
+    background: var(--color-green);
+}
+.notice-sec p {
+    font-size: 13.5px; line-height: 1.85;
+    color: var(--color-text-secondary); margin: 0 0 6px;
+}
+.notice-sec p:last-child { margin-bottom: 0; }
+.notice-sec ul { margin: 0; padding-left: 18px; }
+.notice-sec li {
+    font-size: 13.5px; line-height: 1.85;
+    color: var(--color-text-secondary); margin-bottom: 5px;
+}
+.notice-sec li b { color: var(--color-text); font-weight: 600; }
+.notice-sec p b { color: var(--color-text); font-weight: 600; }
+.notice-apology {
+    background: var(--color-yellow-bg);
+    border-left: 3px solid var(--color-yellow);
+    border-radius: 0 var(--radius-sm) var(--radius-sm) 0;
+    padding: 10px 12px;
+    color: #b45309;
+}
+.notice-repo {
+    background: var(--color-bg-alt);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-md);
+    padding: 10px 12px; text-align: center; margin-top: 10px;
+}
+.notice-repo a {
+    font-family: var(--font-mono);
+    font-size: 12.5px; color: var(--color-blue);
+    word-break: break-all;
+}
+.notice-repo a:hover { text-decoration: underline; }
+.notice-mute {
+    display: flex; align-items: center; gap: 6px;
+    font-size: 13px; color: var(--color-text-muted);
+    margin: 18px 0 12px; cursor: pointer; user-select: none;
+}
+.notice-mute input { width: 15px; height: 15px; cursor: pointer; accent-color: var(--color-green); }
+
+/* ---- 上传区文案：一次一份说明 + 未登录提示 ---- */
+.upload-single-hint {
+    font-size: 12.5px !important;
+    color: var(--color-text-muted) !important;
+}
+.upload-login-hint {
+    display: inline-block; margin-top: 12px;
+    padding: 6px 14px; border-radius: var(--radius-full);
+    background: var(--color-yellow-bg);
+    border: 1px solid var(--color-yellow-light);
+    color: #b45309; font-size: 13px;
+}
+.upload-login-hint a { color: var(--color-blue); font-weight: 600; }
+.upload-login-hint a:hover { text-decoration: underline; }
+
+/* ---- 上传区未登录态：不给"可以拖进来"的诱惑，但保留点击入口（点进去弹登录） ---- */
+.upload-zone.is-locked,
+.upload-zone.is-locked:hover,
+.upload-zone.is-locked.dragover {
+    border-color: var(--color-border);
+    background: var(--color-bg-alt);
+}
+.upload-zone.is-locked.dragover { transform: none; box-shadow: none; }
+.upload-zone.is-locked .upload-icon,
+.upload-zone.is-locked:hover .upload-icon,
+.upload-zone.is-locked.dragover .upload-icon {
+    background: var(--color-gray-light);
+    color: var(--color-text-muted);
+    transform: none;
+}
+.upload-zone.is-locked .upload-title { color: var(--color-text-muted); }
+/* 锁定态下「点击选择文件」不该再显示成可点的绿色链接（点了会弹登录，视觉先对齐） */
+.upload-zone.is-locked .upload-hint { color: var(--color-text-muted); }
+.upload-zone.is-locked .upload-link { color: var(--color-text-muted); text-decoration: none; }

@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>ESG碳治理能力画像系统</title>
     <meta name="description" content="面向企业与金融机构的碳治理能力评估工具 — 自动提取ESG报告碳信息，量化评估碳治理能力，生成可视化画像">
-    <link rel="stylesheet" href="css/style.css?v=104&t=1789567340">
+    <link rel="stylesheet" href="css/style.css?v=115&t=1790155115">
     <link rel="icon" type="image/svg+xml" href="favicon.svg?v=92">
     <!-- v=92：移除 fonts.googleapis.com preconnect —— 全站未引用 Google Fonts，
          国内网络下该预连接必然失败，只白白占用一个连接槽。字体走系统字体栈。 -->
@@ -311,7 +311,11 @@
                     <h3 class="upload-title">将ESG报告拖拽到此处</h3>
                     <p class="upload-hint">或 <label for="fileInput" class="upload-link">点击选择文件</label> 上传</p>
                     <p class="upload-formats">支持 PDF、DOC、DOCX 格式，单个文件不超过 200MB</p>
-                    <input type="file" id="fileInput" accept=".pdf,.doc,.docx" multiple style="display:none">
+                    <!-- v=115：一次一份 —— 去掉 multiple，并在文案里讲清「要传新的得先删旧的」 -->
+                    <p class="upload-formats upload-single-hint">当前每次仅支持上传 1 份报告，需先删除已上传的报告才能上传新的</p>
+                    <!-- v=115：未登录态的提示（登录门禁由 JS 兜底控制显隐，这里给个可见入口） -->
+                    <p class="upload-login-hint" id="uploadLoginHint" style="display:none;">请先 <a href="javascript:void(0)" onclick="openAuthModal()">登录</a> 后再使用数据提取功能</p>
+                    <input type="file" id="fileInput" accept=".pdf,.doc,.docx" style="display:none">
                 </div>
             </div>
 
@@ -1070,6 +1074,56 @@
     </div>
 </div>
 
+<!-- ============ 使用须知公告（v=115） ============ -->
+<div class="modal-overlay" id="noticeModal">
+    <div class="modal-content modal-md">
+        <div class="modal-header">
+            <h3>使用须知</h3>
+            <button class="modal-close" onclick="closeNotice()">&times;</button>
+        </div>
+        <div class="modal-body">
+            <div class="notice-body">
+
+                <section class="notice-sec">
+                    <h4>面向对象</h4>
+                    <p>本系统面向企业的 ESG／碳管理人员、金融机构的研究与风控人员，以及从事碳中和相关研究的教师与学生。如果你只是想快速了解一家企业的碳治理情况，也欢迎试用。</p>
+                </section>
+
+                <section class="notice-sec">
+                    <h4>适用条件</h4>
+                    <ul>
+                        <li>需上传 <b>PDF / DOC / DOCX</b> 格式的 ESG 报告（或可持续发展报告）原文；扫描件系统会自动按页 OCR 识别，耗时会长一些。</li>
+                        <li>需<b>注册并登录</b>后使用数据提取功能；提取结果会自动保存到你的「我的分析」，方便日后回看。</li>
+                        <li><b>每次仅支持 1 份报告</b>。要提取下一份，请先删除当前这份 —— 删除后页面上的提取结果与评分画像会同步清空，避免与新报告混淆。</li>
+                    </ul>
+                </section>
+
+                <section class="notice-sec">
+                    <h4>为什么一次只能提取一份</h4>
+                    <p>多份报告同时送入模型时，模型容易跨文件串读，把 A 公司的数据误挂到 B 公司名下，产生噪声、影响指标归属的准确性。一次一份，能保证每份报告在提取与评分上的口径都是干净的 —— 这是我们刻意的取舍，后续版本会评估更稳妥的并行方案。</p>
+                </section>
+
+                <section class="notice-sec">
+                    <h4>关于权重与样本量</h4>
+                    <p>系统的指标权重与行业基准，由样本内 ESG 报告的披露情况统计得出，<b>结果会受样本量影响</b>。本项目仍处于起步期，目前样本量为 <b>94 份</b>，其中金融、交通运输等行业的样本尤其有限，这些行业的对标结果可能存在偏差。</p>
+                    <p class="notice-apology">若提取结果或评分与贵公司实际情况存在出入，敬请海涵。我们会在保证方法论一致的前提下持续扩充样本、迭代权重，也非常欢迎你把问题反馈给我们。</p>
+                </section>
+
+                <section class="notice-sec">
+                    <h4>一起交流迭代</h4>
+                    <p>项目代码与文档在 GitHub 上维护，仓库地址如下。当前处于私有维护阶段，<b>作品提交（2026 年 10 月 20 日）后将转为公开仓库</b>，届时可直接访问、提交 Issue 与 Pull Request；在此之前，如对方法或结果有疑问，欢迎先与我们直接交流。</p>
+                    <p class="notice-repo"><a href="https://github.com/24203230230/esg-carbon-system" target="_blank" rel="noopener">github.com/24203230230/esg-carbon-system</a></p>
+                </section>
+
+            </div>
+            <label class="notice-mute">
+                <input type="checkbox" id="noticeMuteCheck"> 不再提示
+            </label>
+            <button class="btn btn-primary btn-block" onclick="closeNotice()">开始使用</button>
+        </div>
+    </div>
+</div>
+
 <!-- ============ 登录/注册弹窗（v=70） ============ -->
 <div class="modal-overlay" id="authModal">
     <div class="modal-content modal-sm">
@@ -1124,7 +1178,7 @@
 
 <script src="js/config.js?v=97&t=1789282683"></script>
 <script src="js/mock-data.js?v=92&t=1787578323"></script>
-<script src="js/app.bundle.js?v=114&t=1789864762"></script>
-<script src="js/charts.js?v=112&t=1789734720"></script>
+<script src="js/app.bundle.js?v=115&t=1790155115"></script>
+<script src="js/charts.js?v=115&t=1790155115"></script>
 </body>
 </html>
