@@ -35,8 +35,15 @@ services:
     build: ./frontend
     container_name: esg-frontend
     ports:
-      # 80 对宿主机（Cloudflare Tunnel 从这个端口暴露到公网）
-      - "80:80"
+      # 只绑回环（127.0.0.1）而非 0.0.0.0 —— 与 agent2 同策略。
+      # 原因：本机宿主 IP 172.17.30.117 落在 Docker 默认 bridge 段 172.17.0.0/16 内，
+      #   绑定 0.0.0.0 时端口转发会因路由冲突失败（2026-09-18 实测：容器内 HTTP 200，
+      #   宿主访问连接被立即关闭 "Empty reply from server"，而同为 23400 进程监听的
+      #   127.0.0.1:8083 正常 —— 差别就在 0.0.0.0 vs 回环）。
+      # 访问方式：http://127.0.0.1/ 。注意用 127.0.0.1 而非 localhost ——
+      #   本机 [::1]:80 被另一进程（非 Docker）占用，localhost 可能先解析到 IPv6 而失败。
+      # Cloudflare Tunnel 用容器名 esg-frontend:80 寻址，不经宿主端口，不受影响。
+      - "127.0.0.1:80:80"
     depends_on:
       - esg-extractor
       - esg-agent2

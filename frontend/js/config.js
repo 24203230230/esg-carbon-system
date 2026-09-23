@@ -12,7 +12,7 @@ const API_CONFIG = {
     // ⚠️ 必须用同源相对路径 '/api'，不要写 http://localhost
     //    写死 localhost 时：公网用户浏览器会把 localhost 解析成"自己的电脑"，
     //    且 HTTPS 页面请求 HTTP 属混合内容，会被直接拦截（CORS + ERR_FAILED 400）
-    // 相对路径的好处：本机 http://localhost 和公网 https://esg.[DEPLOY_HOST] 都能用
+    // 相对路径的好处：本机 http://localhost 和公网 https://<你的域名> 都能用
     // 路径含 /api 前缀，fetch 拼接时只加 /extract 即可
     EXTRACT_API: '/api',
 

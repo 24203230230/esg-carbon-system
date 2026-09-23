@@ -210,6 +210,23 @@ def resolve_industry_mean(industry: str, indicator: str):
     return fallback, '全市场均值(行业不在列表)'
 
 
+def resolve_baseline_n(industry: str, base_source: str = '') -> int:
+    """返回 base_source 所对应的基准样本量（v110 B-lite：让「行业均值」能带上自己的样本量）。
+
+    - base_source == '行业均值' → 该行业在 weights.json 里的样本数
+    - 其余（降级到全市场）      → 全市场样本数
+    取不到时返回 0（调用方据此省略样本量标注，不影响任何判定）。
+    """
+    try:
+        ind = str(industry or '').strip().replace('行业', '').replace('市', '')
+        if str(base_source or '') == '行业均值' and ind in INDUSTRY_BASE:
+            return int((INDUSTRY_BASE[ind] or {}).get('样本数', 0) or 0)
+        am = INDUSTRY_BASE.get('【全市场均值】') or INDUSTRY_BASE.get('全市场均值') or {}
+        return int((am or {}).get('样本数', 0) or 0)
+    except Exception:                                 # noqa: BLE001
+        return 0
+
+
 # ============================== 非上市版：中位数 ==============================
 def resolve_unlisted_score(indicator: str, node: dict, has_evidence: bool) -> dict:
     """非上市版评分：
@@ -236,6 +253,29 @@ def score_indicator(indicator: str, node: dict, industry: str, company_type: str
     mean, base_source = resolve_industry_mean(industry, indicator)
     result['行业均值'] = mean
     result['基准来源'] = base_source
+    # v110 B-lite：基准样本量（与「行业均值」同源，供 agent2 标注口径用；不参与任何计算）
+    result['基准样本数'] = resolve_baseline_n(industry, base_source)
+
+    # ------------------------------------------------------------------
+    # v112：行业「同口径」对标值 —— **纯展示派生字段，不参与任何打分与判定**
+    # ------------------------------------------------------------------
+    # 为什么需要它：图表原先拿「行业均值」直接去比「L4得分」，但两者量纲不同 ——
+    #   「行业均值」是【基础分】口径（0-6），「L4得分」是【基础分+对标分】口径（0-10）。
+    #   同一根轴比两个量纲，得出的高低没有意义，典型症状是「零披露吃保底 1 分」的指标
+    #   在图上看起来"领先行业均值"。
+    # 换算规则：把行业基础分均值代入同一套对标分规则（即报告正文「达行业均值→X」那一列，
+    #   已验证与正文逐项吻合）：
+    #     行业均值 0.00（本行业普遍未披露）→ 对标分 1 → 1.00  ← 保底线
+    #     行业均值 0.18 → 对标分 3 → 3.18
+    #     行业均值 3.18 → 对标分 3 → 6.18
+    result['行业L4得分'] = (round(mean + calc_benchmark_score(mean, mean), 2)
+                        if isinstance(mean, (int, float)) else None)
+    # 未披露：完整度与质量均为 0（上市版即基础分 0；非上市版即无公开证据）
+    result['是否未披露'] = (calc_completeness(node) == 0 and calc_quality(node) == 0)
+    # 保底分：行业均值 < 0.5 且本企业未披露 → 对标分走兜底分支拿 1 分
+    #   （语义是"行业都没做，不罚你"，不是能力得分；仅此类指标需要画保底线）
+    result['保底分'] = (1.0 if (result['是否未披露']
+                            and isinstance(mean, (int, float)) and mean < 0.5) else None)
 
     if company_type == 'unlisted':
         # 非上市版：判断是否有公开证据

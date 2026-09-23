@@ -22,6 +22,28 @@ import uuid as _uuid
 import requests
 from flask import Flask, jsonify, request
 
+# v=100：检索层（Agent 1.5）—— 离线同行对标库（D 方案），为根因分析补「外部事实」
+#   可选依赖：索引缺失 / 模块异常时必须静默降级，绝不阻塞原有分析链路
+try:
+    import peer_retrieval
+except Exception as _pr_err:          # noqa: BLE001
+    peer_retrieval = None
+    print(f"[WARN] 检索层不可用（降级为纯报告文本诊断）: {_pr_err}")
+
+# v=101：A 方案（联网检索企业公开信息）+ 确定性分析（适用性 / 改进收益）
+#   同样是可选增强：任一模块不可用都只降级为空块，不影响主链路。
+try:
+    import web_search
+except Exception as _ws_err:          # noqa: BLE001
+    web_search = None
+    print(f"[WARN] 联网检索层不可用（降级为仅离线对标）: {_ws_err}")
+
+try:
+    import materiality
+except Exception as _mt_err:          # noqa: BLE001
+    materiality = None
+    print(f"[WARN] 适用性/收益量化模块不可用（降级为不量化）: {_mt_err}")
+
 # ============================== 配置 ==============================
 ADP_BACKEND = os.environ.get('ADP_BACKEND', 'deepseek')   # 'deepseek' | 'adp'
 
@@ -67,17 +89,128 @@ def call_deepseek_suggest(esg_json: dict, company_type: str) -> dict:
     return call_deepseek_suggest_model(esg_json, company_type, 'deepseek-v4-flash')
 
 
-def call_deepseek_suggest_model(esg_json: dict, company_type: str, model_id: str) -> dict:
-    """LLM 直调（v=78 多模型）：内置双提示词 + 增强 JSON → 根因分析严格 JSON"""
+def retrieve_external_facts(esg_json: dict, use_peer: bool = True, use_web: bool = True) -> dict:
+    """检索层（Agent 1.5）：三段式证据链。
+
+    v=101 起聚合三个来源，顺序与系统提示词 v5.0 的「分工表」一致：
+        ① 确定性分析（Python）  —— 该不该披露？改了能提升多少分？
+        ② 企业公开信息（联网）  —— 这家企业自己做过什么
+        ③ 同行对标库（离线）    —— 别的公司怎么写
+    任一来源失败只丢该段，其余照常 —— 检索层是增强项，绝不影响主链路。
+    """
+    out = {
+        "启用": False, "文本块": "", "事实": [], "统计": {}, "语料规模": 0,
+        "联网": {}, "确定性分析": {}, "分段": {},
+    }
+
+    # ---- ① 确定性分析（纯 Python，本地计算，永不失败） ----
+    mat_text = ""
+    if materiality is not None:
+        try:
+            peer_idx = None
+            if peer_retrieval is not None:
+                try:
+                    peer_idx = peer_retrieval.load_index()
+                except Exception:               # noqa: BLE001
+                    peer_idx = None
+            mat = materiality.analyze(esg_json, peer_idx)
+            if mat.get("启用"):
+                mat_text = mat.get("文本块", "")
+                out["确定性分析"] = {
+                    "启用": True,
+                    "总纲": mat.get("总纲", {}),
+                    "统计": mat.get("统计", {}),
+                }
+                logger.info("🧮 确定性分析：%s" % mat.get("统计"))
+            else:
+                out["确定性分析"] = {"启用": False, "原因": mat.get("原因", "")}
+        except Exception as e:                   # noqa: BLE001
+            logger.error(f"确定性分析异常（降级）: {e}", exc_info=True)
+            out["确定性分析"] = {"启用": False, "原因": str(e)}
+
+    # ---- ② 企业公开信息（联网检索） ----
+    web_text = ""
+    if use_web and web_search is not None:
+        try:
+            web = web_search.build_web_facts(esg_json)
+            web_text = web.get("文本块", "")
+            out["联网"] = {
+                "启用": web.get("启用", False),
+                "原因": web.get("原因", ""),
+                "统计": web.get("统计", {}),
+            }
+            if web.get("启用"):
+                logger.info("🌐 联网检索：%s" % web.get("统计"))
+            else:
+                logger.info(f"🌐 联网检索未启用：{web.get('原因')}")
+        except Exception as e:                   # noqa: BLE001
+            logger.error(f"联网检索异常（降级）: {e}", exc_info=True)
+            out["联网"] = {"启用": False, "原因": str(e), "统计": {}}
+    elif not use_web:
+        out["联网"] = {"启用": False, "原因": "本次请求已关闭", "统计": {}}
+    else:
+        out["联网"] = {"启用": False, "原因": "联网检索模块未加载", "统计": {}}
+
+    # ---- ③ 同行对标库（离线） ----
+    peer_res = {"启用": False, "原因": "未启用", "事实": [], "文本块": "", "统计": {}}
+    if use_peer:
+        if peer_retrieval is None:
+            peer_res = {"启用": False, "原因": "检索模块未加载", "事实": [], "文本块": "", "统计": {}}
+        else:
+            try:
+                peer_res = peer_retrieval.build_external_facts(esg_json)
+                if peer_res.get("启用"):
+                    st = peer_res.get("统计", {})
+                    logger.info(
+                        f"🔍 同行对标：语料 {peer_res.get('语料规模')} 家 | 命中指标 {st.get('命中指标')} "
+                        f"| 同行业 {st.get('同行业识别')} | 文本块 {st.get('文本块字符数')} 字符"
+                    )
+                else:
+                    logger.info(f"🔍 同行对标未启用：{peer_res.get('原因')}")
+            except Exception as e:               # noqa: BLE001
+                logger.error(f"同行对标异常（降级）: {e}", exc_info=True)
+                peer_res = {"启用": False, "原因": str(e), "事实": [], "文本块": "", "统计": {}}
+    else:
+        peer_res = {"启用": False, "原因": "本次请求已关闭", "事实": [], "文本块": "", "统计": {}}
+
+    # ---- 拼接（顺序必须是 ① ② ③，与提示词分工表一致） ----
+    blocks = [b for b in (mat_text, web_text, peer_res.get("文本块", "")) if b]
+    out["文本块"] = "\n\n\n".join(blocks)
+    out["事实"] = peer_res.get("事实", [])
+    out["统计"] = peer_res.get("统计", {})
+    out["语料规模"] = peer_res.get("语料规模", 0)
+    out["分段"] = {
+        "确定性分析": bool(mat_text),
+        "企业公开信息": bool(web_text),
+        "同行对标": bool(peer_res.get("文本块")),
+    }
+    out["启用"] = any(out["分段"].values())
+    if not out["启用"]:
+        out["原因"] = "三段证据均不可用"
+    logger.info("📚 三段证据链：%s | 合计 %d 字符" % (
+        out["分段"], len(out["文本块"])))
+    return out
+
+
+def call_deepseek_suggest_model(esg_json: dict, company_type: str, model_id: str,
+                                extra_context: str = "") -> dict:
+    """LLM 直调（v=78 多模型）：内置双提示词 + 增强 JSON → 根因分析严格 JSON
+
+    extra_context（v=100）：检索层产出的「外部事实块」，插在用户提示词之后、
+    esg_json 之前 —— 让模型先看到同行事实，再看到本企业数据。
+    """
     from models import call_llm
     system_prompt = load_file(SYSTEM_PROMPT_FILE)
     user_template = load_file(USER_PROMPT_FILE)
-    user_text = (
-        user_template
-        + "\n\n【实际输入 esg_json】\n"
+    user_text = user_template
+    if extra_context:
+        user_text += "\n\n" + extra_context
+    user_text += (
+        "\n\n【实际输入 esg_json】\n"
         + json.dumps({"company_type": company_type, "esg_json": esg_json}, ensure_ascii=False)
     )
-    logger.info(f"📤 LLM 直调 [{model_id}]（系统提示词 {len(system_prompt)} 字符 + 用户提示词 {len(user_template)} 字符）")
+    logger.info(f"📤 LLM 直调 [{model_id}]（系统提示词 {len(system_prompt)} 字符 + 用户提示词 "
+                f"{len(user_template)} 字符 + 外部事实 {len(extra_context)} 字符）")
     return call_llm(system_prompt, user_text, model_id=model_id)
 
 
@@ -237,8 +370,20 @@ def suggest():
             # ---- 轨2：LLM 直调（one-api 网关，按 model 路由）----
             if not os.environ.get('LLM_GATEWAY_KEY'):
                 return jsonify({"success": False, "error": "LLM_GATEWAY_KEY 未配置（one-api 分发 token）"}), 503
+
+            # v=100：检索层（Agent 1.5）—— 规则式离线同行对标，给推理层补外部事实
+            # v=101：扩为三段式（确定性分析 + 联网企业检索 + 离线同行对标）
+            #   use_peer=false / use_web=false 可单请求关闭某段（便于改造前后 A/B 对比）
+            use_peer = req.get('use_peer', True) is not False
+            use_web = req.get('use_web', True) is not False
+            facts = {"启用": False, "原因": "本次请求已关闭", "事实": [], "文本块": "",
+                     "统计": {}, "联网": {}, "确定性分析": {}, "分段": {}}
+            if use_peer or use_web:
+                facts = retrieve_external_facts(esg_json, use_peer=use_peer, use_web=use_web)
+
             try:
-                result = call_deepseek_suggest_model(esg_json, company_type, model_id)
+                result = call_deepseek_suggest_model(esg_json, company_type, model_id,
+                                                     extra_context=facts.get("文本块", ""))
             except RuntimeError as e:
                 return jsonify({"success": False, "error": str(e)}), 503
             suggestion = parse_suggestion_text(result['content'])
@@ -247,12 +392,28 @@ def suggest():
             return jsonify({
                 "success": True,
                 "suggestion": suggestion,
-                "raw_text": result['content'][:8000],
+                # v=103：不再按 8000 截断。v5.0 结构化建议单条常 600+ 字符（含企业特征/现状/
+                # 同行对照/改进收益/证据来源），10 条可达 2 万字符；截断会让前端 JSON.parse
+                # 失败并退化成「整坨 JSON 当正文」。上限 100000 仅防极端畸形输出。
+                "raw_text": result['content'][:100000],
+                "raw_text_len": len(result['content'] or ''),
                 "backend": model_id,
                 "tokens_used": result['tokens_used'],
                 "model": result['model'],
                 "company_type": company_type,
                 "duration_sec": duration,
+                # v=100 检索层产物：外部事实（含出处）供前端展示「证据来源」
+                "外部事实": facts.get("事实", []),
+                "检索层": {
+                    "启用": facts.get("启用", False),
+                    "原因": facts.get("原因", ""),
+                    "语料规模": facts.get("语料规模", 0),
+                    "统计": facts.get("统计", {}),
+                    # v=101：三段式证据链的可用性与统计
+                    "分段": facts.get("分段", {}),
+                    "联网": facts.get("联网", {}),
+                    "确定性分析": facts.get("确定性分析", {}),
+                },
                 "error": None,
             })
 
@@ -269,7 +430,9 @@ def suggest():
         return jsonify({
             "success": result['success'],
             "suggestion": suggestion,
-            "raw_text": result['text'][:8000] if result['text'] else '',
+            # v=103：与 DeepSeek 轨保持一致，不再 8000 截断
+            "raw_text": result['text'][:100000] if result['text'] else '',
+            "raw_text_len": len(result['text'] or ''),
             "backend": "adp",
             "events_count": result['events_count'],
             "company_type": company_type,
@@ -283,12 +446,29 @@ def suggest():
 
 @app.route('/api/health', methods=['GET'])
 def health():
+    peer = {"启用": False, "可用": False, "原因": "检索模块未加载"}
+    if peer_retrieval is not None:
+        try:
+            peer = peer_retrieval.index_status()
+        except Exception as e:                   # noqa: BLE001
+            peer = {"启用": False, "可用": False, "原因": str(e)}
+    web = {"启用": False, "可用": False, "原因": "联网检索模块未加载"}
+    if web_search is not None:
+        try:
+            web = dict(web_search.provider_status(), 可用=True)
+        except Exception as e:                   # noqa: BLE001
+            web = {"启用": False, "可用": False, "原因": str(e)}
+    mat = {"可用": materiality is not None}
     return jsonify({
         "status": "ok",
         "service": "esg-agent2",
+        "build": "v110",   # v110：基准口径标注（materiality + peer_retrieval 文案带口径与样本量，判定与分数不变）
         "backend": ADP_BACKEND,
         "deepseek_key": bool(DEEPSEEK_API_KEY),
         "adp_key": bool(ADP_APP_KEY),
+        "peer_retrieval": peer,
+        "web_search": web,
+        "materiality": mat,
     })
 
 

@@ -16,6 +16,7 @@
 - [核心特性](#核心特性)
 - [系统架构](#系统架构)
 - [快速启动](#快速启动)
+- [复现与 AI 辅助部署](#复现与-ai-辅助部署)
 - [目录结构](#目录结构)
 - [环境变量](#环境变量)
 - [API 一览](#api-一览)
@@ -29,7 +30,7 @@
 
 | 模块 | 能力 |
 | --- | --- |
-| **提取** | PDF / DOCX 双通道解析；大文件分片上传（上限 200MB）；扫描件 RapidOCR 兜底（离线可用）；60K 字符智能截断 |
+| **提取** | PDF / DOCX 双通道解析；**COS 直传**（≥6MB 走对象存储，实测 98MB ≈ 37s）与 1MB 分片上传双链路（上限 200MB，任一异常自动回落旧链路）；扫描件 RapidOCR 兜底（离线可用）；60K 字符智能截断 |
 | **评分** | 完整度（0–3）/ 质量（0–3）/ 基础分 / 对标分（0–4）/ L4 得分 / 维度得分 / 总分 / 障碍度 Top10，公式 1–10 全确定性实现 |
 | **对标** | 10 个行业基准库 + 全市场中位数；上市 / 非上市双轨权重；样本不足自动降级到全市场均值 |
 | **诊断** | 智能体二输出「诊断摘要 + Top10 短板根因 + 改进建议」，采用元认知因果推导（障碍度逆向推演） |
@@ -37,7 +38,7 @@
 | **报告** | 服务端 WeasyPrint 精美 PDF（中文字体内嵌）+ 客户端 pdfmake 兜底；Word / PPT 导出 |
 | **账户** | Supabase 邮箱认证 + 分析历史（PostgreSQL + RLS 行级安全）；**游客模式下无需登录即可跑完整分析** |
 | **多模型** | one-api 网关统一路由 DeepSeek / GLM / Kimi / MiniMax，前端下拉切换 |
-| **部署** | 四容器 Docker Compose 编排；支持 Cloudflare Tunnel 内网穿透（免公网 IP / 免备案调试） |
+| **部署** | 四容器 Docker Compose 编排；公网入口走 Cloudflare 代理 + SSL，源站 nginx 直跑 80（免证书运维）；**SSH 管理通道与网站完全解耦**，服务器重启后网站 / 管理通道 / 定时任务全部自愈 |
 
 ---
 
@@ -99,13 +100,48 @@ curl http://localhost/api/health
 curl -X POST -F "file=@/path/to/esg_report.pdf" http://localhost/api/extract
 ```
 
-### 日常运维（Windows）
+### 日常运维
 
-```powershell
-powershell -ExecutionPolicy Bypass -File stack_ctl.ps1 -Action Status   # 体检
-powershell -ExecutionPolicy Bypass -File stack_ctl.ps1 -Action Standby  # 停机（含禁用隧道看门狗）
-powershell -ExecutionPolicy Bypass -File stack_ctl.ps1 -Action Start    # 启动 + 等待隧道就绪
+```bash
+docker-compose ps                      # 容器体检
+docker-compose logs -f esg-extractor   # 提取服务日志
+docker-compose down                    # 停机
+docker-compose up -d                   # 启动
 ```
+
+---
+
+## 复现与 AI 辅助部署
+
+本仓库**不含任何真实密钥与服务器凭据**（`.env` 已由 `.gitignore` 排除），也**不随仓库下发运维脚本**——克隆即得全部可复现代码。
+
+**仓库地址**：<https://github.com/24203230230/esg-carbon-system>
+
+部署过程可直接交给 AI 编程助手完成。以下工具均可用于本仓库（把仓库地址与目标环境丢给它即可）：
+
+| 工具 | 说明 |
+| --- | --- |
+| **WorkBuddy** | 办公智能体，可读写本地文件并执行终端命令 |
+| **Codex** | OpenAI 编程智能体 |
+| **Claude Code** | Anthropic 终端编程智能体 |
+| **DeepSeek Harness** | DeepSeek 官方智能体运行框架 |
+
+可直接复制的提示词：
+
+```text
+仓库地址：https://github.com/24203230230/esg-carbon-system
+目标环境：Ubuntu 24.04 + Docker 29（最低 2 核 2G）
+
+请先阅读 README.md 与 ARCHITECTURE.md，然后：
+1) 按 .env.example 生成 .env（密钥我会自己提供，绝不要写进仓库或提交）；
+2) 创建容器网络：docker network create --subnet 172.23.0.0/16 ai-network；
+3) 用 docker-compose up -d 启动四个容器（frontend / extractor / agent2 / one-api）；
+4) 用 curl http://localhost/api/health 验证返回 build=v114。
+
+遇到报错请说明根因与修复步骤，不要跳过验证步骤。
+```
+
+> 判断部署是否成功，看 `/api/health` 的 `build` 字段是否等于 `v114`——这是唯一可靠的信号，比页面能否打开更准。
 
 ---
 
@@ -115,28 +151,33 @@ powershell -ExecutionPolicy Bypass -File stack_ctl.ps1 -Action Start    # 启动
 esg-carbon-system/
 ├── docker-compose.yml          # 四容器编排（extractor / frontend / agent2 / one-api）
 ├── Dockerfile                  # 提取 + 评分服务镜像
-├── extract_service.py          # Flask 提取服务（/api/extract、分片上传、OCR 兜底、WeasyPrint PDF）
+├── extract_service.py          # Flask 提取服务（提取 / 分片上传 / COS 直传 / OCR 兜底 / WeasyPrint PDF）
 ├── weights_logic.py            # ★ 评分引擎：公式 1–10 全实现（确定性算术层）
 ├── weights.json                # ★ 42 指标权重 + 10 行业基准库 + 全市场中位数 + 评分规则
 ├── models.py                   # LLM 网关配置与支持模型清单
 ├── extraction_prompt.md        # 智能体一 · 提取提示词
 ├── agent2/                     # 智能体二 · 障碍度根因分析服务
 │   ├── suggest_service.py      #   /api/suggest（双后端 deepseek | adp）
-│   ├── system_prompt.md        #   根因分析提示词（元认知因果推导）
-│   └── user_prompt.md
+│   ├── system_prompt.md        #   根因分析提示词 v3.0（元认知因果推导）
+│   ├── user_prompt.md
+│   ├── peer_retrieval.py       #   检索层：离线同行对标库检索（倒排索引）
+│   ├── peer_index.json         #   102 家同行索引（构建产物，随镜像发布，运行时零网络依赖）
+│   ├── web_search.py           #   企业公开信息检索（东方财富 / 巨潮资讯，免 Key）
+│   └── materiality.py          #   实质性分析（纯 Python 确定性计算）
+├── tools/build_peer_index.py   # 重建 peer_index.json 的构建脚本
 ├── frontend/                   # 前端 SPA（原生 JS + Chart.js，无构建步骤）
 │   ├── index.html
 │   ├── js/app.bundle.js        #   业务主逻辑
 │   ├── js/charts.js            #   雷达图 / 圆环 / 三色评分点
 │   ├── vendor/                 #   第三方库本地化（离线可用）
 │   └── nginx.conf              #   静态资源 + API 反代 + gzip + 长缓存策略
-├── templates/                  # 服务端 PDF 模板（Jinja2）+ 中文字体
-├── stack_ctl.ps1               # 一键启停 / 体检 / 临时隧道
+├── templates/                  # 服务端 PDF 模板（Jinja2）+ 中文字体（思源黑体 CJKsc）
 ├── supabase_schema.sql         # 认证与历史表结构 + RLS 策略
+├── CHANGELOG.md                # 版本沿革
+├── deploy/                     # 部署与公网入口说明
 ├── docs/
 │   ├── architecture/           # 架构图（论文图 4-1 / 4-2 / 4-3）
 │   └── ESG碳画像系统排障复盘.docx
-├── deploy/                     # Cloudflare Tunnel 部署配置（模板已脱敏）
 └── 智能体二*.md                # 根因分析提示词定稿（v2.0 / v3.0）
 ```
 
@@ -153,6 +194,10 @@ esg-carbon-system/
 | `ADP_BACKEND` | | `deepseek`（默认，自主可控）/ `adp`（比赛展示） |
 | `ADP_APP_KEY` | | 仅 `ADP_BACKEND=adp` 时需要 |
 | `LLM_GATEWAY_URL` / `LLM_GATEWAY_KEY` | | one-api 多模型网关地址与分发 Token |
+| `COS_ENABLED` | | `1` 启用 COS 直传；不配 = 自动走原分片链路（功能不受影响，仅慢） |
+| `COS_SECRET_ID` / `COS_SECRET_KEY` | | 对象存储密钥，**建议用最小权限子账号**（只需对象读写删） |
+| `COS_BUCKET` / `COS_REGION` | | 存储桶与地域，如 `your-bucket-1250000000` / `ap-guangzhou` |
+| `COS_UPLOAD_ENDPOINT` | | 上传端点；开启全球加速时填 `cos.accelerate.myqcloud.com` |
 | `EXTRACT_PORT` | | 提取服务端口，默认 `8082` |
 
 ---
@@ -171,6 +216,8 @@ esg-carbon-system/
 | POST | `/api/upload_chunk` | 大文件分片上传（单片） |
 | POST | `/api/upload_complete` | 分片合并并触发提取 |
 | POST | `/api/upload_abort` | 放弃上传并清理临时分片 |
+| POST | `/api/cos_upload_prepare` | 申请 COS 预签名 PUT URL（浏览器直传对象存储，不经服务器中转） |
+| POST | `/api/cos_complete` | 直传完成后取件（三级回退下载）并触发提取 |
 | POST | `/api/extract_score` | 提取 + 落盘共享目录（供外部读取） |
 | POST | `/api/report` | WeasyPrint 生成精美 PDF 报告 |
 
@@ -219,7 +266,7 @@ L4 得分 = (基础分 + 对标分) × 权重
 
 ## 版本沿革
 
-前端以 `?v=NN` 版本号控制浏览器长缓存，改文件必须同步 bump。
+系统版本以 `/api/health` 返回的 `build` 字段为准；前端各静态资源另带 `?v=NN` 缓存戳，**按资源独立维护**（只在该资源内容变化时才 bump，避免无谓地让用户重下全部资源）。
 
 | 阶段 | 版本 | 里程碑 |
 | --- | --- | --- |
@@ -227,10 +274,13 @@ L4 得分 = (基础分 + 对标分) × 权重
 | 账户体系 | v=70 – v=77 | Supabase 认证 + 分析历史 + RLS、用户下拉卡片、密码逻辑加固 |
 | 多模型 | v=78 – v=87 | one-api 多模型网关、模型映射修复、DeepSeek V4 Vision |
 | 报告与性能 | v=88 – v=93 | PDF 模板商业风升级、**WeasyPrint 服务端 PDF**、性能基线 v=92（gzip + 长缓存 + PDF 库懒加载）、RapidOCR 扫描件兜底 |
-| 当前 | v=94 – v=99 | 模型选项重整、稳定性与防御性修复、前端锁版 |
-| 部署 | — | 四容器迁移至云服务器；ICP 备案期通过临时 Quick Tunnel 提供测试入口 |
+| 证据链 | v=94 – v=102 | 报告可视化图表与诊断摘要入模板；Agent2 企业画像；检索层（离线同行对标索引）与联网企业检索组成三段式证据链 |
+| 稳健性 | v=103 – v=104 | 建议载荷统一解析（修复报告整屏印出 JSON 源码）；大文件**断点续传**（只补缺片）与瞬断类错误重试策略 |
+| 视角与口径 | v=105 – v=110 | 评估视角由「披露审计」转为「**碳治理能力诊断**」；同行覆盖率修正；行业均值附带样本量标注 |
+| 报告与图表 | v=111 – v=113 | PDF 中文字体修复（OTTO/CFF → glyf/TrueType）；图表口径错配修复；「未披露」两情形区分 |
+| **当前** | **v=114** | **COS 直传**：大文件改由浏览器凭预签名 URL 直传对象存储，98MB 报告上传由 4 分半降到约 37 秒；原分片链路完整保留作回落 |
 
-> 当前生产基线：**CSS `v=99` / JS `v=97`**。
+> 当前生产基线：**v=114**。
 
 ---
 
@@ -239,6 +289,6 @@ L4 得分 = (基础分 + 对标分) × 权重
 - **许可**：[LICENSE](LICENSE) —— 自定义「非商业使用」许可，商业用途需单独书面授权。
 - **排障复盘**：[`docs/ESG碳画像系统排障复盘-20260816.docx`](docs/) —— 15 个 Bug、4 类根源、排查清单、溯源索引。
 - **架构图**：[`docs/architecture/`](docs/architecture/) —— 论文图 4-1 / 4-2 / 4-3。
-- **部署配置**：[`deploy/`](deploy/) —— Cloudflare Tunnel 隧道模板（已脱敏）。
+- **部署说明**：[`deploy/`](deploy/) —— 公网入口与容器编排的部署要点。
 
 > 本系统生成的评分与建议仅供学术研究与决策参考，不构成投资建议或合规承诺。

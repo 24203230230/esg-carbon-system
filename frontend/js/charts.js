@@ -38,7 +38,13 @@ const Charts = {
         };
     },
 
-    // 行业平均：从 L4计算结果取每个指标"行业均值"，按维度加权平均（权重为指标权重）
+    // 行业水平：从 L4计算结果取每个指标的「行业L4得分」（**同口径** 0-10，v=112 起）
+    // 按维度加权平均（权重为指标权重）
+    //
+    // v=112 口径修复：原先取的是「行业均值」（基础分口径 0-6），而雷达图另一条线是企业
+    // 维度得分（L4 口径 0-10）—— 两条线量纲不同，画在同一张雷达图上不可比。
+    // 现改用后端派生字段「行业L4得分」，与图 3、与报告正文同源。
+    // 兼容：若后端仍是旧版（无该字段），退回 0 跳过该指标，绝不拿旧口径混算。
     _getIndustryAverages(sd) {
         try {
             const l4 = sd['L4计算结果'] || {};
@@ -46,7 +52,7 @@ const Charts = {
             const dims = { '企业内部碳管理': [0, 0], '供应链碳管理': [0, 0], '透明度': [0, 0], '金融化情况': [0, 0] };
             Object.values(l4).forEach(r => {
                 const dim = r['维度'];
-                const indMean = r['行业均值'];
+                const indMean = r['行业L4得分'];
                 const weight = r['权重'];
                 if (dims[dim] && typeof indMean === 'number' && typeof weight === 'number') {
                     dims[dim][0] += indMean * weight;
@@ -126,12 +132,17 @@ const Charts = {
                     pointRadius: 6,
                     pointHoverRadius: 8
                 }, {
-                    label: '行业平均',
+                    // v=112：口径已统一为「行业L4得分」（0-10，见 _getIndustryAverages），
+                    // 与另一条线（企业维度得分，同为 L4 口径）可比。
+                    // 另修一处隐患：原写法 `?? 5.5` 会在行业数据缺失时**凭空画出一条 5.5 的假行业线**，
+                    // 现改为 null（Chart.js 视为断点）；且完全无行业数据时整条隐藏，不伪造。
+                    label: '行业水平（同口径）',
+                    hidden: !score.industry,
                     data: [
-                        score.industry?.['企业内部碳管理'] ?? 5.5,
-                        score.industry?.['供应链碳管理'] ?? 5.5,
-                        score.industry?.['透明度'] ?? 5.5,
-                        score.industry?.['金融化情况'] ?? 5.5
+                        score.industry?.['企业内部碳管理'] ?? null,
+                        score.industry?.['供应链碳管理'] ?? null,
+                        score.industry?.['透明度'] ?? null,
+                        score.industry?.['金融化情况'] ?? null
                     ],
                     backgroundColor: 'rgba(59, 130, 246, 0.1)',
                     borderColor: 'rgba(59, 130, 246, 0.6)',

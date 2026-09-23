@@ -700,6 +700,10 @@ section[class^="section-"]:not(.section-hero) {
     text-overflow: ellipsis;
 }
 .file-meta { font-size: 12px; color: var(--color-text-muted); }
+/* v=104：上传失败的文件也要常驻在列表里（原来失败即从界面消失，没有任何重试入口） */
+.file-item.has-error { border-color: #fecaca; background: #fff7f7; }
+.file-item.has-error:hover { border-color: #f87171; }
+.file-error { color: #dc2626; font-weight: 600; }
 .file-actions { display: flex; gap: 4px; flex-shrink: 0; }
 .file-btn {
     width: 32px; height: 32px;

@@ -62,12 +62,125 @@ async function parseJsonResponse(res, label) {
     // 兜底：后端没给原因时，按状态码给一句人话
     if (!detail) {
         if (res.status === 413) detail = '文件超过服务端上传大小限制';
-        else if (res.status === 502 || res.status === 504) detail = '后端服务无响应或超时，请稍后重试';
+        // v=104：530 是 Cloudflare 在「隧道到边缘的连接断开」时返回的（不是业务错误）。
+        //   实测重连约需 21s，客户端会自动重试；这里的文案要能解释「为什么在重试」，
+        //   而不是甩一个裸的 HTTP 530 让用户以为系统坏了。
+        else if (res.status === 530) detail = '边缘隧道连接中断（服务端正在自动重连），请稍后重试';
+        else if (res.status === 502 || res.status === 503 || res.status === 504) detail = '后端服务无响应或超时，请稍后重试';
         else if (res.status === 524) detail = '边缘网关等待超时，请重试（长任务已改走异步接口）';
         else detail = `HTTP ${res.status}`;
     }
 
-    throw new Error(`${label}失败：${detail}`);
+    const err = new Error(`${label}失败：${detail}`);
+    // v=104：把状态码挂在 Error 上 —— 重试策略据此判断「值不值得重试」，
+    //   不要再靠正则去匹配上面那些会随时改的提示文案（改文案就悄悄失效了）。
+    err.status = res.status;
+    throw err;
+}
+
+// ============ COS 直传（v=114）============
+// 背景：存在 99.8MB 量级报告。原链路（浏览器 → CF 边缘 → 香港源站）实测 **3.0 Mbps**
+//   ⇒ 100MB 需 **4.4 分钟**，不可接受。且 CF 给本站分配的边缘落点在阿姆斯特丹
+//   （RTT 254ms），免费版无法改 IP 段 ⇒ 换 CDN 也救不了。
+// 方案：浏览器直传 COS（国内就近接入，实测 22–23 Mbps ⇒ 99.8MB ≈ 37 秒）
+//   → 服务器从 COS 取件（腾讯云内网/全球加速，实测 205–346 Mbps）⇒ 全链路约 40 秒。
+// ⚠️ **完全可回落**：下面任一步失败（后端未启用 COS / 后端是旧版本没有该路由 /
+//   预签名失败 / 直传失败 / 取件失败）都自动退回原 1MB 串行分片链路，**旧链路一字未改**。
+// ⚠️ 预签名 URL **不得改写 host**：COS v5 签名**含 host**，换 host 必然 403
+//   （网络是通的、0.1s 快失败，极易误判成"网络不通"）。URL 由后端签发，原样使用。
+const COS_MIN_SIZE = 6 * 1024 * 1024;   // 起用直传的体积门槛（更小的走原链路，省一次取件往返）
+const COS_MAX_RETRY = 3;                // 整包重试次数（分片级续传由原链路负责）
+const COS_RETRY_BACKOFF_MS = [1500, 4000, 10000];
+
+/** 用预签名 URL 一次 PUT 整个文件（进度来自 XHR 原生 upload 事件，真实字节级） */
+function putFileToCos(file, url, onProgress) {
+    return new Promise((resolve, reject) => {
+        const xhr = new XMLHttpRequest();
+        xhr.open('PUT', url, true);
+        // ⚠️ 不设 Content-Type：服务端预签名**未签该 header**，让浏览器按 file.type
+        //   自动带上即可。若签名里带了 Content-Type，前端就得逐字节对齐，太脆。
+        xhr.timeout = 1800 * 1000;      // 30 分钟（与解析上限同量级的大余量）
+        xhr.upload.onprogress = (e) => {
+            if (e.lengthComputable && typeof onProgress === 'function') {
+                try { onProgress(e.loaded, e.total); } catch (_) { }
+            }
+        };
+        xhr.onload = () => (xhr.status >= 200 && xhr.status < 300)
+            ? resolve()
+            : reject(new Error(`COS 直传失败（HTTP ${xhr.status}）`));
+        xhr.onerror = () => reject(new Error('COS 直传网络错误（可能被跨域策略拦截）'));
+        xhr.ontimeout = () => reject(new Error('COS 直传超时'));
+        xhr.onabort = () => reject(new Error('COS 直传被取消'));
+        xhr.send(file);
+    });
+}
+
+/**
+ * 走 COS 直传提交提取任务。
+ * ⚠️ 契约：**任何失败都抛异常**，由 submitExtraction 统一捕获并回落原分片链路。
+ *   因此本函数不需要自己兜底，保持"要么成功返回 task_id，要么抛错"的二值语义。
+ *
+ * @param {File} file
+ * @param {Object} meta   {companyType, model}
+ * @param {Function} report (cur, extra) —— 与分片链路同一个 2 参数契约
+ *        cur/total 按「1MB 折算 1 片」上报：进度语义与分片链路一致，**UI 零改动**
+ * @returns {Promise<string>} task_id
+ */
+async function submitExtractionViaCos(file, meta, report) {
+    // 1) 申请预签名直传凭证（后端未启用 COS 时返回 ok:false ⇒ 属"正常回落"，不是故障）
+    const prepRes = await fetchWithTimeout(`${API_CONFIG.EXTRACT_API}/cos_upload_prepare`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+            filename: file.name, size: file.size,
+            company_type: meta.companyType, model: meta.model
+        })
+    }, 30000);
+    const prep = await parseJsonResponse(prepRes, '申请直传凭证');
+    if (!prep || !prep.ok || !prep.url) {
+        throw new Error((prep && prep.reason) || 'COS 直传未启用');
+    }
+
+    // 2) 直传本体
+    const totalChunks = Math.ceil(file.size / UPLOAD_CHUNK_SIZE);
+    const reportBytes = (loaded) => {
+        const cur = Math.max(0, Math.min(totalChunks, Math.round(loaded / UPLOAD_CHUNK_SIZE)));
+        report(cur, {});
+    };
+    reportBytes(0);
+
+    let lastErr = null;
+    for (let attempt = 1; attempt <= COS_MAX_RETRY; attempt++) {
+        try {
+            await putFileToCos(file, prep.url, reportBytes);
+            lastErr = null;
+            break;
+        } catch (e) {
+            lastErr = e;
+            if (attempt >= COS_MAX_RETRY) break;
+            const wait = COS_RETRY_BACKOFF_MS[Math.min(attempt - 1, COS_RETRY_BACKOFF_MS.length - 1)];
+            // 复用分片链路的重试提示文案（failedIndex=0 只是占位，文案里不体现）
+            report(0, {
+                retry: true, attempt: attempt + 1, maxAttempt: COS_MAX_RETRY,
+                waitMs: wait, failedIndex: 0
+            });
+            await new Promise(r => setTimeout(r, wait));
+        }
+    }
+    if (lastErr) throw lastErr;
+
+    // 3) 通知服务端从 COS 取件建任务（取件走腾讯云内网/加速，100MB 实测秒级）
+    const doneRes = await fetchWithTimeout(`${API_CONFIG.EXTRACT_API}/cos_complete`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+            key: prep.key, filename: file.name, size: file.size,
+            company_type: meta.companyType, model: meta.model
+        })
+    }, 900000);
+    const done = await parseJsonResponse(doneRes, '完成直传');
+    if (!done || !done.task_id) throw new Error('直传已完成但服务端未返回任务ID');
+    return done.task_id;
 }
 
 // ============ 分片上传（v=96）============
@@ -82,7 +195,30 @@ async function parseJsonResponse(res, label) {
 const UPLOAD_CHUNK_SIZE = 1 * 1024 * 1024;        // 单片 1MB（抗抖动，最坏 ~22s ≪ 100s 边缘超时）
 const UPLOAD_CHUNK_THRESHOLD = 6 * 1024 * 1024;   // 超过 6MB 走分片（6MB 一次性提交需 ~44s，已接近危险区）
 const UPLOAD_MAX_CHUNKS = 400;                    // 与后端上限一致（400MB 覆盖上限）
-const UPLOAD_CHUNK_RETRY = 3;                     // 单片失败重试次数（实测上行抖动极大，单片重传远划算）
+// v=104：重试策略按「隧道重连窗口」重定
+//   2026-09-16 实测：cloudflared 到 Cloudflare 边缘的连接被掐断后，约 21s 才重新注册
+//   （日志 `Lost connection with the edge` → 21s 后 `Registered tunnel connection`）。
+//   断线期间的所有请求在边缘就被判 530，**根本不进 nginx**（nginx 侧只留下一条被
+//   切断的 `POST /api/upload_chunk 400 0`）。原配置「3 次重试 + 1s/2s 退避」合计
+//   仅 3s，远短于 21s 重连窗口 → 必然全军覆没，用户看到的就是「切片上传报错」。
+//   现改为 6 次、退避 2/4/8/15/30s（累计 ~59s，覆盖一次完整重连仍有余量）。
+const UPLOAD_CHUNK_RETRY = 6;
+const UPLOAD_RETRY_BACKOFF_MS = [2000, 4000, 8000, 15000, 30000];
+// 边缘/网关瞬断类错误才值得重试：
+//   530 = 隧道边缘连接断（本次故障）｜502/503/504/524 = 网关侧无响应/超时
+//   408/425/429 = 请求超时/过早/限流（限流等一会儿再来也行）
+const UPLOAD_RETRYABLE_RE = /HTTP\s*(408|425|429|5\d\d)|超时|中断|网络|Failed to fetch|NetworkError|Load failed|timeout/i;
+
+/** 该错误是否属于「等一会儿重试就能好」的瞬断类（v=104） */
+function isRetryableUploadError(err) {
+    if (!err) return false;
+    if (err.name === 'AbortError') return true;   // fetchWithTimeout 主动超时掐断
+    // 优先看状态码（parseJsonResponse 会挂 err.status）—— 比匹配中文提示文案稳
+    const st = Number(err.status || 0);
+    if (st) return st === 408 || st === 425 || st === 429 || st >= 500;
+    // 无状态码 = 网络层就失败了（断网/DNS/连接被重置）→ 按文案兜底判断
+    return UPLOAD_RETRYABLE_RE.test(String(err.message || err));
+}
 
 /** 生成 32 位十六进制上传 ID（与后端白名单正则 ^[0-9a-f]{32}$ 一致） */
 function genUploadId() {
@@ -100,25 +236,75 @@ function genUploadId() {
  * 大文件分片上传：逐片提交 → 合并 → 返回 task_id
  *
  * 逐片串行上传（并行只会争抢本就有限的上行带宽，反而更容易触发超时）。
+ *
+ * v=104 变更（对应 2026-09-16「切片上传报错」故障）：
+ *   ① 断点续传：带 opts.uploadId 时先查 /api/upload_status，跳过服务端已有的片；
+ *   ② 重试策略覆盖隧道重连窗口（6 次 / 最长 59s，见 UPLOAD_CHUNK_RETRY 注释）；
+ *   ③ 非瞬断类错误（400 参数错、413 超限）不再无谓重试，直接失败；
+ *   ④ 失败时**不再删除服务端分片**（原逻辑删光 → 每次断线都要从第 1 片重来）。
+ *
  * @param {File} file   待上传文件
  * @param {Object} meta {companyType, model}
- * @param {Function} onUploadProgress (doneChunks, totalChunks)
+ * @param {Function} onUploadProgress (doneChunks, info)
+ *        info: {uploadId, skipped, total, retry, attempt, maxAttempt, waitMs, failedIndex}
+ *        ⚠️ info 是**第二个参数**（不是第三个）；历史上一处三参数调用导致字段被静默丢弃。
+ * @param {Object} [opts] {uploadId} 传入则断点续传，不传则新建会话
  * @returns {Promise<string>} task_id
  */
-async function uploadFileInChunks(file, meta, onUploadProgress) {
-    const uploadId = genUploadId();
+async function uploadFileInChunks(file, meta, onUploadProgress, opts) {
+    const options = opts || {};
+    const uploadId = options.uploadId || genUploadId();
     const totalChunks = Math.ceil(file.size / UPLOAD_CHUNK_SIZE);
     if (totalChunks > UPLOAD_MAX_CHUNKS) {
         throw new Error(`文件过大（${formatFileSize(file.size)}），超过分片上传上限（${UPLOAD_MAX_CHUNKS * 4}MB）`);
     }
 
+    // v=104：先问服务端「哪些片已经落盘了」→ 只补缺片
+    let already = new Set();
+    if (options.uploadId) {
+        try {
+            const stRes = await fetchWithTimeout(
+                `${API_CONFIG.EXTRACT_API}/upload_status?upload_id=${uploadId}`, {}, 30000
+            );
+            const st = await parseJsonResponse(stRes, '查询续传位置');
+            (st && Array.isArray(st.chunks) ? st.chunks : []).forEach(idx => already.add(idx));
+        } catch (e) {
+            // 查不到续传点（如服务端会话已被 TTL 回收）→ 当作全新上传，不影响主流程
+            console.warn('续传位置查询失败，按整包重传处理:', e && e.message);
+            already = new Set();
+        }
+    }
+
+    const report = (cur, extra) => {
+        if (typeof onUploadProgress === 'function') {
+            try {
+                // ⚠️ 契约：第二个参数就是 info 对象，**不要再单独传 totalChunks**。
+                //   2026-09-16 修复（探针实测发现的静默 bug）：原先这里写成
+                //   `onUploadProgress(cur, totalChunks, {...})`，而上一层 submitExtraction
+                //   的 report 签名是 `(cur, extra)` → extra 实际收到的是数字 totalChunks，
+                //   `Object.assign(target, 7)` 不产生任何键 → uploadId / skipped 被**静默吞掉**
+                //   （不报错、不抛异常，只是永远读不到），导致「已续传 N 片」提示不显示、
+                //   续传凭据也记不住。参数个数不匹配是 JS 里最典型的静默失败。
+                onUploadProgress(cur, Object.assign(
+                    { uploadId, skipped: already.size, total: totalChunks }, extra || {}));
+            } catch (_) { /* 渲染异常绝不影响上传本身 */ }
+        }
+    };
+    report(already.size);
+
+    // 待传片 = 全部 - 已落盘（已落盘的片不再传，避免重复浪费本就很窄的上行）
+    const pending = [];
+    for (let i = 0; i < totalChunks; i++) {
+        if (!already.has(i)) pending.push(i);
+    }
+
     try {
-        for (let i = 0; i < totalChunks; i++) {
+        let done = already.size;
+        for (const i of pending) {
             const start = i * UPLOAD_CHUNK_SIZE;
             const blob = file.slice(start, Math.min(file.size, start + UPLOAD_CHUNK_SIZE));
 
-            // v=96：单片失败重试（实测上行 5-18s 抖动明显，单片重传远比整个文件重来划算）
-            //       后端同 chunk_index 为覆盖写 → 重试天然幂等，不会重复拼接
+            // 单片失败重试（后端同 chunk_index 为覆盖写 → 重试天然幂等，不会重复拼接）
             let lastErr = null;
             for (let attempt = 1; attempt <= UPLOAD_CHUNK_RETRY; attempt++) {
                 try {
@@ -134,14 +320,26 @@ async function uploadFileInChunks(file, meta, onUploadProgress) {
                     break;
                 } catch (e) {
                     lastErr = e;
-                    if (attempt < UPLOAD_CHUNK_RETRY) {
-                        await new Promise(r => setTimeout(r, 1000 * attempt));   // 递增退避
-                    }
+                    if (attempt >= UPLOAD_CHUNK_RETRY) break;
+
+                    // 参数/体积类错误重试无意义，立即上抛，别让用户白等 59s
+                    if (!isRetryableUploadError(e)) break;
+
+                    const wait = UPLOAD_RETRY_BACKOFF_MS[
+                        Math.min(attempt - 1, UPLOAD_RETRY_BACKOFF_MS.length - 1)
+                    ];
+                    // 让界面显示「重试中」，用户才知道程序在等隧道重连而不是卡死
+                    report(done, {
+                        retry: true, attempt: attempt + 1, maxAttempt: UPLOAD_CHUNK_RETRY,
+                        waitMs: wait, failedIndex: i
+                    });
+                    await new Promise(r => setTimeout(r, wait));
                 }
             }
             if (lastErr) throw lastErr;
 
-            if (typeof onUploadProgress === 'function') onUploadProgress(i + 1, totalChunks);
+            done++;
+            report(done);
         }
 
         const res = await fetchWithTimeout(`${API_CONFIG.EXTRACT_API}/upload_complete`, {
@@ -159,20 +357,19 @@ async function uploadFileInChunks(file, meta, onUploadProgress) {
         if (!data || !data.task_id) throw new Error('合并分片失败：服务端未返回任务ID');
         return data.task_id;
     } catch (err) {
-        // best-effort 清理服务端残留分片（清理失败不影响主流程与错误提示）
-        try {
-            fetch(`${API_CONFIG.EXTRACT_API}/upload_abort`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ upload_id: uploadId })
-            }).catch(() => { /* 忽略 */ });
-        } catch (_) { /* 忽略 */ }
-
-        // fetch 超时/中断抛的是英文 AbortError，这里换成看得懂的话
-        if (err && (err.name === 'AbortError' || /aborted|failed to fetch|network/i.test(err.message || ''))) {
-            throw new Error('分片上传中断或超时（网络较慢），请检查网络后重试');
-        }
-        throw err;
+        // v=104：⚠️ 这里**故意不调用 /api/upload_abort**
+        //   原逻辑：任一片重试耗尽 → 删掉服务端全部已落盘分片 → 用户只能从第 1 片重来。
+        //   隧道每约 2 小时断一次（实测 9h 内 2 次），100MB 报告 = 100 片，
+        //   于是「永远传不完」。
+        //   现在保留分片（服务端有 1 小时 TTL 自动回收），重试时凭同一 upload_id 续传；
+        //   只有用户显式删除文件时才清理（见 deleteFile）。
+        const wrapped = (err && (err.name === 'AbortError' || /aborted|failed to fetch|network/i.test(err.message || '')))
+            ? new Error('分片上传中断或超时（网络较慢），请检查网络后重试')
+            : err;
+        // 挂上续传上下文 → 上层存入 fileObj，重试时直接续传，无需重新分片
+        wrapped.uploadId = uploadId;
+        wrapped.resumeFrom = already.size;
+        throw wrapped;
     }
 }
 
@@ -185,20 +382,55 @@ async function uploadFileInChunks(file, meta, onUploadProgress) {
 async function submitExtraction(formData, onProgress) {
     const fileObj = formData.get('file');
     const size = (fileObj && typeof fileObj.size === 'number') ? fileObj.size : 0;
+    const companyType = formData.get('company_type') || 'listed';
+    const model = formData.get('model') || '';
+
+    // v=114：大文件优先走 COS 直传（后端签发预签名 URL → 浏览器直传对象存储）
+    //   ⚠️ 失败**不报错**，只打日志后继续走下面的原分片链路 —— 用户侧无感，站点不会挂。
+    //   这条 try/catch 是"新旧链路"的唯一交界点，保持原链路一字未改。
+    if (size >= COS_MIN_SIZE) {
+        const cosTotal = Math.ceil(size / UPLOAD_CHUNK_SIZE);
+        const reportCos = (cur, extra) => {
+            if (typeof onProgress === 'function') {
+                try {
+                    onProgress(Object.assign(
+                        { status: 'uploading', stage: 'upload', current: cur, total: cosTotal },
+                        extra || {}
+                    ));
+                } catch (_) { }
+            }
+        };
+        try {
+            const cosTaskId = await submitExtractionViaCos(
+                fileObj, { companyType, model }, reportCos
+            );
+            if (cosTaskId) return cosTaskId;
+        } catch (e) {
+            console.warn('COS 直传不可用，自动回落原分片链路:', (e && e.message) || e);
+        }
+    }
 
     // 大文件 → 分片上传（每片请求都很小，不会被边缘超时掐断）
     if (size > UPLOAD_CHUNK_THRESHOLD) {
         const totalChunks = Math.ceil(size / UPLOAD_CHUNK_SIZE);
-        const report = (cur) => {
+        const report = (cur, extra) => {
             if (typeof onProgress === 'function') {
-                try { onProgress({ status: 'uploading', stage: 'upload', current: cur, total: totalChunks }); } catch (_) { }
+                try {
+                    onProgress(Object.assign(
+                        { status: 'uploading', stage: 'upload', current: cur, total: totalChunks },
+                        extra || {}
+                    ));
+                } catch (_) { }
             }
         };
         report(0);
         return await uploadFileInChunks(fileObj, {
-            companyType: formData.get('company_type') || 'listed',
-            model: formData.get('model') || ''
-        }, report);
+            companyType: companyType,
+            model: model
+        }, report, {
+            // v=104：fileObj.uploadId 存在 → 断点续传（失败重试/手动重传都走这里）
+            uploadId: (fileObj && fileObj.uploadId) || ''
+        });
     }
 
     // 小文件 → 保持原有一次性提交逻辑不变
@@ -797,6 +1029,10 @@ async function uploadToExtractService(fileObj) {
     }
 
     const formData = new FormData();
+    // v=104：把续传凭据带到提交层 —— 提交层（submitExtraction）是从 formData 里取 File
+    //   对象读 uploadId 的，而上传过程把它记在 App.uploadedFiles 条目上。两者不是同一个
+    //   对象，不在这一步"搬运"的话，续传判定永远读不到 ID，断点续传静默失效。
+    if (fileObj.uploadId) fileObj.file.uploadId = fileObj.uploadId;
     formData.append('file', fileObj.file);
     formData.append('model', getSelectedModel());   // v=78 多模型
 
@@ -826,7 +1062,16 @@ async function uploadToExtractService(fileObj) {
             // 服务端真实阶段回报（优先级高于时间兜底）
             if (st.stage === 'upload') {
                 // v=96：分片上传阶段 → 真实片数进度（进度条走前 30%，其余留给解析/OCR）
-                fileObj.uploadHint = st.total > 0 ? `上传中 ${st.current}/${st.total} 片` : '上传中';
+                // v=104：记住 uploadId（断点续传凭据）+ 显示续传/重试状态
+                if (st.uploadId) fileObj.uploadId = st.uploadId;
+                if (st.retry) {
+                    // 隧道瞬断等瞬断类错误正在自动重试：必须显示出来，否则用户以为卡死了
+                    fileObj.uploadHint = `第 ${st.failedIndex + 1}/${st.total} 片重试中（第 ${st.attempt}/${st.maxAttempt} 次，等 ${Math.round((st.waitMs || 0) / 1000)}s）…`;
+                } else {
+                    fileObj.uploadHint = st.total > 0
+                        ? `上传中 ${st.current}/${st.total} 片${st.skipped ? `（已续传 ${st.skipped} 片）` : ''}`
+                        : '上传中';
+                }
                 if (st.total > 0) {
                     fileObj.progress = Math.min(30, Math.round(st.current / st.total * 30));
                 }
@@ -855,6 +1100,9 @@ async function uploadToExtractService(fileObj) {
         clearInterval(progressTimer);
         fileObj.status = 'error';
         fileObj.error = err.message;
+        // v=104：保住续传凭据 —— 重试时凭它跳过已落盘分片，不必从第 1 片重来
+        if (err && err.uploadId) fileObj.uploadId = err.uploadId;
+        fileObj.uploadHint = '';
         renderProgressList();
         renderFileList();
         showToast(`${fileObj.name} 提取失败: ${err.message}`, 'error');
@@ -911,31 +1159,37 @@ function renderFileList() {
     const section = $('#fileListSection');
     const list = $('#fileList');
     const count = $('#fileCount');
-    const done = App.uploadedFiles.filter(f => f.status === 'done');
+    // v=104：把「上传失败」的文件也列出来 —— 原逻辑只渲染 status==='done'，
+    //   失败文件（status='error'）在界面上彻底消失，用户除了 3 秒的 toast 之外
+    //   没有任何重试入口，只能重新拖一次文件（还得从第 1 片重来）。
+    const shown = App.uploadedFiles.filter(f => f.status === 'done' || f.status === 'error');
 
-    if (done.length === 0) {
+    if (shown.length === 0) {
         section.style.display = 'none';
         return;
     }
 
     section.style.display = 'block';
-    count.textContent = `${done.length} 个文件`;
+    count.textContent = `${shown.length} 个文件`;
 
-    list.innerHTML = done.map(f => {
+    list.innerHTML = shown.map(f => {
+        const ok = f.status === 'done';
         const iconClass = f.type === '.pdf' ? 'pdf' : 'doc';
         const iconSvg = f.type === '.pdf'
             ? '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>'
             : '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>';
 
         return `
-            <div class="file-item" data-id="${f.id}">
+            <div class="file-item${ok ? '' : ' has-error'}" data-id="${f.id}">
                 <div class="file-icon-sm ${iconClass}">${iconSvg}</div>
                 <div class="file-info">
                     <div class="file-name">${escapeHtml(f.name)}</div>
-                    <div class="file-meta">${formatFileSize(f.size)} · ${f.type.toUpperCase().replace('.', '')} · 已上传</div>
+                    <div class="file-meta">${ok
+                        ? `${formatFileSize(f.size)} · ${f.type.toUpperCase().replace('.', '')} · 已上传`
+                        : `${formatFileSize(f.size)} · <span class="file-error">上传失败：${escapeHtml(String(f.error || '未知原因').slice(0, 40))}</span>`}</div>
                 </div>
                 <div class="file-actions">
-                    <button class="file-btn" title="重新上传" onclick="retryUpload('${f.id}')">
+                    <button class="file-btn" title="${ok ? '重新上传' : '重试（断点续传）'}" onclick="retryUpload('${f.id}')">
                         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12a9 9 0 1 1-9-9c2.5 0 4.8 1 6.4 2.6L21 8"/><path d="M21 3v5h-5"/></svg>
                     </button>
                     <button class="file-btn delete" title="删除" onclick="deleteFile('${f.id}')">
@@ -950,19 +1204,53 @@ function renderFileList() {
 function retryUpload(id) {
     const file = App.uploadedFiles.find(f => f.id == id);
     if (!file) return;
-    if (!confirm(`确认重新上传「${file.name}」？`)) return;
+
+    // 演示模式沿用模拟上传
+    if (API_CONFIG.MODE === 'mock') {
+        if (!confirm(`确认重新上传「${file.name}」？`)) return;
+        file.status = 'uploading';
+        file.progress = 0;
+        renderFileList();
+        renderProgressList();
+        simulateUpload(file);
+        showToast(`正在重新上传 ${file.name}`, 'info');
+        return;
+    }
+
+    // v=104：修复「假上传」bug —— 原实现无条件调 simulateUpload()，界面 3 秒后显示
+    //   「已上传」，但服务端根本没有这个文件，后续分析必然失败。
+    //   现在走真实链路；若 file.uploadId 仍在，会凭它在服务端已落盘的分片处续传。
+    const resume = !!file.uploadId;
+    if (!confirm(`确认重新上传「${file.name}」？${resume ? '\n将从上次中断处续传（不必重传已上传的分片）' : ''}`)) return;
+
     file.status = 'uploading';
     file.progress = 0;
+    file.error = '';
+    file.uploadHint = '';
     renderFileList();
     renderProgressList();
-    simulateUpload(file);
-    showToast(`正在重新上传 ${file.name}`, 'info');
+    uploadToExtractService(file);
+    showToast(`正在重新上传 ${file.name}${resume ? '（续传）' : ''}`, 'info');
 }
 
 function deleteFile(id) {
     const file = App.uploadedFiles.find(f => f.id == id);
     if (!file) return;
     if (!confirm(`确认删除「${file.name}」？`)) return;
+
+    // v=104：用户「显式删除」才清理服务端残留分片。
+    //   上传失败时**故意不清理**（要留着续传），所以清理动作收敛到这里；
+    //   若已 upload_complete 成功，服务端目录早已自行删除，这里是空操作。
+    if (file.uploadId) {
+        try {
+            fetch(`${API_CONFIG.EXTRACT_API}/upload_abort`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ upload_id: file.uploadId })
+            }).catch(() => { /* best-effort，失败不影响删除 */ });
+        } catch (_) { /* 忽略 */ }
+    }
+
     App.uploadedFiles = App.uploadedFiles.filter(f => f.id != id);
     renderFileList();
     renderProgressList();
@@ -1340,7 +1628,7 @@ function fillScoreCards(extractData) {
             const sortedDims = Object.entries(dimScores).sort((a, b) => b[1] - a[1]);
             const strongest = sortedDims[0] || ['-', 0];
             const weakest = sortedDims[sortedDims.length - 1] || ['-', 0];
-            scoreSummaryP.innerHTML = `该企业碳治理能力整体处于<span class="text-green font-bold">${level}</span>水平（综合评分 <strong>${total}</strong> 分）。<strong>${strongest[0]}</strong> 表现突出（${strongest[1]} 分），<strong>${weakest[0]}</strong> 仍有提升空间（${weakest[1]} 分）。`;
+            scoreSummaryP.innerHTML = `该企业碳治理能力整体处于<span class="text-green font-bold">${level}</span>水平（综合评分 <strong>${total}</strong> 分）。其中 <strong>${strongest[0]}</strong> 的碳治理能力相对扎实（${strongest[1]} 分），<strong>${weakest[0]}</strong> 的碳治理能力存在明显缺口（${weakest[1]} 分），是能力建设的优先方向。`;
         }
 
         // === 3. 维度得分 ===
@@ -1363,8 +1651,8 @@ function fillScoreCards(extractData) {
             const weakest = sortedDims[sortedDims.length - 1];
             conclusionEl.innerHTML = `
                 该企业碳治理能力整体处于 <span class="text-green font-bold">${level}</span> 水平（综合评分 <strong>${total}</strong>）。
-                <strong>${strongest[0]}</strong> 表现最佳（${strongest[1]} 分），
-                <strong>${weakest[0]}</strong> 仍有提升空间（${weakest[1]} 分）。
+                其中 <strong>${strongest[0]}</strong> 的碳治理能力相对扎实（${strongest[1]} 分），
+                <strong>${weakest[0]}</strong> 的碳治理能力存在明显缺口（${weakest[1]} 分），是能力建设的优先方向。
             `;
         }
 
@@ -1479,7 +1767,7 @@ function fillScoreCards(extractData) {
                     if (dimL4.length > 0) {
                         listEl.innerHTML = dimL4.map(([name, r], i) => {
                             const cls = i === 0 ? cfg.cls : 'yellow';
-                            const status = r['失分类型'] === '完整度失分' ? '未披露' : (r['值'] || '待完善');
+                            const status = r['失分类型'] === '完整度失分' ? '能力尚未建立' : (r['值'] || '待完善');
                             return `<li><span class="dot ${cls}"></span>${name}：${status}</li>`;
                         }).join('');
                     } else {
@@ -1649,8 +1937,147 @@ function initTabs() {
 }
 
 // ============ 报告预览与下载 ============
+
+/**
+ * v=103：把文本强转为 JSON 对象（容错三连）
+ *   1) 直接 JSON.parse
+ *   2) 剥离 ```json 代码围栏后再 parse
+ *   3) 截取首个 { 到最后一个 } 的主体；仍失败则「截断修复」——按括号平衡截到最后一个完整值并补齐
+ *
+ * 背景：服务端 raw_text 曾按 8000 字符硬截断，直接 JSON.parse 必然抛错，
+ *       前端随后把整坨 JSON 当 Markdown 正文渲染 → 报告正文里出现一屏 JSON 源码。
+ */
+function coerceJsonObject(text) {
+    if (!text || typeof text !== 'string') return null;
+    const t = text.trim();
+    if (!t) return null;
+    const tryParse = s => { try { return JSON.parse(s); } catch (e) { return null; } };
+
+    let obj = tryParse(t);
+    if (obj) return obj;
+
+    // 代码围栏 ```json ... ```
+    if (t.indexOf('```') > -1) {
+        const fenced = t.replace(/^[\s\S]*?```[a-zA-Z]*\s*/, '').replace(/```[\s\S]*$/, '').trim();
+        obj = tryParse(fenced);
+        if (obj) return obj;
+        const repaired = repairTruncatedJson(fenced);
+        if (repaired) { obj = tryParse(repaired); if (obj) return obj; }
+    }
+
+    // 取首个 { 到最后一个 } 的主体
+    const a = t.indexOf('{');
+    const b = t.lastIndexOf('}');
+    if (a >= 0 && b > a) {
+        obj = tryParse(t.slice(a, b + 1));
+        if (obj) return obj;
+    }
+    // 截断修复（针对被切断的 JSON）
+    const repaired = repairTruncatedJson(a >= 0 ? t.slice(a) : t);
+    if (repaired) { obj = tryParse(repaired); if (obj) return obj; }
+    return null;
+}
+
+/**
+ * 修复被截断的 JSON：扫描到最后一个「括号平衡点」，截断后按**那一刻的**未闭合栈补齐 ] } ，
+ * 让前面已完整的条目仍能被解析出来（例如 10 条建议被切在第 7 条中间 → 恢复前 6 条）。
+ *
+ * 注意：未闭合栈必须在 lastClose 那一刻做快照。若直接复用扫描结束后的栈，
+ *       lastClose 之后新出现的 [ { 会被多补一个 ] }，拼出来仍是非法 JSON（v=103 已修）。
+ */
+function repairTruncatedJson(src) {
+    if (!src || typeof src !== 'string') return null;
+    let inStr = false, esc = false, lastClose = -1, snapshot = null;
+    const stack = [];
+    for (let i = 0; i < src.length; i++) {
+        const c = src[i];
+        if (inStr) {
+            if (esc) esc = false;
+            else if (c === '\\') esc = true;
+            else if (c === '"') inStr = false;
+            continue;
+        }
+        if (c === '"') { inStr = true; }
+        else if (c === '{') { stack.push('}'); }
+        else if (c === '[') { stack.push(']'); }
+        else if (c === '}' || c === ']') {
+            if (stack.length && stack[stack.length - 1] === c) {
+                stack.pop();
+                lastClose = i;
+                snapshot = stack.slice();   // ← 关键：记录此刻的未闭合状态
+            }
+        }
+    }
+    if (lastClose < 0 || !snapshot || !snapshot.length) return null;   // 本就平衡 → 无需修复
+    let cut = src.slice(0, lastClose + 1);
+    while (snapshot.length) cut += snapshot.pop();
+    return cut;
+}
+
+/** 从解析出来的对象里取出「改进建议 / 诊断摘要 / 企业画像」（兼容 Output.* 嵌套） */
+function adviceFromObject(obj) {
+    if (!obj || typeof obj !== 'object') return null;
+    const pools = [obj, (obj['Output'] && typeof obj['Output'] === 'object') ? obj['Output'] : null];
+    for (const p of pools) {
+        if (!p) continue;
+        if (Array.isArray(p['改进建议']) && p['改进建议'].length) {
+            return {
+                advs: p['改进建议'],
+                summary: p['诊断摘要'] || '',
+                profile: p['企业画像'] || ''
+            };
+        }
+    }
+    return null;
+}
+
+/** 判断一段文本是不是「JSON 源码」（用于兜底：残缺 JSON 绝不能当 Markdown 印进报告） */
+function looksLikeJson(text) {
+    if (!text || typeof text !== 'string') return false;
+    const t = text.trim();
+    if (!/^[\{\[]/.test(t)) return false;
+    return /"\s*[^"]{1,30}"\s*:/.test(t.slice(0, 500));
+}
+
+/**
+ * v=103：统一「建议载荷」解析 —— 预览、PDF 下载、pdfmake 兼容模式共用同一份结果
+ * 优先级：scoreResult.suggestion（服务端已解析，未截断）→ 评分结果/finalreport → raw_text 容错
+ * @returns {{advs: Array|null, summary: string, profile: string, md: string, source: string}}
+ */
+function parseAdvicePayload(scoreResult) {
+    const out = { advs: null, summary: '', profile: '', md: '', source: 'none' };
+    const sr = scoreResult || {};
+    const candidates = [
+        sr.suggestion,
+        sr['评分结果'],
+        sr.finalreport,
+        (sr['Output'] && sr['Output'].finalreport) || null
+    ];
+    for (const c of candidates) {
+        const r = adviceFromObject(c);
+        if (r) { out.advs = r.advs; out.summary = r.summary; out.profile = r.profile; out.source = 'suggestion'; return out; }
+    }
+    const raw = sr.raw_text || '';
+    if (raw.trim()) {
+        const r = adviceFromObject(coerceJsonObject(raw));
+        if (r) { out.advs = r.advs; out.summary = r.summary; out.profile = r.profile; out.source = 'raw_text(json)'; return out; }
+        // 兜底：修复后仍是 JSON 形态（残缺/损坏）时，绝不把它当 Markdown 渲染，
+        //       否则报告正文会整屏印出 JSON 源码 —— 这正是 v=103 之前线上报告的现象。
+        if (looksLikeJson(raw)) {
+            out.source = 'raw_text(broken-json)';
+            return out;
+        }
+        // 真·自由文本才当 Markdown
+        out.md = raw;
+        out.source = 'raw_text(text)';
+    }
+    return out;
+}
+
 function previewReport() {
     const body = $('#reportModalBody');
+    // v=103：统一解析建议载荷（data 构造、结构化渲染、PDF 复用同一份结果）
+    const advPayload = parseAdvicePayload(App.scoreResult);
 
     // 数据源优先级（两段式渲染）：
     //   1. 评分增强数据（前端 Python 已算好，立即可用）
@@ -1681,11 +2108,11 @@ function previewReport() {
             gradeLabel: scoreData['评分等级'] || '-',
             carbonData: {}
         };
-        // 建议：优先用 ADP 返回的 raw_text（Markdown 诊断报告），没有再降级到 Top10 模板
-        // ADP chat 输出是 Markdown 报告，不是结构化 JSON，直接当报告正文展示最自然
-        const adpRawText = App.scoreResult && App.scoreResult.raw_text;
-        if (adpRawText && adpRawText.trim().length > 0) {
-            suggestions = [{ __adp_raw_text: adpRawText }];
+        // 建议：v=103 统一解析（结构化 suggestion 优先 → raw_text 容错 → Top10 模板兜底）
+        if (advPayload.advs && advPayload.advs.length > 0) {
+            suggestions = advPayload.advs;
+        } else if (advPayload.md) {
+            suggestions = [{ __adp_raw_text: advPayload.md }];
         } else if (adpResult.改进建议 && adpResult.改进建议.length > 0) {
             suggestions = adpResult.改进建议;
         } else if (preComputed && preComputed['障碍度Top10']) {
@@ -1696,9 +2123,9 @@ function previewReport() {
                 const ind = item['指标'];
                 const loss = item['失分类型'] || '需关注';
                 const actionMap = {
-                    '完整度失分': `建议在ESG报告中补充披露该指标相关数据（基础分为0）`,
-                    '质量失分': `建议补充定量数据与多年连续序列，提升披露质量`,
-                    '对标失分': `建议对标行业先进企业，提升披露水平`
+                    '完整度失分': `建立该能力项的管理机制与数据采集口径（当前能力尚未建立）`,
+                    '质量失分': `建立年度台账与连续追踪机制，把定性动作固化为可度量管理动作`,
+                    '对标失分': `对标行业标杆企业的能力水平，补齐差距项`
                 };
                 return {
                     优先级: rank <= 3 ? '高' : (rank <= 7 ? '中' : '低'),
@@ -1719,62 +2146,58 @@ function previewReport() {
         ];
     }
 
-    // 生成改进建议列表（v=80：兼容 Markdown / 结构化 JSON / 模板）
+    // 生成改进建议列表（v=103：结构化优先 / 真 Markdown 次之 / 模板兜底）
     let suggestionHtml;
     let adpRawTextForPdf = '';
-    let structuredAdvs = null;  // 结构化建议数组（{指标/失分类型/根源分析/建议/优先级/验证理由}）
-    let structuredSummary = '';   // 结构化诊断摘要
+    let structuredAdvs = advPayload.advs || null;        // 结构化建议数组
+    let structuredSummary = advPayload.summary || '';    // 诊断摘要
+    let structuredProfile = advPayload.profile || '';    // v=101：企业画像（"这是一家什么企业"）
     const escapeHtml = s => String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');  // v=80：提到顶部，三个分支共用
 
-    if (suggestions.length === 1 && suggestions[0] && suggestions[0].__adp_raw_text) {
-        const rawText = suggestions[0].__adp_raw_text;
-        adpRawTextForPdf = rawText;
-        // 1) 尝试解析为结构化 JSON（DeepSeek 直调返回 strict JSON）
-        try {
-            const parsed = JSON.parse(rawText);
-            if (parsed && Array.isArray(parsed['改进建议'])) {
-                structuredAdvs = parsed['改进建议'];
-                structuredSummary = parsed['诊断摘要'] || '';
-            } else if (parsed && parsed['Output'] && Array.isArray(parsed['Output']['改进建议'])) {
-                structuredAdvs = parsed['Output']['改进建议'];
-                structuredSummary = (parsed['Output']['诊断摘要']) || '';
-            }
-        } catch (e) { /* 非 JSON → 当 Markdown 走 */ }
-
-        if (structuredAdvs && structuredAdvs.length) {
-            // 结构化渲染（v=80：漂亮表格化）
-            const summaryHtml = structuredSummary
-                ? `<div class="adp-summary">${escapeHtml(structuredSummary)}</div>`
-                : '';
-            const itemsHtml = structuredAdvs.map((s, i) => `
-                <div class="adp-item">
-                    <div class="adp-item-head">
-                        <span class="adp-item-idx">${i + 1}</span>
-                        <span class="adp-item-name">${escapeHtml(s['指标'] || '指标')}</span>
-                        <span class="adp-item-pri adp-pri-${escapeHtml((s['优先级'] || '中').toLowerCase())}">${escapeHtml(s['优先级'] || '中')}</span>
-                    </div>
-                    ${s['失分类型'] ? `<div class="adp-item-meta">失分类型：<b>${escapeHtml(s['失分类型'])}</b></div>` : ''}
-                    ${s['根源分析'] ? `<div class="adp-item-row"><span class="adp-row-label">根源：</span>${escapeHtml(s['根源分析'])}</div>` : ''}
-                    ${s['建议']     ? `<div class="adp-item-row"><span class="adp-row-label">建议：</span>${escapeHtml(s['建议'])}</div>` : ''}
-                    ${s['验证理由'] ? `<div class="adp-item-row"><span class="adp-row-label adp-row-why">为何有效：</span>${escapeHtml(s['验证理由'])}</div>` : ''}
+    if (structuredAdvs && structuredAdvs.length) {
+        // 结构化渲染（v=103：补齐企业特征/现状/同行对照/改进收益/适用性/证据来源，与 PDF 模板对齐）
+        const summaryHtml = structuredSummary
+            ? `<div class="adp-summary">${escapeHtml(structuredSummary)}</div>`
+            : '';
+        const profileHtml = structuredProfile
+            ? `<div class="adp-summary" style="border-left-color:#34d399;"><b style="color:#047857;">企业画像：</b>${escapeHtml(structuredProfile)}</div>`
+            : '';
+        const itemsHtml = structuredAdvs.map((s, i) => `
+            <div class="adp-item">
+                <div class="adp-item-head">
+                    <span class="adp-item-idx">${i + 1}</span>
+                    <span class="adp-item-name">${escapeHtml(s['指标'] || '指标')}</span>
+                    ${s['适用性'] ? `<span class="adp-item-pri" style="background:#ecfdf5;border:1px solid #a7f3d0;color:#047857;">${escapeHtml(s['适用性'])}</span>` : ''}
+                    <span class="adp-item-pri adp-pri-${escapeHtml((s['优先级'] || '中').toLowerCase())}">${escapeHtml(s['优先级'] || '中')}</span>
                 </div>
-            `).join('');
-            suggestionHtml = `<div class="adp-report adp-report-structured">${summaryHtml}<div class="adp-list">${itemsHtml}</div></div>`;
-        } else {
-            // Markdown 渲染（ADP 模式）
-            let mdHtml;
-            try {
-                if (typeof marked !== 'undefined' && typeof DOMPurify !== 'undefined') {
-                    mdHtml = DOMPurify.sanitize(marked.parse(rawText, { gfm: true, breaks: true }));
-                } else {
-                    mdHtml = rawText.split('\n').map(l => `<p>${escapeHtml(l)}</p>`).join('');
-                }
-            } catch (e) {
-                console.error('Markdown 渲染失败，回退纯文本:', e);
+                ${(s['失分类型'] || s['能力判据']) ? `<div class="adp-item-meta">${s['失分类型'] ? `能力缺口类型：<b>${escapeHtml(s['失分类型'])}</b>` : ''}${(s['失分类型'] && s['能力判据']) ? '　·　' : ''}${s['能力判据'] ? `判据级别：<b>${escapeHtml(s['能力判据'])}</b>` : ''}</div>` : ''}
+                ${s['企业特征'] ? `<div class="adp-item-row"><span class="adp-row-label">企业特征：</span>${escapeHtml(s['企业特征'])}</div>` : ''}
+                ${s['现状']     ? `<div class="adp-item-row"><span class="adp-row-label">能力表现：</span>${escapeHtml(s['现状'])}</div>` : ''}
+                ${s['同行对照'] ? `<div class="adp-item-row"><span class="adp-row-label">标杆对照：</span>${escapeHtml(s['同行对照'])}</div>` : ''}
+                ${s['根源分析'] ? `<div class="adp-item-row"><span class="adp-row-label">能力缺口成因：</span>${escapeHtml(s['根源分析'])}</div>` : ''}
+                ${s['建议']     ? `<div class="adp-item-row"><span class="adp-row-label">能力建设路径：</span>${escapeHtml(s['建议'])}</div>` : ''}
+                ${s['改进收益'] ? `<div class="adp-item-row" style="background:#f0fdf4;border-left:3px solid #34d399;padding:2px 8px;border-radius:4px;"><span class="adp-row-label" style="color:#047857;">能力补齐后水平：</span>${escapeHtml(s['改进收益'])}</div>` : ''}
+                ${s['验证理由'] ? `<div class="adp-item-row"><span class="adp-row-label adp-row-why">为何有效：</span>${escapeHtml(s['验证理由'])}</div>` : ''}
+                ${(s['证据来源'] || s['事实基础']) ? `<div class="adp-item-meta" style="color:#94a3b8;">${s['事实基础'] ? `事实基础：${escapeHtml(s['事实基础'] === '报告未披露' ? '报告未体现' : s['事实基础'])}` : ''}${(s['事实基础'] && s['证据来源']) ? '　' : ''}${s['证据来源'] ? `证据来源：${escapeHtml(Array.isArray(s['证据来源']) ? s['证据来源'].join('；') : s['证据来源'])}` : ''}</div>` : ''}
+            </div>
+        `).join('');
+        suggestionHtml = `<div class="adp-report adp-report-structured">${profileHtml}${summaryHtml}<div class="adp-list">${itemsHtml}</div></div>`;
+    } else if (advPayload.md || (suggestions.length === 1 && suggestions[0] && suggestions[0].__adp_raw_text)) {
+        // Markdown 渲染：仅当确认是自由文本（非 JSON）时才走这里
+        const rawText = advPayload.md || suggestions[0].__adp_raw_text;
+        adpRawTextForPdf = rawText;
+        let mdHtml;
+        try {
+            if (typeof marked !== 'undefined' && typeof DOMPurify !== 'undefined') {
+                mdHtml = DOMPurify.sanitize(marked.parse(rawText, { gfm: true, breaks: true }));
+            } else {
                 mdHtml = rawText.split('\n').map(l => `<p>${escapeHtml(l)}</p>`).join('');
             }
-            suggestionHtml = `<div class="adp-report">${mdHtml}</div>`;
+        } catch (e) {
+            console.error('Markdown 渲染失败，回退纯文本:', e);
+            mdHtml = rawText.split('\n').map(l => `<p>${escapeHtml(l)}</p>`).join('');
         }
+        suggestionHtml = `<div class="adp-report">${mdHtml}</div>`;
     } else if (suggestions.length > 0) {
         suggestionHtml = suggestions.map(s => {
             if (typeof s === 'string') return `                    <li>• ${s}</li>`;
@@ -2162,34 +2585,26 @@ async function buildPdfReport() {
         }
     };
 
-    // 优化建议 → pdfmake 节点（v=79：兼容 Markdown 报告 与 结构化 JSON 建议）
+    // 优化建议 → pdfmake 节点（v=103：统一解析；结构化字段补齐，且永不再把 JSON 源码当正文）
     let adpNodes = [];
-    const rawText = App._adpRawText || '';
-    // 1) 尝试把 raw_text 当 JSON 解析 → 结构化建议（DeepSeek 直调是 strict JSON）
-    let structuredAdv = null;
-    try {
-        const parsed = JSON.parse(rawText);
-        if (parsed && Array.isArray(parsed['改进建议'])) structuredAdv = parsed['改进建议'];
-        else if (parsed && parsed['Output'] && Array.isArray(parsed['Output']['改进建议'])) structuredAdv = parsed['Output']['改进建议'];
-    } catch (e) { /* 非 JSON（Markdown）→ 走 mdToPdfMake */ }
-    // 2) 兜底：从 App.scoreResult 拿建议数组
-    if (!structuredAdv || !structuredAdv.length) {
-        try {
-            const sRes = (App.scoreResult && App.scoreResult.评分结果) || App.scoreResult || {};
-            if (Array.isArray(sRes['改进建议']) && sRes['改进建议'].length) structuredAdv = sRes['改进建议'];
-        } catch (e) { /* ignore */ }
-    }
-    if (structuredAdv && structuredAdv.length > 0) {
+    const advPayloadPdf = parseAdvicePayload(App.scoreResult);
+    const structuredAdv = (advPayloadPdf.advs && advPayloadPdf.advs.length) ? advPayloadPdf.advs : null;
+    if (structuredAdv) {
         adpNodes = structuredAdv.map((s, i) => ({
             stack: [
-                { text: `${i + 1}. ${s['指标'] || '指标'}（${s['优先级'] || '-'}优先级）`, bold: true, margin: [0, 6, 0, 2] },
-                { text: `失分类型：${s['失分类型'] || '—'}`, fontSize: 9, color: '#6b7280', margin: [0, 0, 0, 1] },
-                { text: `根源：${s['根源分析'] || '—'}`, margin: [0, 0, 0, 2] },
-                { text: `建议：${s['建议'] || '—'}`, margin: [0, 0, 0, 4] }
+                { text: `${i + 1}. ${s['指标'] || '指标'}（${s['适用性'] ? s['适用性'] + ' · ' : ''}${s['优先级'] || '-'}优先级）`, bold: true, margin: [0, 6, 0, 2] },
+                { text: `${s['能力判据'] ? `判据级别：${s['能力判据']}　·　` : ''}能力缺口类型：${s['失分类型'] || '—'}`, fontSize: 9, color: '#6b7280', margin: [0, 0, 0, 1] },
+                ...(s['企业特征'] ? [{ text: `企业特征：${s['企业特征']}`, margin: [0, 0, 0, 2] }] : []),
+                ...(s['现状'] ? [{ text: `能力表现：${s['现状']}`, margin: [0, 0, 0, 2] }] : []),
+                ...(s['同行对照'] ? [{ text: `标杆对照：${s['同行对照']}`, margin: [0, 0, 0, 2] }] : []),
+                { text: `能力缺口成因：${s['根源分析'] || '—'}`, margin: [0, 0, 0, 2] },
+                { text: `能力建设路径：${s['建议'] || '—'}`, margin: [0, 0, 0, 2] },
+                ...(s['改进收益'] ? [{ text: `能力补齐后水平：${s['改进收益']}`, color: '#047857', margin: [0, 0, 0, 2] }] : []),
+                ...(s['验证理由'] ? [{ text: `为何有效：${s['验证理由']}`, fontSize: 9, color: '#6b7280', margin: [0, 0, 0, 4] }] : [])
             ]
         }));
-    } else if (rawText) {
-        adpNodes = mdToPdfMake(rawText);
+    } else if (advPayloadPdf.md) {
+        adpNodes = mdToPdfMake(advPayloadPdf.md);
     }
     const fallbackNodes = adpNodes.length ? [] : [{
         text: '（分析建议尚未生成，可重新分析获取建议）', color: '#9ca3af', margin: [0, 4, 0, 6]
@@ -2218,15 +2633,15 @@ async function buildPdfReport() {
             // 二、雷达图
             ...(radarImg ? [
                 { text: '二、四维度能力雷达图', fontSize: 14, bold: true, color: '#1a3a6e', margin: [0, 20, 0, 8] },
-                { image: radarImg, width: 340, alignment: 'center', margin: [0, 0, 0, 8] }
+                { image: radarImg, width: 480, alignment: 'center', margin: [0, 0, 0, 8] }
             ] : []),
             // 三、评估结论
             { text: '三、评估结论', fontSize: 14, bold: true, color: '#1a3a6e', margin: [0, 20, 0, 8] },
             {
                 text: [
                     { text: `该企业碳治理能力整体处于 ${level} 水平。综合评分 ${(typeof total === 'number' ? total.toFixed(2) : total)} 分。` },
-                    { text: `${strongest[0]} 表现最佳（${(strongest[1] ?? 0).toFixed(2)} 分），` },
-                    { text: `${weakest[0]} 仍有提升空间（${(weakest[1] ?? 0).toFixed(2)} 分）。` }
+                    { text: `其中 ${strongest[0]} 的碳治理能力相对扎实（${(strongest[1] ?? 0).toFixed(2)} 分），` },
+                    { text: `${weakest[0]} 的碳治理能力存在明显缺口（${(weakest[1] ?? 0).toFixed(2)} 分），是能力建设的优先方向。` }
                 ],
                 lineHeight: 1.7, margin: [0, 2, 0, 6]
             },
@@ -2237,6 +2652,264 @@ async function buildPdfReport() {
     };
 
     pdfMake.createPdf(docDefinition).download(`碳治理画像报告-${company}.pdf`);
+}
+
+/**
+ * v=103：离屏渲染高清雷达图（供 WeasyPrint 报告使用）
+ *
+ * 为什么不再直接用页面上的 #reportRadar canvas：
+ *   页面 canvas 受 CSS 高度（320px）限制，toDataURL 出来的位图偏小，
+ *   在 A4 上按满宽缩放后线条与刻度发虚。这里按 1000×860 离屏出图，
+ *   缩到 A4 正文宽（约 17.8cm）时仍有约 2 倍像素密度。
+ *
+ * @param {Object} sd 评分增强数据（含 维度得分）
+ * @returns {string} base64 dataURL；失败返回 ''
+ */
+function _renderRadarChart(sd) {
+    try {
+        if (typeof Chart === 'undefined') return '';
+        const dims = (sd && sd['维度得分']) || {};
+        const cv = document.createElement('canvas');
+        cv.width = 1000;
+        cv.height = 860;
+        const chart = new Chart(cv, {
+            type: 'radar',
+            data: {
+                labels: ['企业内部碳管理', '供应链碳管理', '透明度披露', '碳金融转化'],
+                datasets: [{
+                    label: '当前企业',
+                    data: [
+                        dims['企业内部碳管理'] ?? 0,
+                        dims['供应链碳管理'] ?? 0,
+                        dims['透明度'] ?? 0,
+                        dims['金融化情况'] ?? 0
+                    ],
+                    backgroundColor: 'rgba(16, 185, 129, 0.22)',
+                    borderColor: 'rgba(4, 120, 87, 1)',
+                    borderWidth: 4,
+                    pointBackgroundColor: 'rgba(4, 120, 87, 1)',
+                    pointBorderColor: '#fff',
+                    pointBorderWidth: 3,
+                    pointRadius: 8
+                }]
+            },
+            options: {
+                responsive: false,
+                animation: false,
+                plugins: {
+                    legend: { display: false },
+                    tooltip: { enabled: false },
+                    title: {
+                        display: true, text: '四维度碳治理能力（满分 10 分）',
+                        font: { size: 26, weight: '700' }, color: '#111827', padding: { bottom: 8 }
+                    }
+                },
+                scales: {
+                    r: {
+                        min: 0, max: 10,
+                        ticks: { stepSize: 2, font: { size: 18 }, color: '#94a3b8', showLabelBackdrop: false },
+                        grid: { color: 'rgba(0,0,0,0.10)', lineWidth: 1.5 },
+                        angleLines: { color: 'rgba(0,0,0,0.10)', lineWidth: 1.5 },
+                        pointLabels: { font: { size: 22, weight: '600' }, color: '#1a2332', padding: 14 }
+                    }
+                }
+            }
+        });
+        chart.update('none');
+        const url = cv.toDataURL('image/png');
+        chart.destroy();
+        return url;
+    } catch (e) {
+        console.warn('v=103 雷达图离屏渲染失败:', e);
+        return '';
+    }
+}
+
+/**
+ * v=100：生成报告内图表（离屏 canvas → base64 PNG）
+ *
+ * 为什么用离屏 + animation:false：
+ *   Chart.js 未完成渲染时 toDataURL() 会拿到白图/半成品。页面上的图表可能没被滚动到
+ *   （懒渲染）或已被销毁，所以这里临时建 canvas、关动画、强制 update('none') 后再取图。
+ *   尺寸按 A4 正文宽的 2 倍输出，在报告里 CSS 缩到 100% 宽度 = 2x 清晰度。
+ *
+ * @param {Object} sd 评分增强数据（含 L4计算结果 / 障碍度Top10）
+ * @returns {{obstacle_img: string, benchmark_img: string}}
+ */
+function _renderReportCharts(sd) {
+    const out = { obstacle_img: '', benchmark_img: '' };
+    if (typeof Chart === 'undefined') return out;
+    const l4 = (sd && sd['L4计算结果']) || {};
+    const top10 = Array.isArray(sd && sd['障碍度Top10']) ? sd['障碍度Top10'] : [];
+    if (!top10.length && !Object.keys(l4).length) return out;
+
+    const short = (s, n) => (s && s.length > n) ? s.slice(0, n) + '…' : (s || '');
+    // 失分类型配色（与页面状态色一致）
+    const LOSE_COLOR = {
+        '完整度失分': 'rgba(239, 68, 68, 0.85)',
+        '质量失分': 'rgba(245, 158, 11, 0.85)',
+        '对标失分': 'rgba(59, 130, 246, 0.85)'
+    };
+
+    // ---- 图1：障碍度 Top10（横向条形，越长越拖后腿） ----
+    // v=107 说明：此处刻意不加 minBarLength —— 障碍度 0 意味着「该指标不是缺口」，
+    // 若也画成短条会让人误读为「存在缺口」，与图 3 的零值语义正好相反（图 3 的 0 是「有数据且为 0」）。
+    try {
+        const rows = top10.slice(0, 10);
+        if (rows.length) {
+            const cv = document.createElement('canvas');
+            cv.width = 1200;
+            cv.height = 130 + rows.length * 46;
+            const chart = new Chart(cv, {
+                type: 'bar',
+                data: {
+                    labels: rows.map(r => short(r['指标'], 16)),
+                    datasets: [{
+                        label: '障碍度',
+                        data: rows.map(r => Number(r['障碍度']) || 0),
+                        backgroundColor: rows.map(r => LOSE_COLOR[r['失分类型']] || 'rgba(16,185,129,0.85)'),
+                        borderWidth: 0
+                    }]
+                },
+                options: {
+                    indexAxis: 'y',
+                    responsive: false,
+                    animation: false,
+                    plugins: {
+                        legend: { display: false },
+                        title: { display: true, text: '障碍度 Top10（条形越长 = 越拖累总分）', font: { size: 22, weight: '700' }, color: '#111827' },
+                        tooltip: { enabled: false }
+                    },
+                    scales: {
+                        x: { beginAtZero: true, ticks: { font: { size: 15 }, color: '#6b7280' }, grid: { color: 'rgba(0,0,0,0.06)' } },
+                        y: { ticks: { font: { size: 17 }, color: '#1f2937' }, grid: { display: false } }
+                    }
+                }
+            });
+            chart.update('none');
+            out.obstacle_img = cv.toDataURL('image/png');
+            chart.destroy();
+        }
+    } catch (e) { console.warn('v=100 障碍度图生成失败:', e); }
+
+    // ---- 图3：本企业 vs 行业水平（v=103 改横向分组条形；v=112 修口径错配） ----
+    // 为什么改横向：原纵向柱状图 8 个中文指标名只能 45° 斜排，A4 上缩印后字小到看不清；
+    // 横向布局把指标名放左侧水平排列，条目高度可撑开，缩印后依然清楚。
+    //
+    // v=112 口径修复（核心）：灰条原先取 l4[k]['行业均值']，那是【基础分】口径（0-6），
+    //   而绿条是【L4得分】（0-10）—— 两个量纲放在同一根轴上，比出来的高低没有意义。
+    //   症状：零披露、按保底规则拿 1 分的指标（如绿色信贷/绿色债券），绿条反而长于灰条，
+    //   看起来"领先行业"，与事实相反。
+    //   现改用后端派生字段「行业L4得分」（= 行业基础分均值按同一套对标规则换算到 0-10），
+    //   与报告正文「达行业均值→X」那一列同源 ⇒ 图文口径一致。
+    //   预期结果：行业全员未披露的指标，两条等长（= 同处保底线 1.0），
+    //   语义是"本行业普遍尚未建立"，而非"企业领先"。
+    try {
+        const keys = top10.slice(0, 8).map(r => r['指标']).filter(k => k && l4[k]);
+        if (keys.length) {
+            // v=113：「未披露」分两种，标签必须区分开 ——
+            //   ① 行业普遍未披露（行业均值 < 0.5）→ 对标分走兜底档记 1 → L4 = 1.0，与保底线齐平；
+            //   ② 行业已披露而本企业缺位（行业均值 ≥ 0.5）→ 基础分 0 < 行业均值×0.6 → 对标分 0
+            //      → L4 = 0.0，**低于保底线是正常的**（显著落后档，不是没吃到保底）。
+            //   v112 两种都只标「（未披露）」，会让读者误以为「凡未披露都该落在保底线上」，
+            //   进而把 ② 的 0 分条看成画错了。此处把两种语义在标签上写开。
+            const labels = keys.map(k => {
+                const r = l4[k] || {};
+                if (Number(r['基础分']) !== 0) return k;
+                return r['保底分'] != null ? (k + '（未披露·行业普遍未披露）')
+                                           : (k + '（未披露·行业已披露）');
+            });
+            // 保底线：只对本指标【真的吃到保底】的行画一小段橙色虚线（x = 1.0）。
+            // v=113 不再画通高竖线 —— 通高线会让「行业已披露→0 分」的行看起来"没够到保底线"，
+            // 而保底规则本身只适用于行业普遍未披露的情形（见 weights_logic.calc_benchmark_score）。
+            const floorRows = keys.map((k, i) => (l4[k] && l4[k]['保底分'] != null) ? i : -1)
+                                   .filter(i => i >= 0);
+            const hasFloor = floorRows.length > 0;
+            const floorLine = {
+                id: 'v113FloorLine',
+                afterDatasetsDraw(c2chart) {
+                    const opt = c2chart.options.plugins && c2chart.options.plugins.v113Floor;
+                    if (!opt || !opt.enabled || !(opt.rows || []).length) return;
+                    const xs = c2chart.scales.x;
+                    const meta = c2chart.getDatasetMeta(0);
+                    if (!xs || !meta || !meta.data) return;
+                    const px = xs.getPixelForValue(opt.value);
+                    const area = c2chart.chartArea;
+                    const c2 = c2chart.ctx;
+                    c2.save();
+                    c2.setLineDash([7, 6]);
+                    c2.lineWidth = 2;
+                    c2.strokeStyle = 'rgba(217, 119, 6, 0.95)';
+                    // v=113：逐行绘制。只标"本指标真的吃了保底"的行，
+                    //   其余行（含未披露但行业已披露→0 分）不出现任何橙色标记，避免误导。
+                    opt.rows.forEach(function (i) {
+                        const el = meta.data[i];
+                        if (!el) return;
+                        const half = ((el.height != null ? el.height : 22) / 2) + 5;
+                        c2.beginPath();
+                        c2.moveTo(px, el.y - half);
+                        c2.lineTo(px, el.y + half);
+                        c2.stroke();
+                    });
+                    // 文字放在 x 轴下方的刻度带：x=1.0 处没有刻度数字（stepSize=2，只有 0/2/4…），
+                    // 横向居中书写，既不压住横条，也不会被裁切。
+                    c2.setLineDash([]);
+                    c2.fillStyle = 'rgba(180, 83, 9, 0.95)';
+                    c2.font = '600 15px sans-serif';
+                    c2.textAlign = 'center';
+                    c2.textBaseline = 'top';
+                    c2.fillText(opt.label || '保底线 1.0', px, area.bottom + 6);
+                    c2.restore();
+                }
+            };
+            const cv = document.createElement('canvas');
+            cv.width = 1200;
+            cv.height = 150 + keys.length * 76;      // 每条 76px：两条横柱 + 间隙，缩印后仍清晰
+            const chart = new Chart(cv, {
+                type: 'bar',
+                data: {
+                    labels: labels,                       // 不再截断：横向有充足空间放全名
+                    datasets: [
+                        // v=107 修复「得 0 分就整条不画」：minBarLength 让 0 值也画出 8px 的可见条。
+                        // 依据（Chart.js v4.4.1 源码 controller.bar 的 _calculateBarValuePixels）：
+                        //   size = head - base;  if (Math.abs(size) < minBarLength) {
+                        //     size = (0 !== size ? Math.sign(size)
+                        //            : (vScale.isHorizontal() ? 1 : -1) * (vScale.min >= base ? 1 : -1)) * minBarLength; }
+                        // 即源码专门为 size === 0 留了分支（不取符号，按轴向取 ±1），故 0 值同样被绘制；
+                        // 画布 1200px 宽，缩印到 A4 正文后 8px ≈ 4px，仍清晰可辨。
+                        // 目的：把「该项有数据且为 0」（本企业尚未起步 / 行业均值确为 0）与「数据缺失」在图上区分开。
+                        // 注意：图 1（障碍度 Top10）刻意不加此参数——障碍度 0 表示「非缺口」，画条反而误导。
+                        { label: '本企业', data: keys.map(k => Number(l4[k]['L4得分']) || 0), minBarLength: 8, backgroundColor: 'rgba(4, 120, 87, 0.92)', barPercentage: 0.88, categoryPercentage: 0.62 },
+                        // v=112：灰条取「行业L4得分」（同口径 0-10）。字段缺失时按 0 画（不伪造数据）。
+                        { label: '行业水平（同口径）', data: keys.map(k => { const v = l4[k]['行业L4得分']; return (v == null || isNaN(Number(v))) ? 0 : Number(v); }), minBarLength: 8, backgroundColor: 'rgba(156, 163, 175, 0.85)', barPercentage: 0.88, categoryPercentage: 0.62 }
+                    ]
+                },
+                options: {
+                    indexAxis: 'y',
+                    responsive: false,
+                    animation: false,
+                    layout: { padding: { right: 26, top: 4 } },
+                    plugins: {
+                        legend: { position: 'top', labels: { font: { size: 20 }, color: '#374151', boxWidth: 26, padding: 14 } },
+                        title: { display: true, text: '关键能力项：本企业 vs 行业水平（同口径 0-10 分）', font: { size: 24, weight: '700' }, color: '#111827', padding: { bottom: 10 } },
+                        tooltip: { enabled: false },
+                        // v=113 保底线：仅对「真的吃了保底」的行逐行标注（rows 为空则不画）
+                        v113Floor: { enabled: hasFloor, value: 1, rows: floorRows, label: '保底线 1.0' }
+                    },
+                    scales: {
+                        x: { beginAtZero: true, max: 10, ticks: { font: { size: 17 }, color: '#6b7280', stepSize: 2 }, grid: { color: 'rgba(0,0,0,0.06)' } },
+                        y: { ticks: { font: { size: 19 }, color: '#1f2937', autoSkip: false }, grid: { display: false } }
+                    }
+                },
+                plugins: [floorLine]
+            });
+            chart.update('none');
+            out.benchmark_img = cv.toDataURL('image/png');
+            chart.destroy();
+        }
+    } catch (e) { console.warn('v=103 对标图生成失败:', e); }
+
+    return out;
 }
 
 function downloadReport() {
@@ -2251,32 +2924,25 @@ function downloadReport() {
         const ext = (App.extractResult && App.extractResult.extracted) || App.extractResult || {};
         const meta = ext['报告元数据'] || {};
         const sd = ext['评分增强数据'] || {};
-        // v=86：建议数据提取（与 previewReport v=80 同款：JSON.parse(raw_text) 优先）
-        let advList = [];
-        try {
-            const sRes = (App.scoreResult && App.scoreResult.评分结果) || {};
-            if (Array.isArray(sRes['改进建议']) && sRes['改进建议'].length) {
-                advList = sRes['改进建议'];
-            } else {
-                const rawText = App.scoreResult && App.scoreResult.raw_text;
-                if (rawText) {
-                    const parsed = JSON.parse(rawText);
-                    if (parsed && Array.isArray(parsed['改进建议'])) advList = parsed['改进建议'];
-                    else if (parsed && parsed['Output'] && Array.isArray(parsed['Output']['改进建议'])) advList = parsed['Output']['改进建议'];
-                }
-            }
-        } catch (e) { console.warn('v=86 提取建议失败:', e); }
-        // 兜底：raw_text 直接当 markdown
-        if (!advList.length && App.scoreResult && App.scoreResult.raw_text) {
-            advList = [{ '__raw_md': App.scoreResult.raw_text }];
+        // v=103：建议数据统一走 parseAdvicePayload（服务端 suggestion 优先 + raw_text 容错修复）
+        // 旧实现只认 raw_text 的 JSON.parse，一旦服务端截断，就把整坨 JSON 塞进 __raw_md 渲染进 PDF
+        const advPayload = parseAdvicePayload(App.scoreResult);
+        let advList = (advPayload.advs && advPayload.advs.length) ? advPayload.advs : [];
+        // 兜底：仅当确认是自由 Markdown 文本时才走 __raw_md（JSON 源码永不进正文）
+        if (!advList.length && advPayload.md) {
+            advList = [{ '__raw_md': advPayload.md }];
         }
 
-        // 雷达图（reportRadar canvas → base64 PNG，传给后端）
-        let radarImg = '';
-        const radarCanvas = document.getElementById('reportRadar');
-        if (radarCanvas) {
-            try { radarImg = radarCanvas.toDataURL('image/png'); } catch (e) { radarImg = ''; }
+        // 雷达图（v=103：优先离屏高清渲染，取不到再退页面 canvas）
+        let radarImg = _renderRadarChart(sd);
+        if (!radarImg) {
+            const radarCanvas = document.getElementById('reportRadar');
+            if (radarCanvas) {
+                try { radarImg = radarCanvas.toDataURL('image/png'); } catch (e) { radarImg = ''; }
+            }
         }
+        // v=100：障碍度 Top10 + 行业均值对比图（离屏渲染，规避「未渲染→白图」）
+        const extraCharts = _renderReportCharts(sd);
 
         const reportData = {
             company: meta['企业名称'] || '待评估企业',
@@ -2285,7 +2951,13 @@ function downloadReport() {
             grade: sd['评分等级'] || '—',
             dim_scores: sd['维度得分'] || {},
             suggestions: advList,
-            radar_img: radarImg
+            radar_img: radarImg,
+            obstacle_img: extraCharts.obstacle_img,
+            benchmark_img: extraCharts.benchmark_img,
+            // v=100：诊断摘要（Agent2 输出），报告正文用
+            conclusion: advPayload.summary || '',
+            // v=103：企业画像（模板里早就有 {% if profile %}，但前端从未传过值）
+            profile: advPayload.profile || ''
         };
 
         const r = await fetchWithTimeout('/api/report', {

@@ -11,7 +11,8 @@
  * ===== */
 @page {
     size: A4;
-    margin: 1.8cm 1.6cm 2cm;
+    /* v=103：上下边距收紧，给正文与图表多让出约 1.5cm 纵向空间，减少页尾空白 */
+    margin: 1.5cm 1.5cm 1.6cm;
     @bottom-center {
         content: "ESG碳治理能力画像系统 · 第 " counter(page) " / " counter(pages) " 页";
         font-size: 8pt;
@@ -23,24 +24,30 @@
         color: #9ca3af;
     }
 }
+/* v=111：⚠️ 必须是 glyf(TrueType) 轮廓的字体文件。
+   原文件扩展名叫 .ttf、内部其实是 OTTO(CFF 轮廓)，WeasyPrint 会嵌成 /CIDFontType0；
+   而它写正文时用的是 GID，CFF 的 charset 又非恒等映射（「中」GID=184 但 CID=9544），
+   严格渲染器（iOS/macOS Quick Look、Adobe）按 CID 查不到字形 → 中文整段空白、只有
+   拉丁和数字能显示（它们的 GID 恰好等于 CID）。换成 glyf 后 PDF 声明 /CIDFontType2
+   + /CIDToGIDMap /Identity，CID==GID 是定义而非假设，全平台一致。 */
 @font-face {
     font-family: 'Noto Sans CJK SC';
     font-style: normal;
     font-weight: 400;
-    src: url('NotoSansSC-Regular.ttf') format('truetype');
+    src: url('NotoSansCJKsc-Regular.ttf') format('truetype');
 }
 @font-face {
     font-family: 'Noto Sans CJK SC';
     font-style: normal;
     font-weight: 700;
-    src: url('NotoSansSC-Bold.ttf') format('truetype');
+    src: url('NotoSansCJKsc-Bold.ttf') format('truetype');
 }
 * { margin: 0; padding: 0; box-sizing: border-box; }
 body {
     font-family: "Noto Sans CJK SC", "Noto Sans SC", sans-serif;
     color: #1f2937;              /* 深灰正文 */
     font-size: 10pt;
-    line-height: 1.75;
+    line-height: 1.62;           /* v=103：1.75 → 1.62，同页可多容纳约 8% 正文 */
 }
 
 /* ===== 封面（极简：白底 + 绿色细线 + 居中） ===== */
@@ -54,7 +61,7 @@ body {
     background: linear-gradient(90deg, #064e3b, #10b981);
     margin: 0 -1.6cm;            /* 拉满页宽（抵消 @page margin） */
 }
-.cover-inner { padding: 90px 0 60px; }
+.cover-inner { padding: 72mm 0 0; }   /* v=103：封面内容下移撑开整页，消除下半页大片留白 */
 .cover .brand {
     display: inline-block;
     border: 1px solid #10b981;
@@ -80,7 +87,7 @@ body {
 }
 .cover .meta div { margin: 6px 0; text-align: center; }
 .cover .meta strong { font-weight: 700; color: #047857; }
-.cover .foot { font-size: 8.5pt; color: #9ca3af; margin-top: 80px; padding-top: 14px; border-top: 1px solid #e5e7eb; }
+.cover .foot { font-size: 8.5pt; color: #9ca3af; margin-top: 58mm; padding-top: 14px; border-top: 1px solid #e5e7eb; }
 .cover .foot .foot-brand { font-weight: 700; color: #6b7280; font-size: 9pt; letter-spacing: 1.5px; margin-bottom: 3px; }
 
 /* ===== 章节标题（左侧绿色条） ===== */
@@ -90,7 +97,7 @@ body {
     color: #111827;
     border-left: 4px solid #10b981;
     padding: 2px 0 2px 12px;
-    margin: 22px 0 14px;
+    margin: 15px 0 10px;        /* v=103：22/14 → 15/10，压缩章节间空白 */
     letter-spacing: 0.5px;
 }
 
@@ -98,14 +105,14 @@ body {
 .total-card {
     border: 1px solid #e5e7eb;
     border-radius: 10px;
-    padding: 22px 26px;
-    margin-bottom: 20px;
+    padding: 16px 22px;         /* v=103：22/26 → 16/22 紧凑 */
+    margin-bottom: 14px;
     page-break-inside: avoid;
     background: #fff;
 }
 .total-card .label { font-size: 10pt; color: #6b7280; margin-bottom: 8px; letter-spacing: 1px; }
 .total-card .big-row { display: flex; align-items: baseline; }
-.total-card .big { font-size: 40pt; font-weight: 800; color: #047857; line-height: 1; }
+.total-card .big { font-size: 34pt; font-weight: 800; color: #047857; line-height: 1; }
 .total-card .big span { font-size: 12pt; font-weight: 400; color: #6b7280; margin-left: 6px; }
 .total-card .grade {
     display: inline-block;
@@ -120,12 +127,12 @@ body {
 }
 
 /* ===== 四维度评分：横向进度条（商业报告风格） ===== */
-.dim-section { page-break-inside: avoid; margin-bottom: 12px; }
+.dim-section { page-break-inside: avoid; margin-bottom: 10px; }
 .dim-item {
     border: 1px solid #e5e7eb;
     border-radius: 8px;
-    padding: 10px 16px;
-    margin: 8px 0;
+    padding: 8px 14px;          /* v=103：10/16 → 8/14 紧凑 */
+    margin: 7px 0;
     background: #fff;
 }
 .dim-item .dim-head { display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px; }
@@ -166,19 +173,58 @@ body {
 .pri-低, .pri-low  { background: #d1fae5; color: #047857; }
 .adp-item .meta { font-size: 8.5pt; color: #6b7280; margin: 3px 0; }
 .adp-item .meta b { color: #d97706; }
-.adp-item .row { font-size: 9.5pt; margin: 3px 0; line-height: 1.65; }
+.adp-item .row { font-size: 9.5pt; margin: 2.5px 0; line-height: 1.55; }   /* v=103：行距 1.65 → 1.55 */
 .adp-item .row .lbl { font-weight: 700; color: #047857; }
 
 /* ===== 评估结论 ===== */
 .conclusion {
     background: #f9fafb;
     border-left: 3px solid #10b981;
-    padding: 12px 16px;
-    margin: 8px 0 16px;
+    padding: 10px 14px;
+    margin: 8px 0 12px;
     font-size: 10pt;
     page-break-inside: avoid;
     color: #374151;
 }
+
+/* ===== 图表（v=100：前端 canvas 截图注入，一律用 <img> —— WeasyPrint 对 flex/grid 支持不完整） ===== */
+.chart-block { page-break-inside: avoid; margin: 8px 0 12px; }
+.chart-cap { font-size: 9pt; color: #6b7280; margin-bottom: 5px; }
+.chart-img { width: 100%; display: block; border: 1px solid #e5e7eb; border-radius: 8px; }
+/* v=103：雷达图是近正方形，满宽会吃掉半页高度 → 收窄到 64% 居中。
+   64% ≈ 11.4cm 宽，配 1000px 画布出图仍约 7pt 字号，清晰可读，
+   同时能塞进「综合评分 + 四维度评分」那一页，避免第 2 页留下半页空白。 */
+.chart-img.radar { width: 64%; margin: 0 auto; }
+
+/* ===== 证据来源标签（v=100 检索层产物） ===== */
+.evid { font-size: 8.5pt; color: #6b7280; margin-top: 4px; }
+.evid .tag {
+    display: inline-block;
+    background: #ecfdf5;
+    border: 1px solid #a7f3d0;
+    color: #047857;
+    border-radius: 8px;
+    padding: 0 8px;
+    margin-right: 4px;
+    font-size: 8pt;
+}
+.evid .tag.fact-public { background: #eff6ff; border-color: #bfdbfe; color: #1d4ed8; }
+.evid .tag.fact-gap    { background: #fef3c7; border-color: #fde68a; color: #b45309; }
+
+/* ===== 指标适用性标签（v=101：区分「真短板」与「行业普遍空白」） ===== */
+.mat {
+    display: inline-block; border-radius: 8px; padding: 0 8px; font-size: 8pt;
+    margin-left: 6px; background: #f3f4f6; border: 1px solid #e5e7eb; color: #374151;
+}
+.mat-必备            { background: #fee2e2; border-color: #fecaca; color: #b91c1c; }
+.mat-应披露          { background: #fef3c7; border-color: #fde68a; color: #b45309; }
+.mat-可选            { background: #f3f4f6; border-color: #e5e7eb; color: #4b5563; }
+.mat-低重要性        { background: #eef2ff; border-color: #c7d2fe; color: #4338ca; }
+.mat-已说明不适用    { background: #ecfdf5; border-color: #a7f3d0; color: #047857; }
+
+/* ===== 改进收益高亮（v=101：Python 精确计算，禁止 LLM 改写） ===== */
+.row.gain { background: #f0fdf4; border-left: 3px solid #34d399; padding: 3px 8px; border-radius: 4px; }
+.row.gain .lbl { color: #047857; }
 
 /* ===== 页脚 ===== */
 .footer { text-align: center; font-size: 8.5pt; color: #9ca3af; margin-top: 30px; padding-top: 10px; border-top: 1px solid #e5e7eb; }
@@ -217,8 +263,8 @@ body {
     </div>
 </div>
 
-<!-- ===== 二、四维度能力评分（进度条） ===== -->
-<div class="section-title">二、四维度能力评分</div>
+<!-- ===== 二、四维度碳治理能力（进度条） ===== -->
+<div class="section-title">二、四维度碳治理能力</div>
 <div class="dim-section">
     {% for dim, score in dim_scores.items() %}
     <div class="dim-item">
@@ -232,37 +278,98 @@ body {
             <div class="dim-fill {{ 'good' if score >= 6 and score < 8 else 'poor' if score < 6 else '' }}" style="width: {{ score * 10 }}%"></div>
         </div>
         <div class="dim-comment">
-            {% if score >= 8 %}表现优秀，处于行业领先水平
-            {% elif score >= 6 %}整体良好，仍有提升空间
-            {% else %}明显薄弱，需重点改进
+            {% if score >= 8 %}该维度碳治理能力已较成熟，处于行业领先区间
+            {% elif score >= 6 %}该维度碳治理能力已基本建立，尚有体系化空间
+            {% else %}该维度碳治理能力存在明显缺口，是能力建设的优先方向
             {% endif %}
         </div>
     </div>
     {% endfor %}
 </div>
 
-<!-- ===== 三、改进建议（根因分析） ===== -->
-<div class="section-title">三、改进建议（根因分析）</div>
+<!-- ===== 附：四维度能力雷达图（v=100 接上，此前通道已通但模板未渲染） ===== -->
+{% if radar_img %}
+<div class="chart-block">
+    <div class="chart-cap">图 1　四维度能力雷达图（满分 10 分）</div>
+    <img class="chart-img radar" src="{{ radar_img }}" alt="四维度能力雷达图">
+</div>
+{% endif %}
+
+<!-- ===== 三、碳治理能力对标（v=105 更名：从「指标对标」到「能力对标」） ===== -->
+{% if obstacle_img or benchmark_img %}
+<div class="section-title">三、碳治理能力对标：与行业标杆的差距</div>
+{% if obstacle_img %}
+<div class="chart-block">
+    <div class="chart-cap">图 2　能力缺口 Top10（条形越长，该能力项与标杆企业的差距越大；颜色区分缺口类型）</div>
+    <img class="chart-img" src="{{ obstacle_img }}" alt="能力缺口Top10">
+</div>
+{% endif %}
+{% if benchmark_img %}
+<div class="chart-block">
+    <div class="chart-cap">图 3　关键能力项：本企业 vs 行业水平（<b>同口径 0–10 分</b>；灰＝行业水平，差距即建设空间）。
+        指标名带「未披露」<b>分两种</b>：<span style="color:#b45309;font-weight:600;">行业普遍未披露</span> → 兜底记 <b>1.0</b> 分（橙色虚线＝保底线 1.0，非能力得分，仅此类行标注）；
+        <span style="color:#047857;font-weight:600;">行业已披露而本企业缺位</span> → 记 <b>0</b> 分（显著落后档），故低于保底线属正常，条形极短≠数据缺失。</div>
+    <img class="chart-img" src="{{ benchmark_img }}" alt="本企业 vs 行业均值">
+</div>
+{% endif %}
+{% endif %}
+
+<!-- ===== 四、碳治理能力诊断与建设路径 ===== -->
+<div class="section-title">四、碳治理能力诊断与建设路径</div>
+{% if profile %}
+<div class="conclusion"><span style="font-weight:700;color:#047857;">碳治理能力画像：</span>{{ profile }}</div>
+{% endif %}
+{% if conclusion %}
+<div class="conclusion"><span style="font-weight:700;color:#047857;">能力结构诊断：</span>{{ conclusion }}</div>
+{% endif %}
 {% if suggestions and suggestions|length > 0 %}
     {% for s in suggestions %}
     {% if s['__raw_md'] %}
-        <div class="conclusion">{{ s['__raw_md'] }}</div>
+        {# v=103：兜底保护 —— 万一传进来的“正文”其实是 JSON 源码（解析失败的历史数据/接口截断），
+           只输出提示，绝不把 JSON 打印进 PDF。正常路径下前端已保证此处是真正的 Markdown 文本。 #}
+        {% set _raw = s['__raw_md'] %}
+        {% if _raw[:1] in ['{', '['] %}
+        <div class="conclusion">（本次建议的结构化数据解析失败，原始数据已省略；重新分析即可获取完整建议。）</div>
+        {% else %}
+        <div class="conclusion">{{ _raw }}</div>
+        {% endif %}
     {% else %}
     <div class="adp-item">
         <div class="head">
             <span class="idx">{{ loop.index }}</span>
             <span class="name">{{ s['指标'] or '指标' }}</span>
+            {% if s['适用性'] %}<span class="mat mat-{{ s['适用性'] }}">{{ s['适用性'] }}</span>{% endif %}
             <span class="pri pri-{{ (s['优先级'] or '中')[:1] }}">{{ s['优先级'] or '中' }}</span>
         </div>
-        {% if s['失分类型'] %}<div class="meta">失分类型：<b>{{ s['失分类型'] }}</b></div>{% endif %}
-        {% if s['根源分析'] %}<div class="row"><span class="lbl">根源：</span>{{ s['根源分析'] }}</div>{% endif %}
-        {% if s['建议'] %}<div class="row"><span class="lbl">建议：</span>{{ s['建议'] }}</div>{% endif %}
+        {% if s['失分类型'] or s['能力判据'] %}
+        <div class="meta">
+            {% if s['失分类型'] %}能力缺口类型：<b>{{ s['失分类型'] }}</b>{% endif %}
+            {% if s['能力判据'] %}　·　判据级别：<b>{{ s['能力判据'] }}{% if s['能力判据'] == 'L1' %}（报告已确证）{% elif s['能力判据'] == 'L2' %}（能力已具备未呈现）{% elif s['能力判据'] == 'L3' %}（能力缺口）{% elif s['能力判据'] == 'L4' %}（行业新兴议题）{% elif s['能力判据'] == 'L5' %}（不适用）{% endif %}</b>{% endif %}
+        </div>
+        {% endif %}
+        {% if s['企业特征'] %}<div class="row"><span class="lbl">企业特征：</span>{{ s['企业特征'] }}</div>{% endif %}
+        {% if s['现状'] %}<div class="row"><span class="lbl">能力表现：</span>{{ s['现状'] }}</div>{% endif %}
+        {% if s['同行对照'] %}<div class="row"><span class="lbl">标杆对照：</span>{{ s['同行对照'] }}</div>{% endif %}
+        {% if s['根源分析'] %}<div class="row"><span class="lbl">能力缺口成因：</span>{{ s['根源分析'] }}</div>{% endif %}
+        {% if s['建议'] %}<div class="row"><span class="lbl">能力建设路径：</span>{{ s['建议'] }}</div>{% endif %}
+        {% if s['改进收益'] %}<div class="row gain"><span class="lbl">能力补齐后水平：</span>{{ s['改进收益'] }}</div>{% endif %}
+        {% if s['验证理由'] %}<div class="row"><span class="lbl">验证理由：</span>{{ s['验证理由'] }}</div>{% endif %}
+        {% if s['证据来源'] or s['事实基础'] %}
+        <div class="evid">
+            {% if s['事实基础'] %}
+            <span class="tag{{ ' fact-public' if s['事实基础'] == '已确证公开事实' else ' fact-gap' if s['事实基础'] == '行业普遍空白' else '' }}">事实基础：{{ '报告未体现' if s['事实基础'] == '报告未披露' else s['事实基础'] }}</span>
+            {% endif %}
+            {% if s['证据来源'] %}
+            <span class="tag">证据来源</span>{% if s['证据来源'] is string %}{{ s['证据来源'] }}{% else %}{{ s['证据来源'] | join('；') }}{% endif %}
+            {% endif %}
+        </div>
+        {% endif %}
     </div>
     {% endif %}
     {% endfor %}
 {% else %}
     <div class="conclusion">
-        暂无根因分析建议——该企业碳治理表现均衡，未触发严重障碍指标（总分 ≥ 6 分即视为无关键失分点）。
+        暂无能力建设建议——该企业四维度碳治理能力表现均衡，未触发关键能力缺口（总分 ≥ 6 分即视为无重点短板）。
     </div>
 {% endif %}
 

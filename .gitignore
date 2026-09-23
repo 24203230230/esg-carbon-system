@@ -33,3 +33,10 @@ desktop.ini
 # ===== 本地开发辅助（性能诊断、版本备份、临时脚本）=====
 _perf/
 cloudflared-temp/
+*.bak
+*.bak_*
+
+# ===== 本机运维脚本（含本机绝对路径与私有域名，不入库）=====
+#   他人的复现方式见 README「复现与 AI 辅助部署」
+stack_ctl.ps1
+open_server_ui.cmd

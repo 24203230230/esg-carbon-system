@@ -452,7 +452,8 @@ def normalize_extracted_structure(data: dict) -> dict:
 
     if not isinstance(data, dict):
         return {
-            '报告元数据': {'企业名称': '', '报告名称': '', '报告年份': '', '报告页码/章节': ''},
+            '报告元数据': {'企业名称': '', '报告名称': '', '报告年份': '', '所属行业': '',
+                       '主营业务': '', '企业性质': '', '营收规模': '', '报告页码/章节': ''},
             '指标提取结果': {d: dict(EMPTY_DIM) for d in DIMS}
         }
 
@@ -470,15 +471,23 @@ def normalize_extracted_structure(data: dict) -> dict:
     else:
         # 完全没有结构
         data = {
-            '报告元数据': {'企业名称': '', '报告名称': '', '报告年份': '', '报告页码/章节': ''},
+            '报告元数据': {'企业名称': '', '报告名称': '', '报告年份': '', '所属行业': '',
+                       '主营业务': '', '企业性质': '', '营收规模': '', '报告页码/章节': ''},
             '指标提取结果': {}
         }
         dims_root = data
 
-    # 报告元数据兜底
-    dims_root.setdefault('报告元数据', {
-        '企业名称': '', '报告名称': '', '报告年份': '', '报告页码/章节': ''
-    })
+    # 报告元数据兜底（含企业画像字段：供 Agent2 说明「这是什么企业、为什么这样做」）
+    # 纯补齐缺失键，不覆盖 LLM 已返回的任何值
+    _META_DEFAULTS = {
+        '企业名称': '', '报告名称': '', '报告年份': '',
+        '所属行业': '', '主营业务': '', '企业性质': '', '营收规模': '',
+        '报告页码/章节': '',
+    }
+    dims_root.setdefault('报告元数据', dict(_META_DEFAULTS))
+    if isinstance(dims_root.get('报告元数据'), dict):
+        for _k, _v in _META_DEFAULTS.items():
+            dims_root['报告元数据'].setdefault(_k, _v)
 
     # 指标提取结果兜底
     dims_root.setdefault('指标提取结果', {})
@@ -526,6 +535,7 @@ def health():
         "status": "ok",
         "service": "esg-extractor",
         "version": "1.0.0",
+        "build": "v114",   # v114：新增 COS 直传（/api/cos_upload_prepare + /api/cos_complete），旧分片四路由一字不改作回落；99.8MB 报告上传 4.4min → ~40s
         "model": DEEPSEEK_MODEL,
         "thinking": DEEPSEEK_THINKING,
         "pdf_support": PDF_SUPPORT,
@@ -534,7 +544,12 @@ def health():
         "ocr_max_pages": OCR_MAX_PAGES,
         "ocr_target_width": OCR_TARGET_WIDTH,
         "prompt_loaded": len(EXTRACTION_PROMPT) > 0,
-        "deepseek_key_set": bool(DEEPSEEK_API_KEY)
+        "deepseek_key_set": bool(DEEPSEEK_API_KEY),
+        # v=114：COS 直传就绪状态（前端据此决定走直传还是原分片链路）
+        "cos_support": COS_SUPPORT,
+        "cos_ready": _safe_cos_ready(),
+        "cos_bucket": _safe_cos_get('bucket'),
+        "cos_upload_endpoint": _safe_cos_get('upload_endpoint'),
     })
 
 
@@ -753,11 +768,39 @@ UPLOAD_CHUNK_MAX_BYTES = 8 * 1024 * 1024    # 单片上限 8MB（前端只发 1M
 UPLOAD_MAX_CHUNKS = 400                     # 最多 400 片 × 1MB ≈ 400MB 覆盖上限
 UPLOAD_SESSION_TTL = 3600                   # 未完成会话保留 1 小时，之后自动回收
 _UPLOAD_ID_RE = _re.compile(r'^[0-9a-f]{32}$')   # 只认 32 位十六进制，杜绝路径穿越
+# v=104：分片文件名的唯一格式定义（落盘/校验/续传查询三处共用，避免各写一份正则走偏）
+_CHUNK_FILE_RE = _re.compile(r'^chunk_(\d{5})$')
 
 
 def _upload_dir(upload_id):
     """把 upload_id 映射到临时目录（ID 已通过白名单正则校验）"""
     return UPLOAD_TMP_ROOT / upload_id
+
+
+def _chunk_path(upload_dir, chunk_index):
+    """分片在会话目录内的落盘路径（索引已校验为 int，格式化天然无路径穿越）"""
+    return upload_dir / f'chunk_{chunk_index:05d}'
+
+
+def _existing_chunks(upload_dir):
+    """列出会话目录内已落盘的分片索引（升序）。目录不存在时返回空表。
+
+    v=104：⚠️ 必须显式过滤 `is_file()`。`_upload_gc()` 是并发跑的（每个分片请求
+    可能触发一次回收），若回收发生在遍历过程中，目录里的项可能在两次调用之间消失，
+    裸 iterdir() 会把已删除的名字也报成"已上传"，前端据此跳片 → 合并时缺片失败。
+    """
+    out = []
+    try:
+        if not upload_dir.is_dir():
+            return out
+        for p in upload_dir.iterdir():
+            m = _CHUNK_FILE_RE.match(p.name)
+            if m and p.is_file():
+                out.append(int(m.group(1)))
+    except OSError:
+        pass
+    out.sort()
+    return out
 
 
 def _upload_gc():
@@ -846,7 +889,7 @@ def upload_chunk():
     try:
         d = _upload_dir(upload_id)
         d.mkdir(parents=True, exist_ok=True)
-        (d / f'chunk_{chunk_index:05d}').write_bytes(blob)
+        _chunk_path(d, chunk_index).write_bytes(blob)
     except Exception as e:
         logger.error(f"分片落盘失败: {e}")
         return jsonify({'error': f'分片落盘失败: {e}'}), 500
@@ -854,6 +897,31 @@ def upload_chunk():
     _upload_gc_tick()
     return jsonify({'ok': True, 'upload_id': upload_id,
                     'chunk_index': chunk_index, 'size': len(blob)})
+
+
+@app.route('/api/upload_status', methods=['GET'])
+def upload_status():
+    """查询某次分片上传已落盘的分片 → 供前端「断点续传」（v=104）
+
+    为什么需要它（2026-09-16 真实故障）：
+      Cloudflare 快速隧道到边缘的 TCP 连接会周期性被掐断（实测 9 小时内 2 次，
+      重连耗时约 21s）。连接断开的瞬间，正在上传的分片会被边缘直接判为 530，
+      分片只传了一半 → nginx 记 `400 0`。原先前端重试 3 次（退避合计仅 3s）
+      远小于重连窗口，必然失败；失败后还会调 /api/upload_abort 把**整批分片删掉**，
+      用户只能从第 1 片重来 —— 100MB 报告 = 100 片，实际上永远传不完。
+
+      有了本接口，重试时可以带着同一个 upload_id 先问"哪些片已经在服务端了"，
+      只补缺失的片，把「一次断线 = 整个文件重传」降为「一次断线 = 重传 1 片」。
+
+    路由：GET /api/upload_status?upload_id=<32位hex>
+    返回：{"ok":true,"upload_id":..,"chunks":[0,1,2,..],"count":N}
+    """
+    upload_id = (request.args.get('upload_id') or '').strip().lower()
+    if not _UPLOAD_ID_RE.match(upload_id):
+        return jsonify({'error': 'upload_id 不合法'}), 400
+    chunks = _existing_chunks(_upload_dir(upload_id))
+    return jsonify({'ok': True, 'upload_id': upload_id,
+                    'chunks': chunks, 'count': len(chunks)})
 
 
 @app.route('/api/upload_complete', methods=['POST'])
@@ -888,16 +956,19 @@ def upload_complete():
     model_id = data.get('model') or 'deepseek-v4-flash'
 
     # 完整性校验：缺片时明确告知缺哪一片，便于定位重传
-    missing = [i for i in range(total_chunks) if not (d / f'chunk_{i:05d}').exists()]
+    # v=104：返回体带上缺失片索引，前端可据此「只补缺片」而不是整包重传
+    missing = [i for i in range(total_chunks) if not _chunk_path(d, i).exists()]
     if missing:
         return jsonify({
-            'error': f'分片不完整，缺失 {len(missing)} 片（如第 {missing[0] + 1} 片），请重试上传'
+            'error': f'分片不完整，缺失 {len(missing)} 片（如第 {missing[0] + 1} 片），请重试上传',
+            'missing_chunks': missing[:50],
+            'missing_count': len(missing)
         }), 400
 
     try:
         buf = bytearray()
         for i in range(total_chunks):
-            buf += (d / f'chunk_{i:05d}').read_bytes()
+            buf += _chunk_path(d, i).read_bytes()
         file_bytes = bytes(buf)
     except Exception as e:
         logger.error(f"合并分片失败: {e}")
@@ -930,6 +1001,233 @@ def upload_abort():
     existed = d.is_dir()
     shutil.rmtree(d, ignore_errors=True)
     return jsonify({'ok': True, 'cleaned': existed})
+
+
+# ============================== COS 直传（v=114）==============================
+# 背景：存在 99.8MB 量级报告。原链路（浏览器 → CF 边缘 → 香港源站）实测 **3.0 Mbps**，
+#       100MB 需 **4.4 分钟**，不可接受。
+# 方案：浏览器 → COS（国内就近接入，实测 18–21 Mbps ≈ 43 秒）→
+#       服务器从 COS 取件（腾讯云内网/全球加速，实测 **205–346 Mbps**）
+#       ⇒ 全链路约 40 秒（对比原路径快约 6 倍）。
+# ⚠️ 本段为**纯新增**：/api/upload_chunk|upload_status|upload_complete|upload_abort
+#    四个旧路由**一字不改**，作为自动回落链路（COS 任一环不可用，前端自动退回）。
+# 配置全部可经 .env 覆盖 ⇒ 换桶/换地域不用重打镜像。
+_COS_IMPORT_ERROR = ''      # 防御性初始化：无论导入成败都保证该名字存在
+try:
+    from qcloud_cos import CosConfig, CosS3Client
+    COS_SUPPORT = True
+except ImportError as _cos_err:
+    COS_SUPPORT = False
+    _COS_IMPORT_ERROR = str(_cos_err)
+
+
+def _cos_cfg():
+    """读取 COS 配置（每次调用都读环境变量 ⇒ 改 .env 重启即生效）"""
+    return {
+        'enabled': os.getenv('COS_ENABLED', '0').strip().lower() in ('1', 'true', 'yes', 'on'),
+        'secret_id': os.getenv('COS_SECRET_ID', '').strip(),
+        'secret_key': os.getenv('COS_SECRET_KEY', '').strip(),
+        'bucket': os.getenv('COS_BUCKET', '').strip(),
+        'region': os.getenv('COS_REGION', 'ap-guangzhou').strip(),
+        # 前端直传用（预签名 URL 的 host 必须与此一致，否则 403）
+        'upload_endpoint': os.getenv('COS_UPLOAD_ENDPOINT', '').strip(),
+        # 服务器取件用，按顺序回退（内网加速 → 公网加速 → 直连）
+        'fetch_endpoints': [
+            e.strip() for e in os.getenv('COS_FETCH_ENDPOINTS', '').split(',') if e.strip()
+        ],
+        'key_prefix': os.getenv('COS_KEY_PREFIX', 'uploads/').strip() or 'uploads/',
+        'max_upload_mb': int(os.getenv('COS_MAX_UPLOAD_MB', '500') or 500),
+        'presign_ttl': int(os.getenv('COS_PRESIGN_TTL', '3600') or 3600),
+        'delete_after_fetch': os.getenv('COS_DELETE_AFTER_FETCH', '1').strip().lower() in ('1', 'true', 'yes', 'on'),
+    }
+
+
+def _cos_ready(cfg):
+    """COS 是否可用于直传（缺任一必需项即视为不可用 ⇒ 前端自动回落旧链路）
+
+    返回 (ready: bool, why: str)
+    """
+    if not COS_SUPPORT:
+        return False, f'服务端未安装 cos SDK（{_COS_IMPORT_ERROR}）'
+    if not cfg['enabled']:
+        return False, 'COS_ENABLED 未开启'
+    for k in ('secret_id', 'secret_key', 'bucket', 'upload_endpoint'):
+        if not cfg[k]:
+            return False, f'缺少配置 {k.upper()}'
+    if not cfg['fetch_endpoints']:
+        return False, '缺少配置 COS_FETCH_ENDPOINTS'
+    return True, ''
+
+
+def _cos_client(cfg, endpoint):
+    """按指定域名建 client。
+
+    ⚠️ Endpoint 必须传**不含桶名前缀**的域名（SDK 会自己拼 `<bucket>.`）；
+    传完整桶域名会拼成 `bucket.bucket.…` 而连接失败。
+    """
+    conf = CosConfig(
+        Region=cfg['region'],
+        SecretId=cfg['secret_id'],
+        SecretKey=cfg['secret_key'],
+        Endpoint=endpoint,
+        Scheme='https',
+    )
+    return CosS3Client(conf)
+
+
+def _safe_cos_ready():
+    """供 /api/health 使用的只读探针 —— 配置写错也不能让健康检查 500"""
+    try:
+        return _cos_ready(_cos_cfg())[0]
+    except Exception:
+        return False
+
+
+def _safe_cos_get(field):
+    """供 /api/health 读取单项配置（异常一律返回空串）"""
+    try:
+        return str(_cos_cfg().get(field, '') or '')
+    except Exception:
+        return ''
+
+
+def _cos_fetch_bytes(cfg, key):
+    """从 COS 取对象（三级域名回退：内网加速 → 公网加速 → 直连）
+
+    为什么必须回退：**内网加速域名只在腾讯云内网有效**（服务器上解析到 169.254.x，
+    本机开发环境根本解析不通）⇒ 本地跑必须能落到公网加速或直连域名。
+    返回 (bytes, endpoint_used)；全部失败时抛最后一个异常。
+    """
+    last_err = None
+    for ep in cfg['fetch_endpoints']:
+        try:
+            client = _cos_client(cfg, ep)
+            resp = client.get_object(Bucket=cfg['bucket'], Key=key)
+            buf = bytearray()
+            for chunk in resp['Body'].get_raw_stream().stream(1024 * 1024):
+                buf += chunk
+            data = bytes(buf)
+            if not data:
+                raise RuntimeError('COS 返回空对象')
+            logger.info(f"📥 COS 取件成功: {key} | {len(data)/1048576:.1f}MB | {ep}")
+            return data, ep
+        except Exception as e:
+            last_err = e
+            logger.warning(f"COS 取件失败（{ep}）: {type(e).__name__}: {e}")
+    raise last_err if last_err is not None else RuntimeError('无可用 COS 取件域名')
+
+
+@app.route('/api/cos_upload_prepare', methods=['POST'])
+def cos_upload_prepare():
+    """签发「直传 COS 的预签名 PUT URL」（v=114 新增）
+
+    设计取舍：
+      ① 用「单对象预签名 PUT」而非 STS 临时密钥 —— 前者只能写后端指定的**一个 key**、
+         1 小时过期，爆炸半径远小于 STS（STS 能写整个桶前缀）；且**不依赖
+         GetFederationToken 权限**，主账号/子账号密钥都能直接用。
+      ② **不签 Content-Type** —— COS 只校验签名里列出的 header，不签它就能兼容浏览器
+         自动带上的 `file.type`，避免"前端少设一个 header 就 403"的脆性。
+      ③ 预签名 URL 的 host 由服务端固定，**前端不得改写** —— COS v5 签名**含 host**，
+         换 host 必然 403（网络通、0.1s 快失败，极易误判成"网络不通"）。
+
+    JSON：{filename, size, company_type, model}
+    返回：{ok:true, key, url, upload_id, expires_in, max_bytes}
+          不可用时 {ok:false, reason} —— 前端据此**自动回落**到原分片链路（HTTP 200）
+    """
+    cfg = _cos_cfg()
+    ready, why = _cos_ready(cfg)
+    if not ready:
+        logger.info(f"COS 直传不可用，前端将走原分片链路: {why}")
+        return jsonify({'ok': False, 'reason': why}), 200
+
+    data = request.get_json(silent=True) or {}
+    raw_name = str(data.get('filename') or 'upload.pdf')
+    filename = os.path.basename(raw_name.replace('\\', '/')).strip() or 'upload.pdf'
+    try:
+        size = int(data.get('size', 0))
+    except (TypeError, ValueError):
+        size = 0
+
+    max_bytes = cfg['max_upload_mb'] * 1024 * 1024
+    if size <= 0 or size > max_bytes:
+        return jsonify({'ok': False,
+                        'reason': '文件大小超出 COS 直传上限（%dMB）' % cfg['max_upload_mb']}), 200
+
+    ext = os.path.splitext(filename)[1].lower()
+    if ext not in ('.pdf', '.docx', '.doc', '.ppt', '.pptx', '.xlsx', '.xls'):
+        ext = '.bin'
+    upload_id = uuid.uuid4().hex
+    key = '%s%s/%s%s' % (cfg['key_prefix'], time.strftime('%Y%m%d'), upload_id, ext)
+
+    try:
+        client = _cos_client(cfg, cfg['upload_endpoint'])
+        url = client.get_presigned_url(
+            Method='PUT', Bucket=cfg['bucket'], Key=key, Expired=cfg['presign_ttl']
+        )
+    except Exception as e:
+        logger.error(f"预签名生成失败: {type(e).__name__}: {e}")
+        return jsonify({'ok': False, 'reason': f'预签名生成失败: {e}'}), 200
+
+    logger.info(f"🔗 COS 直传已就绪: {key} ({size / 1048576:.1f}MB) via {cfg['upload_endpoint']}")
+    return jsonify({
+        'ok': True, 'key': key, 'url': url, 'upload_id': upload_id,
+        'expires_in': cfg['presign_ttl'], 'max_bytes': max_bytes,
+    })
+
+
+@app.route('/api/cos_complete', methods=['POST'])
+def cos_complete():
+    """直传完成后：服务器从 COS 取件 → 建提取任务（v=114 新增）
+
+    ⚠️ key 必须落在 COS_KEY_PREFIX 前缀内，否则拒 —— 防止把桶里别的对象拉下来。
+
+    JSON：{key, filename, size, company_type, model}
+    返回：202 {task_id, status:'queued', fetch_seconds, size_mb}
+    """
+    cfg = _cos_cfg()
+    ready, why = _cos_ready(cfg)
+    if not ready:
+        return jsonify({'error': f'COS 不可用：{why}'}), 503
+
+    data = request.get_json(silent=True) or {}
+    key = str(data.get('key') or '').strip()
+    if not key or not key.startswith(cfg['key_prefix']) or '..' in key:
+        return jsonify({'error': 'key 不合法'}), 400
+
+    raw_name = str(data.get('filename') or 'upload.pdf')
+    filename = os.path.basename(raw_name.replace('\\', '/')).strip() or 'upload.pdf'
+    company_type = data.get('company_type', 'listed')
+    if company_type not in ('listed', 'unlisted'):
+        company_type = 'listed'
+    model_id = data.get('model') or 'deepseek-v4-flash'
+
+    t0 = time.time()
+    try:
+        file_bytes, ep = _cos_fetch_bytes(cfg, key)
+    except Exception as e:
+        logger.error(f"COS 取件全部失败: {key} | {type(e).__name__}: {e}")
+        return jsonify({'error': f'从 COS 取件失败: {e}'}), 502
+    cost = time.time() - t0
+
+    if not file_bytes:
+        return jsonify({'error': 'COS 对象为空'}), 400
+
+    logger.info(
+        f"📥 COS 取件完成: {filename} | {len(file_bytes) / 1048576:.1f}MB | {cost:.1f}s | {ep}"
+    )
+
+    if cfg['delete_after_fetch']:
+        try:
+            _cos_client(cfg, cfg['fetch_endpoints'][0]).delete_object(
+                Bucket=cfg['bucket'], Key=key
+            )
+        except Exception as e:
+            logger.warning(f"COS 对象清理失败（忽略，不影响主流程）: {e}")
+
+    payload = _create_extract_task(filename, file_bytes, company_type, model_id)
+    payload['fetch_seconds'] = round(cost, 2)
+    payload['size_mb'] = round(len(file_bytes) / 1048576, 1)
+    return jsonify(payload), 202
 
 
 def run_extraction(filename, file_bytes, company_type='listed',
@@ -1144,7 +1442,14 @@ def generate_report():
             'dim_scores': dim_scores_ordered,
             'suggestions': req.get('suggestions') or [],
             'generated_at': time.strftime('%Y-%m-%d %H:%M:%S'),
+            # v=100：可视化图表（前端离屏 canvas 截图，base64 dataURL；空值则模板不渲染该章节）
             'radar_img': req.get('radar_img') or '',
+            'obstacle_img': req.get('obstacle_img') or '',
+            'benchmark_img': req.get('benchmark_img') or '',
+            # v=100：Agent2 诊断摘要
+            'conclusion': req.get('conclusion') or '',
+            # v=101：Agent2 企业画像（说清"这是一家什么企业"，空值则模板不渲染该行）
+            'profile': req.get('profile') or '',
         }
 
         html_content = Template(template_str).render(**render_ctx)
