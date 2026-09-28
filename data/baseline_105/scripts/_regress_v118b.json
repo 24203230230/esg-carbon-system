@@ -1,0 +1,406 @@
+{
+ "newly_pass": [
+  {
+   "co": "浙江中力机械股份有限公司（Zhejiang E-P Equipment Co., Ltd.）",
+   "lang": "EN",
+   "indicator": "能源类型和强度",
+   "old": [
+    false,
+    0.926,
+    0.75
+   ],
+   "new": [
+    true,
+    0.926,
+    1.0
+   ],
+   "val": "综合能耗3035.94吨标准煤，能耗强度0.42吨标准煤/百万元营收；主要能源类型为天然气、外购电力、光伏发电"
+  },
+  {
+   "co": "浙江中力机械股份有限公司（Zhejiang E-P Equipment Co., Ltd.）",
+   "lang": "EN",
+   "indicator": "节能目标与改造情况",
+   "old": [
+    false,
+    1.0,
+    0.6
+   ],
+   "new": [
+    true,
+    1.0,
+    1.0
+   ],
+   "val": "2026年节能计划：南区新增储能1165kWh、北区新增储能3495kWh；推进天然气热水器节能改造；采用空压机余热回收"
+  },
+  {
+   "co": "亿华通（北京亿华通科技股份有限公司）",
+   "lang": "CN",
+   "indicator": "碳总量",
+   "old": [
+    false,
+    1.0,
+    0.667
+   ],
+   "new": [
+    true,
+    1.0,
+    1.0
+   ],
+   "val": "8202.6"
+  },
+  {
+   "co": "亿华通（北京亿华通科技股份有限公司）",
+   "lang": "CN",
+   "indicator": "范围三排放",
+   "old": [
+    false,
+    0.444,
+    0.5
+   ],
+   "new": [
+    true,
+    0.444,
+    1.0
+   ],
+   "val": "4167.6"
+  },
+  {
+   "co": "圣湘生物科技股份有限公司",
+   "lang": "CN",
+   "indicator": "碳总量",
+   "old": [
+    false,
+    1.0,
+    0.5
+   ],
+   "new": [
+    true,
+    1.0,
+    1.0
+   ],
+   "val": "11074.59"
+  },
+  {
+   "co": "圣湘生物科技股份有限公司",
+   "lang": "CN",
+   "indicator": "范围二排放",
+   "old": [
+    false,
+    0.789,
+    0.5
+   ],
+   "new": [
+    true,
+    0.789,
+    1.0
+   ],
+   "val": "10939.11"
+  },
+  {
+   "co": "常州长青科技股份有限公司",
+   "lang": "EN",
+   "indicator": "碳总量",
+   "old": [
+    false,
+    1.0,
+    0.5
+   ],
+   "new": [
+    true,
+    1.0,
+    1.0
+   ],
+   "val": "3480.32（基于位置法）；1860.36（基于市场法）"
+  },
+  {
+   "co": "常州长青科技股份有限公司",
+   "lang": "EN",
+   "indicator": "范围二排放",
+   "old": [
+    false,
+    1.0,
+    0.5
+   ],
+   "new": [
+    true,
+    1.0,
+    1.0
+   ],
+   "val": "3114.15（基于位置法）；1494.20（基于市场法）"
+  },
+  {
+   "co": "德石股份联合石油科技股份有限公司",
+   "lang": "EN",
+   "indicator": "碳总量",
+   "old": [
+    false,
+    0.658,
+    0.75
+   ],
+   "new": [
+    true,
+    0.658,
+    1.0
+   ],
+   "val": "10905.91"
+  },
+  {
+   "co": "德石股份联合石油科技股份有限公司",
+   "lang": "EN",
+   "indicator": "范围一排放",
+   "old": [
+    false,
+    0.524,
+    0.75
+   ],
+   "new": [
+    true,
+    0.524,
+    1.0
+   ],
+   "val": "1526.20"
+  },
+  {
+   "co": "德石股份联合石油科技股份有限公司",
+   "lang": "EN",
+   "indicator": "范围二排放",
+   "old": [
+    false,
+    0.591,
+    0.75
+   ],
+   "new": [
+    true,
+    0.591,
+    1.0
+   ],
+   "val": "9379.71"
+  },
+  {
+   "co": "德石股份联合石油科技股份有限公司",
+   "lang": "EN",
+   "indicator": "能耗同比变化",
+   "old": [
+    false,
+    0.684,
+    0.625
+   ],
+   "new": [
+    true,
+    0.684,
+    0.875
+   ],
+   "val": "2025年总能耗3018.71吨标准煤，较2024年3090.19吨标准煤下降2.31%"
+  },
+  {
+   "co": "深圳拓邦股份有限公司（Shenzhen Topband Co., Ltd.）",
+   "lang": "EN",
+   "indicator": "碳总量",
+   "old": [
+    false,
+    0.923,
+    0.75
+   ],
+   "new": [
+    true,
+    0.923,
+    1.0
+   ],
+   "val": "62266.76"
+  },
+  {
+   "co": "深圳拓邦股份有限公司（Shenzhen Topband Co., Ltd.）",
+   "lang": "EN",
+   "indicator": "范围二排放",
+   "old": [
+    false,
+    0.934,
+    0.75
+   ],
+   "new": [
+    true,
+    0.934,
+    1.0
+   ],
+   "val": "52664.67"
+  },
+  {
+   "co": "深圳拓邦股份有限公司（Shenzhen Topband Co., Ltd.）",
+   "lang": "EN",
+   "indicator": "范围三排放",
+   "old": [
+    false,
+    0.937,
+    0.5
+   ],
+   "new": [
+    true,
+    0.937,
+    1.0
+   ],
+   "val": "8764.44"
+  },
+  {
+   "co": "松井新材集团（Sokan New Materials Group Co., Ltd.）",
+   "lang": "CN",
+   "indicator": "碳总量",
+   "old": [
+    false,
+    0.829,
+    0.5
+   ],
+   "new": [
+    true,
+    0.829,
+    1.0
+   ],
+   "val": "9512.15"
+  },
+  {
+   "co": "松井新材集团（Sokan New Materials Group Co., Ltd.）",
+   "lang": "CN",
+   "indicator": "范围二排放",
+   "old": [
+    false,
+    0.8,
+    0.5
+   ],
+   "new": [
+    true,
+    0.8,
+    1.0
+   ],
+   "val": "9432.71"
+  },
+  {
+   "co": "松井新材集团（Sokan New Materials Group Co., Ltd.）",
+   "lang": "CN",
+   "indicator": "碳排放抵消与同比变化",
+   "old": [
+    false,
+    0.893,
+    0.75
+   ],
+   "new": [
+    true,
+    0.893,
+    1.0
+   ],
+   "val": "2025年温室气体排放总量（范围一+范围二）为9512.15 tCO₂e，2024年为8713.34 tCO₂e，202"
+  },
+  {
+   "co": "松井新材集团（Sokan New Materials Group Co., Ltd.）",
+   "lang": "CN",
+   "indicator": "能源类型和强度",
+   "old": [
+    false,
+    1.0,
+    0.714
+   ],
+   "new": [
+    true,
+    1.0,
+    1.0
+   ],
+   "val": "综合能源消费强度3.09吨标准煤/百万元营收；总能耗2231.69吨标准煤，其中直接能耗41.17吨标准煤（汽油2648"
+  },
+  {
+   "co": "格力电器股份有限公司（Gree Electric Appliances, Inc. of Zhuhai）",
+   "lang": "EN",
+   "indicator": "碳总量",
+   "old": [
+    false,
+    0.63,
+    0.75
+   ],
+   "new": [
+    true,
+    0.63,
+    1.0
+   ],
+   "val": "2200430"
+  },
+  {
+   "co": "格力电器股份有限公司（Gree Electric Appliances, Inc. of Zhuhai）",
+   "lang": "EN",
+   "indicator": "范围一排放",
+   "old": [
+    false,
+    0.679,
+    0.75
+   ],
+   "new": [
+    true,
+    0.679,
+    1.0
+   ],
+   "val": "1759657"
+  },
+  {
+   "co": "格力电器股份有限公司（Gree Electric Appliances, Inc. of Zhuhai）",
+   "lang": "EN",
+   "indicator": "范围二排放",
+   "old": [
+    false,
+    0.685,
+    0.75
+   ],
+   "new": [
+    true,
+    0.685,
+    1.0
+   ],
+   "val": "440773"
+  },
+  {
+   "co": "鲁信创业投资集团股份有限公司",
+   "lang": "CN",
+   "indicator": "碳总量",
+   "old": [
+    false,
+    1.0,
+    0.5
+   ],
+   "new": [
+    true,
+    1.0,
+    1.0
+   ],
+   "val": "4838.61"
+  },
+  {
+   "co": "鲁信创业投资集团股份有限公司",
+   "lang": "CN",
+   "indicator": "范围一排放",
+   "old": [
+    false,
+    1.0,
+    0.5
+   ],
+   "new": [
+    true,
+    1.0,
+    1.0
+   ],
+   "val": "3769.63"
+  },
+  {
+   "co": "鲁信创业投资集团股份有限公司",
+   "lang": "CN",
+   "indicator": "范围二排放",
+   "old": [
+    false,
+    1.0,
+    0.5
+   ],
+   "new": [
+    true,
+    1.0,
+    1.0
+   ],
+   "val": "1068.98"
+  }
+ ],
+ "still_block_n": 55,
+ "unknown_n": 4
+}

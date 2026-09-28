@@ -576,15 +576,27 @@ def _baseline_info():
         return None, None
 
 
+def _evidence_info():
+    """v=123：只读暴露证据校验的千分位归一开关（供部署验收 —— 判断 v118b 是否生效）。
+    任何异常返回 (None,)*4，绝不影响健康检查。"""
+    try:
+        from evidence_verify import (ENABLED as _en, STRIP_THOUSANDS as _th,
+                                     MIN_TEXT_RATE as _t, MIN_NUM_RATE as _n)
+        return bool(_en), ('on' if _th else 'off'), _t, _n
+    except Exception:
+        return None, None, None, None
+
+
 @app.route('/api/health', methods=['GET'])
 def health():
     """健康检查"""
     _bv, _bs = _baseline_info()
+    _ee, _eth, _emt, _emn = _evidence_info()
     return jsonify({
         "status": "ok",
         "service": "esg-extractor",
         "version": "1.0.0",
-        "build": "v122b",  # v122b：修复 v122 的 health 路由错位（_baseline_info 被插到 @app.route 与 def health 之间 ⇒ 装饰器绑错函数）+ 基准库样本量键名（样本量→样本数）｜v122：B 阶段基准库重建（92 家重提取 + 现行口径重算；全局权重一字不动）｜v121：PDF 解析逐页释放缓存（纯内存管理，不改解析结果）——修复 52 页文档 RSS 线性涨到 2.3GB ⇒ 2G 机器 OOM/swap 抖动（单页 OCR 7.4s→65s）｜v120：并发内存闸门（纯防御：限"同时驻留的重任务数"）｜v119b：A2 混合控长｜v119 = A2 配额采样 + C1 判定词繁简/英文归一（zhconv）+ C2 提示词消歧义｜v118 = 证据强制校验（evidence_verify.py）｜v117 = EMPTY_VALUES 占位符全集｜v116 = 判据表4.4 + temp 0.0｜v114 = COS 直传
+        "build": "v123",  # v123：证据校验千分位归一（evidence_verify v118b：两侧去千分位分隔符，修复「真实数据带/不带千分位被判编造」的误杀；92 份回归中 25 条误拦恢复、真幻觉 0 漏放）｜v122b：修复 v122 的 health 路由错位（_baseline_info 被插到 @app.route 与 def health 之间 ⇒ 装饰器绑错函数）+ 基准库样本量键名（样本量→样本数）｜v122：B 阶段基准库重建（92 家重提取 + 现行口径重算；全局权重一字不动）｜v121：PDF 解析逐页释放缓存（纯内存管理，不改解析结果）——修复 52 页文档 RSS 线性涨到 2.3GB ⇒ 2G 机器 OOM/swap 抖动（单页 OCR 7.4s→65s）｜v120：并发内存闸门（纯防御：限"同时驻留的重任务数"）｜v119b：A2 混合控长｜v119 = A2 配额采样 + C1 判定词繁简/英文归一（zhconv）+ C2 提示词消歧义｜v118 = 证据强制校验（evidence_verify.py）｜v117 = EMPTY_VALUES 占位符全集｜v116 = 判据表4.4 + temp 0.0｜v114 = COS 直传
         "model": DEEPSEEK_MODEL,
         "thinking": DEEPSEEK_THINKING,
         "pdf_support": PDF_SUPPORT,
@@ -610,6 +622,11 @@ def health():
         # v=122：基准库版本/样本量（只读；用于判断 B 阶段基准库是否随镜像真正生效）
         "baseline_version": _bv,
         "baseline_sample": _bs,
+        # v=123：证据校验千分位归一的生效状态（只读；用于部署核验）
+        "evidence_enabled": _ee,
+        "evidence_strip_thousands": _eth,
+        "evidence_min_text": _emt,
+        "evidence_min_num": _emn,
     })
 
 

@@ -24,6 +24,12 @@
      原文在全文中的起始偏移与采样偏移不齐时会整段假性漏命中。
   ③ **数字做严格匹配**：不去小数点（`1234.56` 不能退化成 `123456`），
      否则虚构数字会被报告里不相邻的数字拼接骗过。
+  ④ **千分位归一（v=118b 补）**：比对前两侧都去掉千分位分隔符
+     （报告写 `3,480.32` ↔ 模型按提示词常写 `3480.32`）。原实现只有"严格子串匹配"
+     ⇒ 查询串不含逗号、索引里含逗号 ⇒ 判为「原文无数字证据」，把**真实数据**误降级。
+     实测 92 份样本中此类误拦 21 条（占真拦截的 25%），英文报告为主（英文数字普遍带千分位）。
+     该归一化**不削弱严格性**：小数点仍不去、数字仍须整体命中
+     （`1234` 不会因去逗号而被 `1,235` 命中）。
 
 判定规则：
   文本命中率 = 原文 6-gram 在报告全文 gram 集合中的命中比例
@@ -67,10 +73,26 @@ NGRAM_N = int(os.environ.get('EVIDENCE_NGRAM', '6') or 6)
 MIN_TEXT_RATE = float(os.environ.get('EVIDENCE_MIN_TEXT', '0.4') or 0.4)
 MIN_NUM_RATE = float(os.environ.get('EVIDENCE_MIN_NUM', '0.8') or 0.8)
 MIN_REPORT_CHARS = int(os.environ.get('EVIDENCE_MIN_REPORT_CHARS', '200') or 200)
+# v=118b：千分位归一（两侧都去分隔符后再比对）。EVIDENCE_THOUSANDS=0 可回到 v118 行为。
+STRIP_THOUSANDS = _env_flag('EVIDENCE_THOUSANDS', True)
 
 _NUM_PAT = re.compile(r'\d+(?:\.\d+)?')
 _NON_WORD = re.compile(r'[^\w\u4e00-\u9fff]')
 _BLANK = re.compile(r'[\s\u3000]')
+# 千分位逗号：仅当「数字 , 恰好3位数字，且其后不再接数字」时才认定为千分位。
+#   '3,480.32' → 去 ；'2,200,430' → 去 ；'1234,5678' → 保留（非千分位）；'1,23' → 保留
+_THOUSANDS = re.compile(r'(?<=\d),(?=\d{3}(?!\d))')
+
+
+def _strip_thousands(s):
+    """去掉数字中的千分位逗号（**只动千分位**，不碰小数点与其它标点）。
+
+    v=118b 修复点：报告原文 `3480.32` 与模型输出可能一个带分隔符、一个不带，
+    严格子串匹配会把真实数据判成幻觉（详见文件头「算法 ④」）。
+    两侧都做同样归一化即可对齐，且不改变判定阈值与逻辑结构。
+    """
+    return _THOUSANDS.sub('', s or '')
+
 
 # 降级时写入的占位值（与算分层的"未披露"口径一致）
 DEGRADE_VALUE = '未披露'
@@ -114,6 +136,9 @@ class ReportIndex(object):
         # ⚠️ 索引必须稠密（step=1），否则与原文采样偏移不齐会整段漏命中
         self.grams = set(f[i:i + n] for i in range(len(f) - n + 1))
         self.flat_num = _norm_keep_num(report_text)
+        if STRIP_THOUSANDS:
+            # 索引侧同样去千分位，与 num_rate 的查询侧对齐（v=118b）
+            self.flat_num = _strip_thousands(self.flat_num)
         self.ready = True
 
     def text_rate(self, raw):
@@ -132,7 +157,11 @@ class ReportIndex(object):
 
     def num_rate(self, text):
         """原文/值中「长度≥3 的数字」的整体命中率；无此类数字时返回 None"""
-        nums = [x for x in _NUM_PAT.findall(text or '') if len(x) >= 3]
+        src = text or ''
+        if STRIP_THOUSANDS:
+            # 先去掉千分位：否则 `2,200,430` 会被 _NUM_PAT 切成 ['2','200','430'] 而漏判
+            src = _strip_thousands(src)
+        nums = [x for x in _NUM_PAT.findall(src) if len(x) >= 3]
         if not nums:
             return None
         hit = sum(1 for x in nums if x in self.flat_num)
@@ -188,7 +217,7 @@ def verify_document(doc, report_text):
         'skipped': 0,
         'degraded': [],
         '阈值': {'文本命中下限': MIN_TEXT_RATE, '数字命中下限': MIN_NUM_RATE, 'ngram': NGRAM_N},
-        '版本': 'v118',
+        '版本': 'v118b',
     }
 
     if not ENABLED:

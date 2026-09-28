@@ -1,0 +1,1256 @@
+{
+ "_meta": {
+  "pdf": "[DATA_ROOT]/ESG报告/补充的ESG报告/拓邦股份：2025年度ESG报告（英文版）.pdf",
+  "pdf_file": "拓邦股份：2025年度ESG报告（英文版）.pdf",
+  "pdf_bytes": 3419503,
+  "task_id": "31beccc604d346e39d51a04d93755da2",
+  "elapsed_s": 74.7,
+  "fetched_at": "2026-09-28 23:04:24"
+ },
+ "报告元数据": {
+  "主营业务": "智能控制与自主智能产品的研发、生产与销售，包括智能控制器、高效电机、电池包、电源及云储能云充电产品",
+  "企业名称": "深圳拓邦股份有限公司",
+  "企业性质": "未披露",
+  "所属行业": "电子科技",
+  "报告名称": "拓邦股份2025年度ESG报告（英文版）",
+  "报告年份": "2025",
+  "报告页码/章节": "第1-121页，全篇",
+  "营收规模": "110.82亿元"
+ },
+ "指标提取结果": {
+  "企业内部碳管理": {
+   "指标": {
+    "环境治理": {
+     "环保投资": {
+      "值": "未披露",
+      "单位": "",
+      "原文": ""
+     },
+     "环境管理体系": {
+      "值": "深圳拓邦、惠州拓邦、宁波拓邦、南通拓邦、越南拓邦、罗马尼亚拓邦、墨西哥拓邦、印度拓邦共8个基地通过ISO 14001环境管理体系认证",
+      "原文": "Multiple bases of the Company have been certified to the ISO 14001 environmental management system. These qualifications are an authoritative recognition of the mature, standardized and effective environmental management system of the Company. Bases that have been certified to the ISO 14001 environmental management system (list): 1 Shenzhen Topband Certified; 2 Huizhou Topband Certified; 3 Ningbo Topband Certified; 4 Nantong Topband Certified; 5 Topband Vietnam Certified; 6 Topband Romania Certified; 7 Topband Mexico Certified; 8 Topband India Certified（第23页）"
+     },
+     "碳管理体系建设": {
+      "值": "依据ISO 14064-1:2018、SZDB/Z 69-2018、SZDB/Z 70-2018及深圳碳交易管控企业碳排放核查技术要点，每年对范围一和范围二温室气体排放开展自查与核查；深圳工厂温室气体排放数据由政府聘请的合格第三方机构定期独立核查；2025年惠州拓邦推进范围三碳排放核查",
+      "原文": "In accordance with ISO 14064-1:2018, the Guidance for Quantification and Reporting of the Organization's Greenhouse Gas Emissions (SZDB/Z 69-2018), the Guidance for Verification of the Organization's Greenhouse Gas Emissions (SZDB/Z 70-2018), the Technical Points for Carbon Emission Verification of Carbon Trading Controlled Organizations in Shenzhen... Topband conducts self-inspection and verification on greenhouse gas emissions in Scope 1 (direct) and Scope 2 (indirect) within the organizational and reporting boundaries annually. In addition to internal self-inspection, the Shenzhen Plant's greenhouse gas emission data would be verified independently and regularly by a qualified third-party agency hired by the government to improve data reliability. In 2025, Huizhou Topband promoted the verification of Scope 3 carbon emissions and further implemented the carbon management responsibility throughout the value chain.（第27页）"
+     }
+    },
+    "碳排放": {
+     "碳总量": {
+      "值": "62266.76",
+      "单位": "tCO₂e",
+      "原文": "Total greenhouse gas emissions (tCO2e) 13,690.03 43,545.32 62,266.76（第28页）",
+      "年份": "2025"
+     },
+     "碳排放强度": {
+      "值": "未披露",
+      "单位": "tCO₂e/万元",
+      "原文": "",
+      "年份": ""
+     },
+     "碳排放抵消与同比变化": {
+      "值": "2025年温室气体排放总量较2024年增长，主要因统计范围扩大至南通工厂并新增惠州工厂范围三统计；2025年数据为初步数据，最终以生态环境局审批为准",
+      "原文": "Note on the updated scope of statistics: In 2025, the scope of data statistics for Scope 1 and Scope 2 was further expanded to include the Nantong Plant on the basis of the existing Shenzhen and Huizhou Plants; the Huizhou Plant was newly included in the scope of statistics for Scope 3. The greenhouse gas emission data in 2025 is preliminary data, and the final data shall be subject to approval by the ecology and environment bureau.（第28页）"
+     },
+     "范围一排放": {
+      "值": "837.65",
+      "单位": "tCO₂e",
+      "原文": "Scope 1: Direct greenhouse gas emissions (tCO2e) 123.03 767.63 837.65（第28页）",
+      "年份": "2025"
+     },
+     "范围三排放": {
+      "值": "8764.44",
+      "单位": "tCO₂e",
+      "原文": "Scope 3: Other indirect greenhouse gas emissions (tCO2e) - Huizhou Plant / / 8,764.44（第28页）",
+      "年份": "2025"
+     },
+     "范围二排放": {
+      "值": "52664.67",
+      "单位": "tCO₂e",
+      "原文": "Scope 2: Indirect greenhouse gas emissions (tCO2e) 13,567.00 42,777.69 52,664.67（第28页）",
+      "年份": "2025"
+     }
+    },
+    "能源消耗与节能方案": {
+     "能效提升对比度": {
+      "值": "未披露",
+      "原文": ""
+     },
+     "能源类型和强度": {
+      "值": "以光伏为主要非化石能源利用切入点，在深圳、惠州、宁波园区安装光伏屋顶；2025年部署储能柜、720kW超级充电桩、太阳能路灯和雷达感应开关四项节能措施",
+      "原文": "Currently, the Company takes PV as the main entry point of utilizing non-fossil energy, and has installed PV roofs in the Shenzhen, Huizhou and Ningbo Parks.（第27页）In 2025, Shenzhen Topband further expanded implementation paths of the 'two increases and two decreases' by taking four energy conservation measures, namely deploying energy storage cabinets, 720 kW supercharging piles, solar street lamps, and radar induction switches in public areas to improve the energy efficiency level comprehensively（第27页）"
+     },
+     "能耗同比变化": {
+      "值": "未披露",
+      "原文": ""
+     },
+     "节能目标与改造情况": {
+      "值": "设定'打造碳中和园区、零碳工厂和绿色产品'战略目标；实施'两增两减'气候行动框架（增能效+增新能源，工业减碳+节约减碳）；2025年部署储能柜、720kW超级充电桩、太阳能路灯、雷达感应开关；办公区LED照明系统升级，空调安装智能温控装置；安装节水装置",
+      "原文": "Topband has defined the climate action framework of 'two increases and two decreases' based on the practical exploration into the path to realize low-carbon manufacturing, namely 'increasing energy efficiency + increasing new energy' and 'industrial carbon reduction + conservation for carbon reduction', and set the strategic goal of 'creating carbon-neutral parks, zero-carbon plants and green products'（第27页）The LED lighting system in the office area was upgraded, and intelligent temperature control devices were installed for air conditioners, reducing energy consumption effectively.（第25页）"
+     }
+    }
+   },
+   "未覆盖指标": [
+    "碳排放强度",
+    "环保投资",
+    "能耗同比变化",
+    "能效提升对比度"
+   ]
+  },
+  "供应链碳管理": {
+   "指标": {
+    "供应商碳管理": {
+     "供应商碳培训及考核情况": {
+      "值": "与核心客户共同开展供应商培训以提升供应商在产品、系统和服务方面的创新能力；2025年新引入目标供应商的供应保障协议签署率达到100%的年度目标",
+      "原文": "The Company worked together with core customers in 2025 to enhance suppliers' innovation capabilities in respect of products, systems and services. During the Reporting Period, the Company achieved the annual target of a 100% signing rate of the Supply Support Agreement for newly introduced target suppliers.（第58页）"
+     },
+     "供应商碳披露及评价要求": {
+      "值": "通过合同约束、定期披露和第三方审计，推动供应商在环境保护和劳工等ESG领域的信息披露和信誉提升；环境工程师定期收集供应商年度有效环保报告，IQC团队使用XRF检测设备对来料进行检测",
+      "原文": "To improve the transparency of the supply chain, the Company further promoted the information disclosure and credibility improvement of suppliers in ESG areas such as environmental protection and labor through contract constraints, regular disclosure, and third-party audits.（第58页）environmental engineers regularly collect annual effective environmental protection reports from suppliers, and the IQC team tests incoming materials with XRF testing equipment to ensure that materials are conforming before they are used for production.（第50页）"
+     },
+     "供应商碳目标": {
+      "值": "未披露",
+      "原文": ""
+     },
+     "供应商绿色采购标准": {
+      "值": "优先选用符合RoHS、REACH等要求的低环境影响材料；基于空间利用最大化原则减少包装材料使用；与客户沟通使用可回收和可持续包装方式",
+      "原文": "prioritizes low environmental impact materials that comply with RoHS, REACH and other requirements, and reduces the use of packaging materials based on the principle of maximizing space utilization. The Company communicates with customers on using recyclable and sustainable packaging methods for shipment, such as vacuum formed materials and recyclable turnover boxes.（第41页）"
+     }
+    },
+    "供应链协同减排": {
+     "供应商激励": {
+      "值": "未披露",
+      "原文": ""
+     },
+     "包装减量及回收情况": {
+      "值": "进一步推进包装转型，逐步降低吸塑包装比例，提高纸箱等易回收材料比例，并在珠三角等地区实施周转箱回收计划；罗马尼亚拓邦设定包装废弃物回收目标：纸张和纸板75%、塑料50%、木材25%，均已达标",
+      "原文": "During the Reporting Period, the Company further promoted packaging transformation, reduced the proportion of vacuum formed packaging gradually, increased the proportion of easily recyclable materials such as cardboard boxes, and implemented a recycling plan for turnover boxes for customers in the Pearl River Delta and other regions.（第41页）In 2025, Topband Romania set targets for packaging waste recycling rates in compliance with local laws, including 75% for paper and cardboards, 50% for plastics, and 25% for timber, all of which were complied with（第41页）"
+     },
+     "循环经济链塑造": {
+      "值": "2025年南通拓邦回收生产性废弃物140.6吨，实现全部回收和资源化；623吨NMP废液全部由代工厂回收并从原材料采购成本中扣除，形成闭环管理；单独收集铜箔等固废并交由合格机构规范回收处置",
+      "原文": "In 2025, Nantong Topband recycled 140.6 tons of productive waste, achieving full recycling and monetization; 623 tons of NMP waste liquid were all recovered by OEMs and deducted from the cost of raw material purchase, forming a closed management loop.（第41页）The Company collects solid waste such as copper foil separately and hands it over to qualified agencies for standardized recovery and disposal, ensuring the efficient reuse of resources and environmental safety.（第41页）"
+     },
+     "绿色物流": {
+      "值": "未披露",
+      "原文": ""
+     }
+    },
+    "供应链风险管控": {
+     "供应链碳风险传导影响评估": {
+      "值": "未披露",
+      "原文": ""
+     },
+     "气候风险暴露供应商数量": {
+      "值": "未披露",
+      "原文": ""
+     },
+     "碳合规风险事件发生率": {
+      "值": "未披露",
+      "原文": ""
+     },
+     "高碳供应商占比": {
+      "值": "未披露",
+      "原文": ""
+     }
+    }
+   },
+   "未覆盖指标": [
+    "供应商碳目标",
+    "供应商激励",
+    "绿色物流",
+    "高碳供应商占比",
+    "气候风险暴露供应商数量",
+    "碳合规风险事件发生率",
+    "供应链碳风险传导影响评估"
+   ]
+  },
+  "透明度": {
+   "指标": {
+    "披露合规性": {
+     "交易所ESG披露指引符合性": {
+      "值": "部分符合",
+      "原文": "The Report is prepared based on the actual situation of the Company in accordance with the relevant requirements of the Self-Regulatory Guidelines No. 17 for Companies Listed on Shenzhen Stock Exchange - Sustainability Report (For Trial Implementation) and the Global Reporting Initiative (GRI) Standards, and based on the Company's actual situation.（第2页）"
+     },
+     "历史信息披露更正次数": {
+      "值": "未提及",
+      "原文": ""
+     },
+     "监管强制披露要求符合性": {
+      "值": "未提及",
+      "原文": ""
+     }
+    },
+    "披露范围与完整性": {
+     "供应链碳披露层级": {
+      "值": "未披露",
+      "原文": ""
+     },
+     "碳排放披露范围": {
+      "值": "范围一+二+三",
+      "原文": "Topband conducts self-inspection and verification on greenhouse gas emissions in Scope 1 (direct) and Scope 2 (indirect) within the organizational and reporting boundaries annually... In 2025, Huizhou Topband promoted the verification of Scope 3 carbon emissions（第27页）Scope 3: Other indirect greenhouse gas emissions (tCO2e) - Huizhou Plant / / 8,764.44（第28页）"
+     },
+     "碳资产与交易信息披露比例": {
+      "值": "未披露",
+      "原文": ""
+     }
+    },
+    "披露质量与可信度": {
+     "ESG评级结果及行业排名": {
+      "值": "CCXGF A+ESG评级；CDP气候变化评级B（较上年B-提升）；CDP水资源安全评级B",
+      "原文": "2025/9 Topband A+ ESG rating CCXGF（第14页）2025/12 Topband CDP: B in climate change; B in water resources security CDP（第14页）In 2025, the Company's CDP climate change rating rose from B- to B successfully, marking a new level of climate actions and low-carbon operations for the Company.（第16页）"
+     },
+     "ISO14064/ISO50001认证": {
+      "值": "未提及",
+      "原文": ""
+     },
+     "信息披露频次": {
+      "值": "年度",
+      "原文": "This is the 6th Social Responsibility Report and the 5th ESG Report issued by Shenzhen Topband Co., Ltd. since its listing... The Report was deliberated and approved at the 25th Meeting of the 8th Board of Directors of Topband held on March 31, 2026, and was released together with Topband's Annual Report 2025.（第2页）"
+     },
+     "第三方核查覆盖率": {
+      "值": "未披露",
+      "原文": ""
+     }
+    }
+   },
+   "未覆盖指标": [
+    "供应链碳披露层级",
+    "碳资产与交易信息披露比例",
+    "第三方核查覆盖率",
+    "ISO14064/ISO50001认证",
+    "监管强制披露要求符合性",
+    "历史信息披露更正次数"
+   ]
+  },
+  "金融化情况": {
+   "指标": {
+    "碳资产管理": {
+     "CCER开发与储备": {
+      "值": "未披露",
+      "原文": ""
+     },
+     "碳资产交易收益": {
+      "值": "未披露",
+      "单位": "",
+      "原文": ""
+     },
+     "碳资产保值增值策略": {
+      "值": "未披露",
+      "原文": ""
+     },
+     "碳配额管理": {
+      "值": "未披露",
+      "原文": ""
+     }
+    },
+    "碳金融": {
+     "碳金融衍生品参与情况": {
+      "值": "未披露",
+      "原文": ""
+     },
+     "绿色信贷": {
+      "值": "未披露",
+      "单位": "",
+      "原文": ""
+     },
+     "绿色债券": {
+      "值": "未披露",
+      "单位": "",
+      "原文": ""
+     }
+    }
+   },
+   "未覆盖指标": [
+    "绿色信贷",
+    "绿色债券",
+    "碳金融衍生品参与情况",
+    "碳配额管理",
+    "CCER开发与储备",
+    "碳资产交易收益",
+    "碳资产保值增值策略"
+   ]
+  }
+ },
+ "证据校验": {
+  "checked": 18,
+  "degraded": [],
+  "enabled": true,
+  "failed": 0,
+  "reason": "",
+  "skipped": 24,
+  "版本": "v118b",
+  "阈值": {
+   "ngram": 6,
+   "数字命中下限": 0.8,
+   "文本命中下限": 0.4
+  }
+ },
+ "评分增强数据": {
+  "L4计算结果": {
+   "CCER开发与储备": {
+    "L4得分": 1,
+    "保底分": 1.0,
+    "值": "未披露",
+    "原文": "",
+    "基准来源": "行业均值",
+    "基准样本数": 26,
+    "基础分": 0,
+    "失分类型": "完整度失分",
+    "子域": "碳资产管理",
+    "完整度分": 0,
+    "对标分": 1,
+    "指标": "CCER开发与储备",
+    "是否未披露": true,
+    "权重": 0.005209,
+    "维度": "金融化情况",
+    "行业L4得分": 1.0,
+    "行业均值": 0.0,
+    "质量分": 0,
+    "障碍度": 0.0047
+   },
+   "ESG评级结果及行业排名": {
+    "L4得分": 7,
+    "保底分": null,
+    "值": "CCXGF A+ESG评级；CDP气候变化评级B（较上年B-提升）；CDP水资源安全评级B",
+    "原文": "2025/9 Topband A+ ESG rating CCXGF（第14页）2025/12 Topband CDP: B in climate change; B in water resources security CDP（第14页",
+    "基准来源": "行业均值",
+    "基准样本数": 26,
+    "基础分": 3,
+    "失分类型": "质量失分",
+    "子域": "披露质量与可信度",
+    "完整度分": 2,
+    "对标分": 4,
+    "指标": "ESG评级结果及行业排名",
+    "是否未披露": false,
+    "权重": 0.024035,
+    "维度": "透明度",
+    "行业L4得分": 4.77,
+    "行业均值": 1.77,
+    "质量分": 1,
+    "障碍度": 0.0072
+   },
+   "ISO14064/ISO50001认证": {
+    "L4得分": 0,
+    "保底分": null,
+    "值": "未提及",
+    "原文": "",
+    "基准来源": "行业均值",
+    "基准样本数": 26,
+    "基础分": 0,
+    "失分类型": "完整度失分",
+    "子域": "披露质量与可信度",
+    "完整度分": 0,
+    "对标分": 0,
+    "指标": "ISO14064/ISO50001认证",
+    "是否未披露": true,
+    "权重": 0.033647,
+    "维度": "透明度",
+    "行业L4得分": 3.92,
+    "行业均值": 0.92,
+    "质量分": 0,
+    "障碍度": 0.0336
+   },
+   "交易所ESG披露指引符合性": {
+    "L4得分": 6,
+    "保底分": null,
+    "值": "部分符合",
+    "原文": "The Report is prepared based on the actual situation of the Company in accordance with the relevant requirements of the ",
+    "基准来源": "行业均值",
+    "基准样本数": 26,
+    "基础分": 3,
+    "失分类型": "质量失分",
+    "子域": "披露合规性",
+    "完整度分": 2,
+    "对标分": 3,
+    "指标": "交易所ESG披露指引符合性",
+    "是否未披露": false,
+    "权重": 0.068887,
+    "维度": "透明度",
+    "行业L4得分": 5.65,
+    "行业均值": 2.65,
+    "质量分": 1,
+    "障碍度": 0.0276
+   },
+   "供应商激励": {
+    "L4得分": 1,
+    "保底分": 1.0,
+    "值": "未披露",
+    "原文": "",
+    "基准来源": "行业均值",
+    "基准样本数": 26,
+    "基础分": 0,
+    "失分类型": "完整度失分",
+    "子域": "供应链协同减排",
+    "完整度分": 0,
+    "对标分": 1,
+    "指标": "供应商激励",
+    "是否未披露": true,
+    "权重": 0.015786,
+    "维度": "供应链碳管理",
+    "行业L4得分": 3.46,
+    "行业均值": 0.46,
+    "质量分": 0,
+    "障碍度": 0.0142
+   },
+   "供应商碳培训及考核情况": {
+    "L4得分": 8,
+    "保底分": null,
+    "值": "与核心客户共同开展供应商培训以提升供应商在产品、系统和服务方面的创新能力；2025年新引入目标供应商的供应保障协议签署率达到100%的年度目标",
+    "原文": "The Company worked together with core customers in 2025 to enhance suppliers' innovation capabilities in respect of prod",
+    "基准来源": "行业均值",
+    "基准样本数": 26,
+    "基础分": 4,
+    "失分类型": "质量失分",
+    "子域": "供应商碳管理",
+    "完整度分": 3,
+    "对标分": 4,
+    "指标": "供应商碳培训及考核情况",
+    "是否未披露": false,
+    "权重": 0.011575,
+    "维度": "供应链碳管理",
+    "行业L4得分": 4.77,
+    "行业均值": 1.77,
+    "质量分": 1,
+    "障碍度": 0.0023
+   },
+   "供应商碳披露及评价要求": {
+    "L4得分": 7,
+    "保底分": null,
+    "值": "通过合同约束、定期披露和第三方审计，推动供应商在环境保护和劳工等ESG领域的信息披露和信誉提升；环境工程师定期收集供应商年度有效环保报告，IQC团队使用XRF检测设备对来料进行检测",
+    "原文": "To improve the transparency of the supply chain, the Company further promoted the information disclosure and credibility",
+    "基准来源": "行业均值",
+    "基准样本数": 26,
+    "基础分": 3,
+    "失分类型": "质量失分",
+    "子域": "供应商碳管理",
+    "完整度分": 2,
+    "对标分": 4,
+    "指标": "供应商碳披露及评价要求",
+    "是否未披露": false,
+    "权重": 0.019289,
+    "维度": "供应链碳管理",
+    "行业L4得分": 4.96,
+    "行业均值": 1.96,
+    "质量分": 1,
+    "障碍度": 0.0058
+   },
+   "供应商碳目标": {
+    "L4得分": 1,
+    "保底分": 1.0,
+    "值": "未披露",
+    "原文": "",
+    "基准来源": "行业均值",
+    "基准样本数": 26,
+    "基础分": 0,
+    "失分类型": "完整度失分",
+    "子域": "供应商碳管理",
+    "完整度分": 0,
+    "对标分": 1,
+    "指标": "供应商碳目标",
+    "是否未披露": true,
+    "权重": 0.011575,
+    "维度": "供应链碳管理",
+    "行业L4得分": 3.46,
+    "行业均值": 0.46,
+    "质量分": 0,
+    "障碍度": 0.0104
+   },
+   "供应商绿色采购标准": {
+    "L4得分": 6,
+    "保底分": null,
+    "值": "优先选用符合RoHS、REACH等要求的低环境影响材料；基于空间利用最大化原则减少包装材料使用；与客户沟通使用可回收和可持续包装方式",
+    "原文": "prioritizes low environmental impact materials that comply with RoHS, REACH and other requirements, and reduces the use ",
+    "基准来源": "行业均值",
+    "基准样本数": 26,
+    "基础分": 3,
+    "失分类型": "质量失分",
+    "子域": "供应商碳管理",
+    "完整度分": 2,
+    "对标分": 3,
+    "指标": "供应商绿色采购标准",
+    "是否未披露": false,
+    "权重": 0.027003,
+    "维度": "供应链碳管理",
+    "行业L4得分": 5.62,
+    "行业均值": 2.62,
+    "质量分": 1,
+    "障碍度": 0.0108
+   },
+   "供应链碳披露层级": {
+    "L4得分": 1,
+    "保底分": 1.0,
+    "值": "未披露",
+    "原文": "",
+    "基准来源": "行业均值",
+    "基准样本数": 26,
+    "基础分": 0,
+    "失分类型": "完整度失分",
+    "子域": "披露范围与完整性",
+    "完整度分": 0,
+    "对标分": 1,
+    "指标": "供应链碳披露层级",
+    "是否未披露": true,
+    "权重": 0.015759,
+    "维度": "透明度",
+    "行业L4得分": 3.46,
+    "行业均值": 0.46,
+    "质量分": 0,
+    "障碍度": 0.0142
+   },
+   "供应链碳风险传导影响评估": {
+    "L4得分": 0,
+    "保底分": null,
+    "值": "未披露",
+    "原文": "",
+    "基准来源": "行业均值",
+    "基准样本数": 26,
+    "基础分": 0,
+    "失分类型": "完整度失分",
+    "子域": "供应链风险管控",
+    "完整度分": 0,
+    "对标分": 0,
+    "指标": "供应链碳风险传导影响评估",
+    "是否未披露": true,
+    "权重": 0.005786,
+    "维度": "供应链碳管理",
+    "行业L4得分": 4.08,
+    "行业均值": 1.08,
+    "质量分": 0,
+    "障碍度": 0.0058
+   },
+   "信息披露频次": {
+    "L4得分": 6,
+    "保底分": null,
+    "值": "年度",
+    "原文": "This is the 6th Social Responsibility Report and the 5th ESG Report issued by Shenzhen Topband Co., Ltd. since its listi",
+    "基准来源": "行业均值",
+    "基准样本数": 26,
+    "基础分": 3,
+    "失分类型": "质量失分",
+    "子域": "披露质量与可信度",
+    "完整度分": 2,
+    "对标分": 3,
+    "指标": "信息披露频次",
+    "是否未披露": false,
+    "权重": 0.043271,
+    "维度": "透明度",
+    "行业L4得分": 6.0,
+    "行业均值": 3.0,
+    "质量分": 1,
+    "障碍度": 0.0173
+   },
+   "包装减量及回收情况": {
+    "L4得分": 8,
+    "保底分": null,
+    "值": "进一步推进包装转型，逐步降低吸塑包装比例，提高纸箱等易回收材料比例，并在珠三角等地区实施周转箱回收计划；罗马尼亚拓邦设定包装废弃物回收目标：纸张和纸板75%、塑料50%、木材25%，均已达标",
+    "原文": "During the Reporting Period, the Company further promoted packaging transformation, reduced the proportion of vacuum for",
+    "基准来源": "行业均值",
+    "基准样本数": 26,
+    "基础分": 4,
+    "失分类型": "质量失分",
+    "子域": "供应链协同减排",
+    "完整度分": 3,
+    "对标分": 4,
+    "指标": "包装减量及回收情况",
+    "是否未披露": false,
+    "权重": 0.036826,
+    "维度": "供应链碳管理",
+    "行业L4得分": 5.12,
+    "行业均值": 2.12,
+    "质量分": 1,
+    "障碍度": 0.0074
+   },
+   "历史信息披露更正次数": {
+    "L4得分": 1,
+    "保底分": 1.0,
+    "值": "未提及",
+    "原文": "",
+    "基准来源": "行业均值",
+    "基准样本数": 26,
+    "基础分": 0,
+    "失分类型": "完整度失分",
+    "子域": "披露合规性",
+    "完整度分": 0,
+    "对标分": 1,
+    "指标": "历史信息披露更正次数",
+    "是否未披露": true,
+    "权重": 0.022968,
+    "维度": "透明度",
+    "行业L4得分": 3.15,
+    "行业均值": 0.15,
+    "质量分": 0,
+    "障碍度": 0.0207
+   },
+   "循环经济链塑造": {
+    "L4得分": 8,
+    "保底分": null,
+    "值": "2025年南通拓邦回收生产性废弃物140.6吨，实现全部回收和资源化；623吨NMP废液全部由代工厂回收并从原材料采购成本中扣除，形成闭环管理；单独收集铜箔等固废并交由合格机构规范回收处置",
+    "原文": "In 2025, Nantong Topband recycled 140.6 tons of productive waste, achieving full recycling and monetization; 623 tons of",
+    "基准来源": "行业均值",
+    "基准样本数": 26,
+    "基础分": 4,
+    "失分类型": "质量失分",
+    "子域": "供应链协同减排",
+    "完整度分": 3,
+    "对标分": 4,
+    "指标": "循环经济链塑造",
+    "是否未披露": false,
+    "权重": 0.036826,
+    "维度": "供应链碳管理",
+    "行业L4得分": 5.92,
+    "行业均值": 2.92,
+    "质量分": 1,
+    "障碍度": 0.0074
+   },
+   "气候风险暴露供应商数量": {
+    "L4得分": 1,
+    "保底分": 1.0,
+    "值": "未披露",
+    "原文": "",
+    "基准来源": "行业均值",
+    "基准样本数": 26,
+    "基础分": 0,
+    "失分类型": "完整度失分",
+    "子域": "供应链风险管控",
+    "完整度分": 0,
+    "对标分": 1,
+    "指标": "气候风险暴露供应商数量",
+    "是否未披露": true,
+    "权重": 0.005786,
+    "维度": "供应链碳管理",
+    "行业L4得分": 1.0,
+    "行业均值": 0.0,
+    "质量分": 0,
+    "障碍度": 0.0052
+   },
+   "环保投资": {
+    "L4得分": 0,
+    "保底分": null,
+    "值": "未披露",
+    "原文": "",
+    "基准来源": "行业均值",
+    "基准样本数": 26,
+    "基础分": 0,
+    "失分类型": "完整度失分",
+    "子域": "环境治理",
+    "完整度分": 0,
+    "对标分": 0,
+    "指标": "环保投资",
+    "是否未披露": true,
+    "权重": 0.035,
+    "维度": "企业内部碳管理",
+    "行业L4得分": 4.85,
+    "行业均值": 1.85,
+    "质量分": 0,
+    "障碍度": 0.035
+   },
+   "环境管理体系": {
+    "L4得分": 7,
+    "保底分": null,
+    "值": "深圳拓邦、惠州拓邦、宁波拓邦、南通拓邦、越南拓邦、罗马尼亚拓邦、墨西哥拓邦、印度拓邦共8个基地通过ISO 14001环境管理体系认证",
+    "原文": "Multiple bases of the Company have been certified to the ISO 14001 environmental management system. These qualifications",
+    "基准来源": "行业均值",
+    "基准样本数": 26,
+    "基础分": 4,
+    "失分类型": "质量失分",
+    "子域": "环境治理",
+    "完整度分": 3,
+    "对标分": 3,
+    "指标": "环境管理体系",
+    "是否未披露": false,
+    "权重": 0.035,
+    "维度": "企业内部碳管理",
+    "行业L4得分": 6.58,
+    "行业均值": 3.58,
+    "质量分": 1,
+    "障碍度": 0.0105
+   },
+   "监管强制披露要求符合性": {
+    "L4得分": 1,
+    "保底分": 1.0,
+    "值": "未提及",
+    "原文": "",
+    "基准来源": "行业均值",
+    "基准样本数": 26,
+    "基础分": 0,
+    "失分类型": "完整度失分",
+    "子域": "披露合规性",
+    "完整度分": 0,
+    "对标分": 1,
+    "指标": "监管强制披露要求符合性",
+    "是否未披露": true,
+    "权重": 0.068887,
+    "维度": "透明度",
+    "行业L4得分": 1.0,
+    "行业均值": 0.0,
+    "质量分": 0,
+    "障碍度": 0.062
+   },
+   "碳合规风险事件发生率": {
+    "L4得分": 1,
+    "保底分": 1.0,
+    "值": "未披露",
+    "原文": "",
+    "基准来源": "行业均值",
+    "基准样本数": 26,
+    "基础分": 0,
+    "失分类型": "完整度失分",
+    "子域": "供应链风险管控",
+    "完整度分": 0,
+    "对标分": 1,
+    "指标": "碳合规风险事件发生率",
+    "是否未披露": true,
+    "权重": 0.005786,
+    "维度": "供应链碳管理",
+    "行业L4得分": 3.15,
+    "行业均值": 0.15,
+    "质量分": 0,
+    "障碍度": 0.0052
+   },
+   "碳总量": {
+    "L4得分": 9,
+    "保底分": null,
+    "值": "62266.76",
+    "原文": "Total greenhouse gas emissions (tCO2e) 13,690.03 43,545.32 62,266.76（第28页）",
+    "基准来源": "行业均值",
+    "基准样本数": 26,
+    "基础分": 5,
+    "失分类型": "无明显失分",
+    "子域": "碳排放",
+    "完整度分": 3,
+    "对标分": 4,
+    "指标": "碳总量",
+    "是否未披露": false,
+    "权重": 0.021475,
+    "维度": "企业内部碳管理",
+    "行业L4得分": 6.69,
+    "行业均值": 3.69,
+    "质量分": 2,
+    "障碍度": 0.0021
+   },
+   "碳排放强度": {
+    "L4得分": 0,
+    "保底分": null,
+    "值": "未披露",
+    "原文": "",
+    "基准来源": "行业均值",
+    "基准样本数": 26,
+    "基础分": 0,
+    "失分类型": "完整度失分",
+    "子域": "碳排放",
+    "完整度分": 0,
+    "对标分": 0,
+    "指标": "碳排放强度",
+    "是否未披露": true,
+    "权重": 0.016707,
+    "维度": "企业内部碳管理",
+    "行业L4得分": 6.69,
+    "行业均值": 3.69,
+    "质量分": 0,
+    "障碍度": 0.0167
+   },
+   "碳排放披露范围": {
+    "L4得分": 7,
+    "保底分": null,
+    "值": "范围一+二+三",
+    "原文": "Topband conducts self-inspection and verification on greenhouse gas emissions in Scope 1 (direct) and Scope 2 (indirect)",
+    "基准来源": "行业均值",
+    "基准样本数": 26,
+    "基础分": 3,
+    "失分类型": "质量失分",
+    "子域": "披露范围与完整性",
+    "完整度分": 2,
+    "对标分": 4,
+    "指标": "碳排放披露范围",
+    "是否未披露": false,
+    "权重": 0.047269,
+    "维度": "透明度",
+    "行业L4得分": 5.31,
+    "行业均值": 2.31,
+    "质量分": 1,
+    "障碍度": 0.0142
+   },
+   "碳排放抵消与同比变化": {
+    "L4得分": 10,
+    "保底分": null,
+    "值": "2025年温室气体排放总量较2024年增长，主要因统计范围扩大至南通工厂并新增惠州工厂范围三统计；2025年数据为初步数据，最终以生态环境局审批为准",
+    "原文": "Note on the updated scope of statistics: In 2025, the scope of data statistics for Scope 1 and Scope 2 was further expan",
+    "基准来源": "行业均值",
+    "基准样本数": 26,
+    "基础分": 6,
+    "失分类型": "无明显失分",
+    "子域": "碳排放",
+    "完整度分": 3,
+    "对标分": 4,
+    "指标": "碳排放抵消与同比变化",
+    "是否未披露": false,
+    "权重": 0.011929,
+    "维度": "企业内部碳管理",
+    "行业L4得分": 6.54,
+    "行业均值": 3.54,
+    "质量分": 3,
+    "障碍度": 0.0
+   },
+   "碳管理体系建设": {
+    "L4得分": 10,
+    "保底分": null,
+    "值": "依据ISO 14064-1:2018、SZDB/Z 69-2018、SZDB/Z 70-2018及深圳碳交易管控企业碳排放核查技术要点，每年对范围一和范围二温室气体排放开展自查与核查；深圳工厂温室气体排放数据由政府聘请的合格第三方机构定期独立核查；2025年惠州拓邦推进范围三碳排放核查",
+    "原文": "In accordance with ISO 14064-1:2018, the Guidance for Quantification and Reporting of the Organization's Greenhouse Gas ",
+    "基准来源": "行业均值",
+    "基准样本数": 26,
+    "基础分": 6,
+    "失分类型": "无明显失分",
+    "子域": "环境治理",
+    "完整度分": 3,
+    "对标分": 4,
+    "指标": "碳管理体系建设",
+    "是否未披露": false,
+    "权重": 0.035,
+    "维度": "企业内部碳管理",
+    "行业L4得分": 5.42,
+    "行业均值": 2.42,
+    "质量分": 3,
+    "障碍度": 0.0
+   },
+   "碳资产与交易信息披露比例": {
+    "L4得分": 1,
+    "保底分": 1.0,
+    "值": "未披露",
+    "原文": "",
+    "基准来源": "行业均值",
+    "基准样本数": 26,
+    "基础分": 0,
+    "失分类型": "完整度失分",
+    "子域": "披露范围与完整性",
+    "完整度分": 0,
+    "对标分": 1,
+    "指标": "碳资产与交易信息披露比例",
+    "是否未披露": true,
+    "权重": 0.026259,
+    "维度": "透明度",
+    "行业L4得分": 3.23,
+    "行业均值": 0.23,
+    "质量分": 0,
+    "障碍度": 0.0236
+   },
+   "碳资产交易收益": {
+    "L4得分": 1,
+    "保底分": 1.0,
+    "值": "未披露",
+    "原文": "",
+    "基准来源": "行业均值",
+    "基准样本数": 26,
+    "基础分": 0,
+    "失分类型": "完整度失分",
+    "子域": "碳资产管理",
+    "完整度分": 0,
+    "对标分": 1,
+    "指标": "碳资产交易收益",
+    "是否未披露": true,
+    "权重": 0.005209,
+    "维度": "金融化情况",
+    "行业L4得分": 1.0,
+    "行业均值": 0.0,
+    "质量分": 0,
+    "障碍度": 0.0047
+   },
+   "碳资产保值增值策略": {
+    "L4得分": 1,
+    "保底分": 1.0,
+    "值": "未披露",
+    "原文": "",
+    "基准来源": "行业均值",
+    "基准样本数": 26,
+    "基础分": 0,
+    "失分类型": "完整度失分",
+    "子域": "碳资产管理",
+    "完整度分": 0,
+    "对标分": 1,
+    "指标": "碳资产保值增值策略",
+    "是否未披露": true,
+    "权重": 0.005209,
+    "维度": "金融化情况",
+    "行业L4得分": 3.12,
+    "行业均值": 0.12,
+    "质量分": 0,
+    "障碍度": 0.0047
+   },
+   "碳配额管理": {
+    "L4得分": 1,
+    "保底分": 1.0,
+    "值": "未披露",
+    "原文": "",
+    "基准来源": "行业均值",
+    "基准样本数": 26,
+    "基础分": 0,
+    "失分类型": "完整度失分",
+    "子域": "碳资产管理",
+    "完整度分": 0,
+    "对标分": 1,
+    "指标": "碳配额管理",
+    "是否未披露": true,
+    "权重": 0.015625,
+    "维度": "金融化情况",
+    "行业L4得分": 1.0,
+    "行业均值": 0.0,
+    "质量分": 0,
+    "障碍度": 0.0141
+   },
+   "碳金融衍生品参与情况": {
+    "L4得分": 1,
+    "保底分": 1.0,
+    "值": "未披露",
+    "原文": "",
+    "基准来源": "行业均值",
+    "基准样本数": 26,
+    "基础分": 0,
+    "失分类型": "完整度失分",
+    "子域": "碳金融",
+    "完整度分": 0,
+    "对标分": 1,
+    "指标": "碳金融衍生品参与情况",
+    "是否未披露": true,
+    "权重": 0.013397,
+    "维度": "金融化情况",
+    "行业L4得分": 1.0,
+    "行业均值": 0.0,
+    "质量分": 0,
+    "障碍度": 0.0121
+   },
+   "第三方核查覆盖率": {
+    "L4得分": 1,
+    "保底分": 1.0,
+    "值": "未披露",
+    "原文": "",
+    "基准来源": "行业均值",
+    "基准样本数": 26,
+    "基础分": 0,
+    "失分类型": "完整度失分",
+    "子域": "披露质量与可信度",
+    "完整度分": 0,
+    "对标分": 1,
+    "指标": "第三方核查覆盖率",
+    "是否未披露": true,
+    "权重": 0.024035,
+    "维度": "透明度",
+    "行业L4得分": 3.08,
+    "行业均值": 0.08,
+    "质量分": 0,
+    "障碍度": 0.0216
+   },
+   "绿色信贷": {
+    "L4得分": 1,
+    "保底分": 1.0,
+    "值": "未披露",
+    "原文": "",
+    "基准来源": "行业均值",
+    "基准样本数": 26,
+    "基础分": 0,
+    "失分类型": "完整度失分",
+    "子域": "碳金融",
+    "完整度分": 0,
+    "对标分": 1,
+    "指标": "绿色信贷",
+    "是否未披露": true,
+    "权重": 0.040181,
+    "维度": "金融化情况",
+    "行业L4得分": 1.0,
+    "行业均值": 0.0,
+    "质量分": 0,
+    "障碍度": 0.0362
+   },
+   "绿色债券": {
+    "L4得分": 1,
+    "保底分": 1.0,
+    "值": "未披露",
+    "原文": "",
+    "基准来源": "行业均值",
+    "基准样本数": 26,
+    "基础分": 0,
+    "失分类型": "完整度失分",
+    "子域": "碳金融",
+    "完整度分": 0,
+    "对标分": 1,
+    "指标": "绿色债券",
+    "是否未披露": true,
+    "权重": 0.040181,
+    "维度": "金融化情况",
+    "行业L4得分": 1.0,
+    "行业均值": 0.0,
+    "质量分": 0,
+    "障碍度": 0.0362
+   },
+   "绿色物流": {
+    "L4得分": 0,
+    "保底分": null,
+    "值": "未披露",
+    "原文": "",
+    "基准来源": "行业均值",
+    "基准样本数": 26,
+    "基础分": 0,
+    "失分类型": "完整度失分",
+    "子域": "供应链协同减排",
+    "完整度分": 0,
+    "对标分": 0,
+    "指标": "绿色物流",
+    "是否未披露": true,
+    "权重": 0.026306,
+    "维度": "供应链碳管理",
+    "行业L4得分": 4.19,
+    "行业均值": 1.19,
+    "质量分": 0,
+    "障碍度": 0.0263
+   },
+   "能效提升对比度": {
+    "L4得分": 0,
+    "保底分": null,
+    "值": "未披露",
+    "原文": "",
+    "基准来源": "行业均值",
+    "基准样本数": 26,
+    "基础分": 0,
+    "失分类型": "完整度失分",
+    "子域": "能源消耗与节能方案",
+    "完整度分": 0,
+    "对标分": 0,
+    "指标": "能效提升对比度",
+    "是否未披露": true,
+    "权重": 0.014587,
+    "维度": "企业内部碳管理",
+    "行业L4得分": 4.27,
+    "行业均值": 1.27,
+    "质量分": 0,
+    "障碍度": 0.0146
+   },
+   "能源类型和强度": {
+    "L4得分": 7,
+    "保底分": null,
+    "值": "以光伏为主要非化石能源利用切入点，在深圳、惠州、宁波园区安装光伏屋顶；2025年部署储能柜、720kW超级充电桩、太阳能路灯和雷达感应开关四项节能措施",
+    "原文": "Currently, the Company takes PV as the main entry point of utilizing non-fossil energy, and has installed PV roofs in th",
+    "基准来源": "行业均值",
+    "基准样本数": 26,
+    "基础分": 4,
+    "失分类型": "质量失分",
+    "子域": "能源消耗与节能方案",
+    "完整度分": 3,
+    "对标分": 3,
+    "指标": "能源类型和强度",
+    "是否未披露": false,
+    "权重": 0.026251,
+    "维度": "企业内部碳管理",
+    "行业L4得分": 6.5,
+    "行业均值": 3.5,
+    "质量分": 1,
+    "障碍度": 0.0079
+   },
+   "能耗同比变化": {
+    "L4得分": 0,
+    "保底分": null,
+    "值": "未披露",
+    "原文": "",
+    "基准来源": "行业均值",
+    "基准样本数": 26,
+    "基础分": 0,
+    "失分类型": "完整度失分",
+    "子域": "能源消耗与节能方案",
+    "完整度分": 0,
+    "对标分": 0,
+    "指标": "能耗同比变化",
+    "是否未披露": true,
+    "权重": 0.014587,
+    "维度": "企业内部碳管理",
+    "行业L4得分": 5.31,
+    "行业均值": 2.31,
+    "质量分": 0,
+    "障碍度": 0.0146
+   },
+   "节能目标与改造情况": {
+    "L4得分": 7,
+    "保底分": null,
+    "值": "设定'打造碳中和园区、零碳工厂和绿色产品'战略目标；实施'两增两减'气候行动框架（增能效+增新能源，工业减碳+节约减碳）；2025年部署储能柜、720kW超级充电桩、太阳能路灯、雷达感应开关；办公区LED照明系统升级，空调安装智能温控装置；安装节水装置",
+    "原文": "Topband has defined the climate action framework of 'two increases and two decreases' based on the practical exploration",
+    "基准来源": "行业均值",
+    "基准样本数": 26,
+    "基础分": 4,
+    "失分类型": "质量失分",
+    "子域": "能源消耗与节能方案",
+    "完整度分": 3,
+    "对标分": 3,
+    "指标": "节能目标与改造情况",
+    "是否未披露": false,
+    "权重": 0.026251,
+    "维度": "企业内部碳管理",
+    "行业L4得分": 6.81,
+    "行业均值": 3.81,
+    "质量分": 1,
+    "障碍度": 0.0079
+   },
+   "范围一排放": {
+    "L4得分": 8,
+    "保底分": null,
+    "值": "837.65",
+    "原文": "Scope 1: Direct greenhouse gas emissions (tCO2e) 123.03 767.63 837.65（第28页）",
+    "基准来源": "行业均值",
+    "基准样本数": 26,
+    "基础分": 5,
+    "失分类型": "无明显失分",
+    "子域": "碳排放",
+    "完整度分": 3,
+    "对标分": 3,
+    "指标": "范围一排放",
+    "是否未披露": false,
+    "权重": 0.021475,
+    "维度": "企业内部碳管理",
+    "行业L4得分": 7.31,
+    "行业均值": 4.31,
+    "质量分": 2,
+    "障碍度": 0.0043
+   },
+   "范围三排放": {
+    "L4得分": 9,
+    "保底分": null,
+    "值": "8764.44",
+    "原文": "Scope 3: Other indirect greenhouse gas emissions (tCO2e) - Huizhou Plant / / 8,764.44（第28页）",
+    "基准来源": "行业均值",
+    "基准样本数": 26,
+    "基础分": 5,
+    "失分类型": "无明显失分",
+    "子域": "碳排放",
+    "完整度分": 3,
+    "对标分": 4,
+    "指标": "范围三排放",
+    "是否未披露": false,
+    "权重": 0.011929,
+    "维度": "企业内部碳管理",
+    "行业L4得分": 4.77,
+    "行业均值": 1.77,
+    "质量分": 2,
+    "障碍度": 0.0012
+   },
+   "范围二排放": {
+    "L4得分": 9,
+    "保底分": null,
+    "值": "52664.67",
+    "原文": "Scope 2: Indirect greenhouse gas emissions (tCO2e) 13,567.00 42,777.69 52,664.67（第28页）",
+    "基准来源": "行业均值",
+    "基准样本数": 26,
+    "基础分": 5,
+    "失分类型": "无明显失分",
+    "子域": "碳排放",
+    "完整度分": 3,
+    "对标分": 4,
+    "指标": "范围二排放",
+    "是否未披露": false,
+    "权重": 0.021475,
+    "维度": "企业内部碳管理",
+    "行业L4得分": 6.62,
+    "行业均值": 3.62,
+    "质量分": 2,
+    "障碍度": 0.0021
+   },
+   "高碳供应商占比": {
+    "L4得分": 1,
+    "保底分": 1.0,
+    "值": "未披露",
+    "原文": "",
+    "基准来源": "行业均值",
+    "基准样本数": 26,
+    "基础分": 0,
+    "失分类型": "完整度失分",
+    "子域": "供应链风险管控",
+    "完整度分": 0,
+    "对标分": 1,
+    "指标": "高碳供应商占比",
+    "是否未披露": true,
+    "权重": 0.005786,
+    "维度": "供应链碳管理",
+    "行业L4得分": 1.0,
+    "行业均值": 0.0,
+    "质量分": 0,
+    "障碍度": 0.0052
+   }
+  },
+  "公司类型": "listed",
+  "总分": 4.23,
+  "维度得分": {
+   "企业内部碳管理": 5.99,
+   "供应链碳管理": 4.91,
+   "透明度": 3.55,
+   "金融化情况": 1.0
+  },
+  "行业": "电子科技",
+  "评分等级": "基础",
+  "障碍度Top10": [
+   {
+    "L4得分": 1,
+    "失分类型": "完整度失分",
+    "指标": "监管强制披露要求符合性",
+    "权重": 0.068887,
+    "障碍度": 0.062
+   },
+   {
+    "L4得分": 1,
+    "失分类型": "完整度失分",
+    "指标": "绿色信贷",
+    "权重": 0.040181,
+    "障碍度": 0.0362
+   },
+   {
+    "L4得分": 1,
+    "失分类型": "完整度失分",
+    "指标": "绿色债券",
+    "权重": 0.040181,
+    "障碍度": 0.0362
+   },
+   {
+    "L4得分": 0,
+    "失分类型": "完整度失分",
+    "指标": "环保投资",
+    "权重": 0.035,
+    "障碍度": 0.035
+   },
+   {
+    "L4得分": 0,
+    "失分类型": "完整度失分",
+    "指标": "ISO14064/ISO50001认证",
+    "权重": 0.033647,
+    "障碍度": 0.0336
+   },
+   {
+    "L4得分": 6,
+    "失分类型": "质量失分",
+    "指标": "交易所ESG披露指引符合性",
+    "权重": 0.068887,
+    "障碍度": 0.0276
+   },
+   {
+    "L4得分": 0,
+    "失分类型": "完整度失分",
+    "指标": "绿色物流",
+    "权重": 0.026306,
+    "障碍度": 0.0263
+   },
+   {
+    "L4得分": 1,
+    "失分类型": "完整度失分",
+    "指标": "碳资产与交易信息披露比例",
+    "权重": 0.026259,
+    "障碍度": 0.0236
+   },
+   {
+    "L4得分": 1,
+    "失分类型": "完整度失分",
+    "指标": "第三方核查覆盖率",
+    "权重": 0.024035,
+    "障碍度": 0.0216
+   },
+   {
+    "L4得分": 1,
+    "失分类型": "完整度失分",
+    "指标": "历史信息披露更正次数",
+    "权重": 0.022968,
+    "障碍度": 0.0207
+   }
+  ]
+ }
+}
