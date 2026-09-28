@@ -207,6 +207,34 @@ def _safe_progress(cb, **fields):
         logger.warning(f"进度回调异常（已忽略）: {e}")
 
 
+_PDF_CACHE_EVERY = 5
+
+
+def _release_pdf_cache(pdf, page_index=None, full=False):
+    """逐页释放 pdfplumber / pdfminer 的缓存（v121，纯内存管理）
+
+    ⚠️ 不改变任何解析结果：缓存 miss 时按需重建，内容逐页一致（已实测比对）。
+
+    背景（实测数据，2026-09-27）：一份 52 页「文字转曲」PDF 在 pdfplumber 下
+    进程 RSS 从 80MB **线性涨到 2281MB（约 44MB/页）** —— pdfminer 会为每页
+    缓存解压后的内容流/图像流对象，且跨页累积、从不释放。后果：
+      · 2 核 2G 的线上机器在第 30~40 页触发内核 OOM（dmesg: anon-rss 1.6GB，
+        esg-extractor 容器被杀重启 → 内存态任务表清空 → 客户端轮询全 404）；
+      · 或陷入 swap 抖动：CPU 仅 3%，单页 OCR 从 7.4s 恶化到 65s（9 倍）。
+    修复后同一份文件：峰值 **2319MB → 235MB（降 90%）**，耗时不变。
+    """
+    try:
+        if page_index is not None:
+            pdf.pages[page_index].flush_cache()
+    except Exception:
+        pass
+    if full:
+        try:
+            pdf.doc._cached_objs.clear()
+        except Exception:
+            pass
+
+
 def _ocr_one_page(page, ocr) -> str:
     """单页 OCR：整页扫描图直接抽取，否则渲染整页
 
@@ -307,6 +335,10 @@ def ocr_pdf_pages(file_bytes: bytes, max_pages: int = OCR_MAX_PAGES,
                     text_parts.append(f"[第{i+1}页]\n{page_text}")
             except Exception as e:
                 logger.warning(f"OCR 第{i+1}页失败: {e}")
+            # v121：逐页释放缓存。扫描件 OCR 是本链路的内存峰值来源
+            #（实测 52 页累积到 2.3GB；逐页释放后稳定在 235MB），
+            # 必须在长循环里释放，否则 2G 机器必然 OOM/换页抖动。
+            _release_pdf_cache(pdf, i, full=((i + 1) % _PDF_CACHE_EVERY == 0))
             # 每页都回报进度（前端轮询据此渲染 "OCR 12/49 页"）
             _safe_progress(progress_cb, stage='ocr', current=i + 1, total=limit)
             # 每 5 页报一次进度，便于从容器日志观察长任务
@@ -340,6 +372,8 @@ def extract_text_from_pdf(file_bytes: bytes, progress_cb=None) -> str:
                     text_parts.append(f"[第{i+1}页]\n{page_text}")
             except Exception as e:
                 logger.warning(f"PDF第{i+1}页提取失败: {e}")
+            # v121：逐页释放 pdfminer 缓存，避免内存随页数线性累积（见 _release_pdf_cache）
+            _release_pdf_cache(pdf, i, full=((i + 1) % _PDF_CACHE_EVERY == 0))
     text = "\n\n".join(text_parts)
 
     # 扫描件/坏编码/稀薄文字层兜底 → 自动 OCR（OCR 渲染成图识别，不依赖 PDF 字体表）
@@ -528,14 +562,29 @@ def normalize_extracted_structure(data: dict) -> dict:
 
 
 # ============================== API端点 ==============================
+def _baseline_info():
+    """v=122：只读暴露基准库版本/样本量（供部署验收 —— 判断基准库是否真的随镜像生效）。
+    任何异常返回 (None, None)，绝不影响健康检查。"""
+    try:
+        import json as _json
+        _p = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'weights.json')
+        with open(_p, encoding='utf-8') as _f:
+            _w = _json.load(_f)
+        _am = (_w.get('行业基准库') or {}).get('【全市场均值】') or {}
+        return _w.get('版本'), _am.get('样本数')
+    except Exception:
+        return None, None
+
+
 @app.route('/api/health', methods=['GET'])
 def health():
     """健康检查"""
+    _bv, _bs = _baseline_info()
     return jsonify({
         "status": "ok",
         "service": "esg-extractor",
         "version": "1.0.0",
-        "build": "v114",   # v114：新增 COS 直传（/api/cos_upload_prepare + /api/cos_complete），旧分片四路由一字不改作回落；99.8MB 报告上传 4.4min → ~40s
+        "build": "v122b",  # v122b：修复 v122 的 health 路由错位（_baseline_info 被插到 @app.route 与 def health 之间 ⇒ 装饰器绑错函数）+ 基准库样本量键名（样本量→样本数）｜v122：B 阶段基准库重建（92 家重提取 + 现行口径重算；全局权重一字不动）｜v121：PDF 解析逐页释放缓存（纯内存管理，不改解析结果）——修复 52 页文档 RSS 线性涨到 2.3GB ⇒ 2G 机器 OOM/swap 抖动（单页 OCR 7.4s→65s）｜v120：并发内存闸门（纯防御：限"同时驻留的重任务数"）｜v119b：A2 混合控长｜v119 = A2 配额采样 + C1 判定词繁简/英文归一（zhconv）+ C2 提示词消歧义｜v118 = 证据强制校验（evidence_verify.py）｜v117 = EMPTY_VALUES 占位符全集｜v116 = 判据表4.4 + temp 0.0｜v114 = COS 直传
         "model": DEEPSEEK_MODEL,
         "thinking": DEEPSEEK_THINKING,
         "pdf_support": PDF_SUPPORT,
@@ -550,6 +599,17 @@ def health():
         "cos_ready": _safe_cos_ready(),
         "cos_bucket": _safe_cos_get('bucket'),
         "cos_upload_endpoint": _safe_cos_get('upload_endpoint'),
+        # v=120：并发内存闸门的可观测状态（只读；失败一律返回 None，绝不影响健康检查）
+        "extract_slot_total": EXTRACT_SLOT_TOTAL,
+        "extract_excl_mb": EXTRACT_EXCL_MB,
+        "extract_active": _extract_active_count(),
+        "mem_available_mb": _mem_available_mb(),
+        # v=121：PDF 解析逐页释放缓存的开关状态（只读，用于部署核验）
+        "page_cache_release": "on",
+        "pdf_cache_every": _PDF_CACHE_EVERY,
+        # v=122：基准库版本/样本量（只读；用于判断 B 阶段基准库是否随镜像真正生效）
+        "baseline_version": _bv,
+        "baseline_sample": _bs,
     })
 
 
@@ -592,14 +652,123 @@ def _task_gc():
                 EXTRACT_TASKS.pop(tid, None)
 
 
+# ============================== v=120 并发内存闸门（纯防御）==============================
+# 背景（2026-09-27 实测 OOM）：服务器仅 ~2GB 内存。批处理以 3 并发同时提交
+#   兰剑智能 98.4MB（扫描件、OCR 60 页）+ 德石股份 50.8MB + 振德医疗 33.3MB
+#   → Flask `file.read()` 全量入内存 + pdfplumber + RapidOCR 逐页大图
+#   → `dmesg`: `Out of memory: Killed process (python) anon-rss:1.6GB`
+#   → esg-extractor 容器被 OOM killer 重启 → **内存态 EXTRACT_TASKS 被清空**
+#   → 所有在飞任务永久 404（调用方若把 404 当"未完成"，就会无限重试 → 再 OOM）。
+#
+# 本闸门只限制「**同时驻留的重任务数**」，**不改变任何提取 / 评分 / 文本处理逻辑**：
+#   · 槽位总数 EXTRACT_SLOT_TOTAL（默认 2）；
+#   · 单份 ≥ EXTRACT_EXCL_MB（默认 30MB）的 PDF 独占「全部」槽位
+#     ⇒ 构造上不可能出现「多个 30MB+ 的 PDF 同时解析」。
+#   实测单份 98.4MB 扫描件峰值 RSS ≈ 350MB，叠常态 ~590MB 远低于 1935MB。
+# 获取带超时（EXTRACT_SLOT_WAIT），避免某个卡死任务把后来者永久阻塞；超时按普通失败
+# 处理（任务标 error 并写明原因），且**不会漏放槽位**。
+# 关停开关：EXTRACT_SLOT_TOTAL=0 或 1 ⇒ 等价于不限并发（行为完全回到 v119b）。
+EXTRACT_SLOT_TOTAL = int(os.environ.get('EXTRACT_SLOT_TOTAL', '2') or 2)
+EXTRACT_EXCL_MB = int(os.environ.get('EXTRACT_EXCL_MB', '30') or 30)
+EXTRACT_SLOT_WAIT = int(os.environ.get('EXTRACT_SLOT_WAIT', '1800') or 1800)
+_EXTRACT_SLOTS = threading.Semaphore(EXTRACT_SLOT_TOTAL)
+_EXTRACT_EXCL = threading.Lock()
+_EXTRACT_ACTIVE = 0
+_EXTRACT_ACTIVE_LOCK = threading.Lock()
+
+
+def _extract_slots_needed(nbytes):
+    """≥EXTRACT_EXCL_MB 的文件独占全部槽位；其余占 1 个。返回 0 = 不加闸（已关停）"""
+    if EXTRACT_SLOT_TOTAL <= 1:
+        return 0
+    if nbytes >= EXTRACT_EXCL_MB * 1024 * 1024:
+        return EXTRACT_SLOT_TOTAL
+    return 1
+
+
+def _extract_gate_enter(n):
+    """获取 n 个槽位；返回实际获取数。中途失败时内部已回滚，绝不泄漏槽位。"""
+    if n <= 0:
+        return 0
+    if n >= EXTRACT_SLOT_TOTAL:
+        if not _EXTRACT_EXCL.acquire(timeout=EXTRACT_SLOT_WAIT):
+            raise RuntimeError(f'等待大文件独占位超时（{EXTRACT_SLOT_WAIT}s）')
+    got = 0
+    for _ in range(n):
+        if _EXTRACT_SLOTS.acquire(timeout=EXTRACT_SLOT_WAIT):
+            got += 1
+        else:
+            for _ in range(got):
+                _EXTRACT_SLOTS.release()
+            if n >= EXTRACT_SLOT_TOTAL:
+                _EXTRACT_EXCL.release()
+            raise RuntimeError(f'等待提取槽位超时（{EXTRACT_SLOT_WAIT}s）')
+    return got
+
+
+def _extract_gate_exit(got):
+    """释放 got 个槽位（got 必须等于 _extract_gate_enter 的返回值）"""
+    if got <= 0:
+        return
+    for _ in range(got):
+        _EXTRACT_SLOTS.release()
+    if got >= EXTRACT_SLOT_TOTAL:
+        _EXTRACT_EXCL.release()
+
+
+def _extract_active_inc():
+    global _EXTRACT_ACTIVE
+    with _EXTRACT_ACTIVE_LOCK:
+        _EXTRACT_ACTIVE += 1
+
+
+def _extract_active_dec():
+    global _EXTRACT_ACTIVE
+    with _EXTRACT_ACTIVE_LOCK:
+        _EXTRACT_ACTIVE = max(0, _EXTRACT_ACTIVE - 1)
+
+
+def _extract_active_count():
+    with _EXTRACT_ACTIVE_LOCK:
+        return _EXTRACT_ACTIVE
+
+
+def _mem_available_mb():
+    """读 /proc/meminfo 的 MemAvailable（容器内也可读）。任何异常一律返回 None —— 
+    健康检查是运维生命线，绝不允许被这个"锦上添花"的指标搞挂。"""
+    try:
+        with open('/proc/meminfo', 'r') as f:
+            for line in f:
+                if line.startswith('MemAvailable:'):
+                    return round(int(line.split()[1]) / 1024.0, 1)
+        return None
+    except Exception:
+        return None
+
+
 def _run_extraction_task(task_id, filename, file_bytes, company_type, model_id):
-    """后台线程主体：跑完整提取流程，把结果写回任务表"""
+    """后台线程主体：跑完整提取流程，把结果写回任务表
+
+    v=120：进出 run_extraction 前后走并发内存闸门（详见上方说明）。
+    """
     def _progress(stage=None, current=None, total=None):
         _task_update(task_id, stage=stage or 'working',
                      current=current, total=total)
 
-    _task_update(task_id, status='running', stage='parse')
+    nslots = _extract_slots_needed(len(file_bytes))
+    _task_update(task_id, status='running', stage='waiting')
+    got = 0
     try:
+        if nslots:
+            logger.info(
+                f"⏳ 等待提取槽位: {task_id} | {filename} "
+                f"({len(file_bytes)/1048576:.1f}MB，需 {nslots}/{EXTRACT_SLOT_TOTAL} 槽)"
+            )
+        got = _extract_gate_enter(nslots)
+        if got:
+            _extract_active_inc()
+            logger.info(f"▶ 开始提取: {task_id} | 占 {got} 槽 | 当前在跑 {_extract_active_count()}")
+        _task_update(task_id, stage='parse')
         payload, status_code = run_extraction(
             filename, file_bytes, company_type=company_type,
             model_id=model_id, progress_cb=_progress
@@ -619,6 +788,9 @@ def _run_extraction_task(task_id, filename, file_bytes, company_type, model_id):
         _task_update(task_id, status='error', stage='failed',
                      error=f"服务内部异常: {str(e)}")
     finally:
+        if got:
+            _extract_active_dec()
+            _extract_gate_exit(got)
         _task_gc()
 
 
@@ -1230,6 +1402,80 @@ def cos_complete():
     return jsonify(payload), 202
 
 
+# ============================== v119（A2）：超长文本「分页配额采样」 ==============================
+# 背景：原实现 report_text[:60000] 是**从头截断**。
+#   ① 字符数 ≠ 信息量：中文报告中位 4.3 万字符（28% 超限），
+#      英文报告中位 24.2 万字符（88% 超限，平均只覆盖前 24%）；
+#   ② 报告的数据密集区（附录 / 关键绩效表）普遍在后半段，被整段丢弃。
+#   实测：同一份宏微报告，中文版抽取 62,234 字符 → 4.41 分，
+#        英文版抽取 238,230 字符 → 1.59 分（内部 7.61 ↔ 2.75），
+#        而 `ISO 14001`@偏移 92,839、`Scope 1`@80,393 均在 60,000 线外。
+# 方案：把全文均分为 K 段，每段按配额保留「段首 + 段尾」，段间以省略标记衔接。
+#   长报告不再"只读前 1/4"，且首尾与全篇分布都进模型。
+# 开关：TEXT_SAMPLE_MODE=quota（默认）| legacy（回退原从头截断，用于 A/B 与紧急回滚）
+TEXT_SAMPLE_MODE = (os.environ.get('TEXT_SAMPLE_MODE') or 'quota').strip().lower()
+try:
+    TEXT_SAMPLE_SEGMENTS = max(2, int(os.environ.get('TEXT_SAMPLE_SEGMENTS') or 10))
+except (TypeError, ValueError):
+    TEXT_SAMPLE_SEGMENTS = 10
+# 头部连续保留比例（默认 0.5）。设计依据：让「头部连续区」**恰好等于旧版全部输入**
+#   （120000 × 0.5 = 60000 = 原 MAX_TEXT_CHARS），从而保证
+#   **前段证据一项不丢（严格不劣于 v118）**；其余预算全部用于全篇抽样（新增覆盖）。
+try:
+    TEXT_SAMPLE_HEAD_RATIO = float(os.environ.get('TEXT_SAMPLE_HEAD_RATIO') or 0.5)
+except (TypeError, ValueError):
+    TEXT_SAMPLE_HEAD_RATIO = 0.5
+TEXT_SAMPLE_HEAD_RATIO = min(0.9, max(0.0, TEXT_SAMPLE_HEAD_RATIO))
+
+
+def sample_text_by_quota(text: str, budget: int = 60000,
+                         segments: int = TEXT_SAMPLE_SEGMENTS,
+                         head_ratio: float = TEXT_SAMPLE_HEAD_RATIO) -> str:
+    """超长文本 → 「头部连续保留 + 全篇配额采样」混合控长。
+
+    实测依据（宏微英文版 24.1 万字符 / 87 页，同一份报告中英两版实测）：
+      · 前段核心指标证据（GHG 总量 @19,431、能源强度 @19,683、环保投资 @19,558，
+        均在第 10 页 ≈ 前 8%）—— **必须靠头部连续保留**才能拿到；
+        若全用配额采样，这些会被"段内省略"切掉（实测总分因此少 0.7）。
+      · 后段附录 / 关键绩效表证据（ISO 14001@93,640、包装@120,296、
+        供应商准入@145,818）—— **必须靠全篇采样**才能拿到；
+        原「从头截断」只看前 6 万字符（=前 22 页 / 87 页），这些全丢。
+      ⇒ 两种策略各有不可替代的收益，故**组合**：
+         头部 `head_ratio` 份额连续保留，其余份额对后半部做 `segments` 段配额采样。
+
+    - `len(text) <= budget` 时**原样返回**（短报告零行为变化）；
+    - 省略处插入 `……[本段省略 N 字符]……` 标记，让模型知道此处有断口，
+      避免把断口两侧的文字误读成连续句。
+    """
+    if not text:
+        return text
+    if len(text) <= budget:
+        return text
+    head_len = int(budget * head_ratio)
+    rest_budget = budget - head_len
+    out = []
+    if head_len > 0:
+        out.append(text[:head_len])
+        out.append('\n\n……[以下为该报告全篇抽样，段内省略处以「本段省略」标记]……\n\n')
+    body = text[head_len:]
+    if rest_budget > 0 and body:
+        seg_len = len(body) / float(segments)
+        per = rest_budget / float(segments)
+        half = max(1, int(per * 0.5))
+        for i in range(segments):
+            s = int(i * seg_len)
+            e = len(body) if i == segments - 1 else int((i + 1) * seg_len)
+            chunk = body[s:e]
+            if len(chunk) <= per:
+                out.append(chunk)
+                continue
+            omitted = len(chunk) - half * 2
+            out.append(chunk[:half]
+                       + f"\n\n……[本段省略 {omitted} 字符]……\n\n"
+                       + chunk[-half:])
+    return ''.join(out)
+
+
 def run_extraction(filename, file_bytes, company_type='listed',
                    model_id='deepseek-v4-flash', progress_cb=None):
     """提取主流程（同步接口与异步任务共用）
@@ -1266,11 +1512,41 @@ def run_extraction(filename, file_bytes, company_type='listed',
             err = "提取文本过短，可能为扫描件PDF，且服务端 OCR 依赖未安装"
         return {"error": err}, 400
 
-    # 3. 截断文本（避免超出token限制）
-    MAX_TEXT_CHARS = 60000  # 约 2万token，留余量
+    # v=118：留一份**截断前**全文副本 —— 证据强制校验需要在完整文本上定位「原文」，
+    #   若用截断后文本，报告后半段的真实证据会被误判为「编造」而误降级。
+    #   （仅新增一个变量，原截断逻辑一字未动）
+    full_report_text = report_text
+
+    # 3. 控长（避免超出 token 限制）
+    #    v119b（A2）：默认「头部连续保留 + 后半全篇配额采样」混合控长。
+    #    为什么预算从 60000 提到 120000：
+    #      · 60000 预算下，「保住前段」与「覆盖后段」是**零和**的 —— 实测
+    #        纯配额采样虽拿到后段 5 项证据，却把前段 3 项（GHG 总量/能源强度/
+    #        环保投资，@偏移 ~19,500）切掉，净损失真实存在；
+    #      · 把 budget 提到 120000、head_ratio 设 0.5 ⇒ 头部连续区 = 前 60000 字符
+    #        **正好等于 v118 的全部输入** ⇒ 前段证据一项不丢（严格不劣于 v118），
+    #        额外 60000 预算再覆盖后半段 ⇒ **单调改进**，无需实验即确定不会变差。
+    #      · 成本：只影响「本来就会被截断」的报告（中文中位 4.3 万字符不受影响），
+    #        每份增加约 2~3 万 token。若需回退：.env 设 MAX_TEXT_CHARS=60000。
+    #    legacy 模式保留原从头截断，用于 A/B 对照与紧急回滚。
+    try:
+        MAX_TEXT_CHARS = int(os.environ.get('MAX_TEXT_CHARS') or 120000)
+    except (TypeError, ValueError):
+        MAX_TEXT_CHARS = 120000
     if text_len > MAX_TEXT_CHARS:
-        logger.warning(f"文本过长({text_len}字符)，截断到{MAX_TEXT_CHARS}字符")
-        report_text = report_text[:MAX_TEXT_CHARS] + "\n\n[后续内容已截断]"
+        if TEXT_SAMPLE_MODE == 'legacy':
+            logger.warning(
+                f"文本过长({text_len}字符)，[legacy]截断到{MAX_TEXT_CHARS}字符"
+            )
+            report_text = report_text[:MAX_TEXT_CHARS] + "\n\n[后续内容已截断]"
+        else:
+            sampled = sample_text_by_quota(report_text, MAX_TEXT_CHARS)
+            logger.warning(
+                f"文本过长({text_len}字符)，[quota head={TEXT_SAMPLE_HEAD_RATIO:.0%}"
+                f"×{TEXT_SAMPLE_SEGMENTS}段] 控长为 {len(sampled)} 字符"
+                f"（头部连续保留 + 后半全篇抽样，前后段证据都不再整体丢弃）"
+            )
+            report_text = sampled
 
     # 4. 构建用户提示词
     user_text = f"""请从以下ESG报告内容中提取碳信息（按完整字段结构输出JSON）。
@@ -1317,6 +1593,24 @@ def run_extraction(filename, file_bytes, company_type='listed',
 
     # 6.5 关键！后端兜底——保证 4 维度嵌套结构完整（防止 LLM 抽风拍扁）
     extracted_json = normalize_extracted_structure(extracted_json)
+
+    # 6.55 证据强制校验（v=118，方案A）：**任何拿到分的指标，其「原文」必须能在
+    #      报告全文中定位到**；定位不到 ⇒ 降级为未披露。作用：防「原文是编造的」幻觉，
+    #      同时让每一条得分可溯源、可审计。
+    #      防御性：任何异常只记录、绝不影响提取与评分主流程；EVIDENCE_VERIFY=0 可整体关停。
+    #      ⚠️ 必须用 full_report_text（截断前全文），否则报告后半段证据会被误杀。
+    try:
+        from evidence_verify import verify_document
+        extracted_json, ev_report = verify_document(extracted_json, full_report_text)
+        extracted_json['证据校验'] = ev_report
+        logger.info(
+            f"🔍 证据校验: 校验 {ev_report['checked']} 项 / 降级 {ev_report['failed']} 项"
+            f" / 跳过 {ev_report['skipped']} 项（{ev_report['reason'] or 'ok'}）"
+        )
+        if ev_report['failed']:
+            logger.warning(f"🛡️ 证据不足已降级: {[d['指标'] for d in ev_report['degraded']]}")
+    except Exception as e:
+        logger.warning(f"证据校验异常（忽略，不影响提取）: {e}")
 
     # 6.6 评分增强（本地查表 + 确定性计算，无LLM参与）
     #     输入: 提取JSON + 行业 + 公司类型

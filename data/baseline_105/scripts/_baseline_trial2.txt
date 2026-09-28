@@ -1,0 +1,12 @@
+﻿璇诲彇 raw_json = 12 浠?| 鍙敤 12 浠?| 寮傚父 0 浠?
+宸插啓 [REPO]\data\baseline_105\weights_patch.json
+----------------------------------------------------------------------
+鏍锋湰閲?= 12 瀹?
+琛屼笟鏁?= 6锛堝叾涓牱鏈?10 闄嶇骇 6 涓級
+姣忎唤寰楀垎鎸囨爣鏁帮細涓綅 15 / 鍧囧€?18.2
+鍔犳潈鍩虹鍒?危锛氬叏甯傚満鍧囧€?1.813
+浜у嚭锛?[REPO]\data\baseline_105\excel\琛屼笟鍩哄噯搴?xlsx
+浜у嚭锛?[REPO]\data\baseline_105\excel\鍩虹鍒嗘槑缁?xlsx
+浜у嚭锛?[REPO]\data\baseline_105\weights_patch.json
+BASELINE_V2_DONE
+rc=0

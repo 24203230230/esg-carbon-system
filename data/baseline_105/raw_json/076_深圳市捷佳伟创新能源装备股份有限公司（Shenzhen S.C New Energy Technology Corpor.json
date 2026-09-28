@@ -1,0 +1,1235 @@
+{
+  "_meta": {
+    "manifest_no": 76,
+    "company": "深圳市捷佳伟创新能源装备股份有限公司（Shenzhen S.C New Energy Technology Corporation）",
+    "industry": "装备制造",
+    "lang": "CN",
+    "pdf": "[DATA_ROOT]/ESG报告\\补充的ESG报告\\捷佳伟创：2025 Environmental, Social, and Governance (ESG) Report.pdf",
+    "pdf_file": "捷佳伟创：2025 Environmental, Social, and Governance (ESG) Report.pdf",
+    "pdf_bytes": 51532855,
+    "extract_build": "v119b",
+    "task_id": "9d8282e4d9f14b1ca071723f5bdb4c7f",
+    "elapsed_s": 42.6,
+    "fetched_at": "2026-09-27 17:41:50",
+    "runtime_build": "v119b",
+    "build_note": "v120/v121 仅改内存管理（并发槽位闸门 + pdfminer 页级缓存释放），不改变提取口径与评分逻辑；故统一标 v119b（提取口径版本），实际运行容器版本见 runtime_build。"
+  },
+  "报告元数据": {
+    "主营业务": "太阳能光伏电池及半导体专用设备的研发、制造与销售",
+    "企业名称": "深圳市捷佳伟创新能源装备股份有限公司",
+    "企业性质": "未披露",
+    "所属行业": "装备制造",
+    "报告名称": "2025 Environmental, Social, and Governance (ESG) Report",
+    "报告年份": "2025",
+    "报告页码/章节": "第3页 About This Report；第10页 Key Performance",
+    "营收规模": "154.7167亿元（RMB 15,471.67 million）"
+  },
+  "指标提取结果": {
+    "企业内部碳管理": {
+      "指标": {
+        "环境治理": {
+          "环保投资": {
+            "值": "2,311.80",
+            "单位": "万元",
+            "原文": "Total Investment in Environmental Protection RMB (10K) / 2,311.80（第44页 Key Performance Form）"
+          },
+          "环境管理体系": {
+            "值": "公司建立《环境、职业健康安全管理手册》等制度，构建由总经理领导、质量管理部协调、其他部门支持的管理架构；供应商评价中考察ISO 14001认证情况",
+            "原文": "It has established systems such as the Environmental, Occupational Health and Safety Management Manual, and built a management structure led by the General Manager, coordinated by the Quality Management Department, and supported by other departments.（第20页 Environmental Management System）；the Company investigates whether suppliers hold certifications such as ISO 14001 (Environmental Management System)（第29页 Supply Chain ESG Management）"
+          },
+          "碳管理体系建设": {
+            "值": "公司开展温室气体核算、碳足迹分析、减排策略制定、碳中和目标设定、碳交易及碳税应对等专项培训；依据GHG Protocol及《温室气体排放核算与报告要求 第29部分：机械设备制造企业》进行温室气体统计",
+            "原文": "the Company has conducted specialized training covering core topics such as greenhouse gas accounting, carbon footprint analysis, formulation of emission reduction strategies, setting carbon neutrality targets, carbon trading and response to carbon taxation, etc.（第19页 Response to Climate Change）；The company's greenhouse gas statistics are based on the Greenhouse Gas Protocol: A Corporate Accounting and Reporting Standard (2004) and Requirements of the Greenhouse Gas Emissions Accounting and Reporting—Part 29: Mechanical Equipment Manufacturing Enterprises（第20页 Metrics and Targets）"
+          }
+        },
+        "碳排放": {
+          "碳总量": {
+            "值": "20,762.20",
+            "单位": "tCO₂e",
+            "原文": "Total GHG Emissions 20,762.20 tCO2e（第10页 Key Performance；第20页 Metrics and Targets；第44页 Key Performance Form）",
+            "年份": "2025"
+          },
+          "碳排放强度": {
+            "值": "1.34",
+            "单位": "tCO₂e/million RMB in revenue",
+            "原文": "GHG Emission Intensity 1.34 tCO2e per million RMB of revenue（第10页 Key Performance；第20页 Metrics and Targets）",
+            "年份": "2025"
+          },
+          "碳排放抵消与同比变化": {
+            "值": "2024年总排放24,401.86 tCO₂e，2025年20,762.20 tCO₂e，同比下降；光伏发电808.01万kWh，减排4,287.30 tCO₂e",
+            "原文": "Total GHG Emissions tCO2e 24,401.86 20,762.20（第44页 Key Performance Form）；PV Generation Amount 808.01*10⁴ kWh，Amount of GHG Emission Reduction 4,287.30 tCO2e（第10页 Key Performance）"
+          },
+          "范围一排放": {
+            "值": "403.93",
+            "单位": "tCO₂e",
+            "原文": "Direct GHG Emissions (Scope 1) 403.93 tCO2e（第20页 Metrics and Targets；第44页 Key Performance Form）",
+            "年份": "2025"
+          },
+          "范围三排放": {
+            "值": "未披露",
+            "单位": "tCO₂e",
+            "原文": "未披露",
+            "年份": "2025"
+          },
+          "范围二排放": {
+            "值": "20,358.27",
+            "单位": "tCO₂e",
+            "原文": "Indirect GHG Emissions (Scope 2) 20,358.27 tCO2e（第20页 Metrics and Targets；第44页 Key Performance Form）",
+            "年份": "2025"
+          }
+        },
+        "能源消耗与节能方案": {
+          "能效提升对比度": {
+            "值": "2024年能源消费强度0.30 tce/百万元营收，2025年0.32 tce/百万元营收",
+            "原文": "Energy Consumption Intensity tce / Million RMB in Revenue 0.30 0.32（第44页 Key Performance Form）"
+          },
+          "能源类型和强度": {
+            "值": "主要能源为电力，另使用天然气、汽油、柴油；2025年综合能源消费总量4,921.99 tce，能源消费强度0.32 tce/百万元营收",
+            "原文": "The Company's energy consumption consists primarily of electricity.；Total energy consumption 4,921.99 tce；Energy consumption intensity 0.32 tce/million RMB in revenue（第22页 Energy Metrics and Targets）"
+          },
+          "能耗同比变化": {
+            "值": "2024年综合能源消费总量5,755.65 tce，2025年4,921.99 tce，同比下降",
+            "原文": "Total Energy Consumption tce 5,755.65 4,921.99（第44页 Key Performance Form）"
+          },
+          "节能目标与改造情况": {
+            "值": "制定《能源管理程序》，通过建设光伏系统推进可再生能源替代；照明全部更换为LED节能灯，部分地下车库升级为LED感应灯；安装37个新能源汽车充电桩，已配备11辆新能源商务车；2025年光伏发电808.01万kWh，可再生能源消费占比16.79%",
+            "原文": "the Company has formulated the Energy Management Procedures. At the same time, the Company actively promotes the substitution of renewable energy by establishing photovoltaic systems；All lighting has been replaced with LED energy-saving lamps；constructing 37 charging stations for new energy vehicles；the Company has equipped 11 new energy commercial vehicles；PV generation 808.01 10,000 kWh；Proportion of renewable energy consumption 16.79%（第22页 Efficient Resource Utilization）"
+          }
+        }
+      },
+      "未覆盖指标": []
+    },
+    "供应链碳管理": {
+      "指标": {
+        "供应商碳管理": {
+          "供应商碳培训及考核情况": {
+            "值": "报告期内开展供应商培训12场，共20家供应商参与",
+            "原文": "During the reporting period, the Company conducted 12 supplier training sessions, with a total of 20 suppliers participating.（第28页 Deepening Responsible Procurement）"
+          },
+          "供应商碳披露及评价要求": {
+            "值": "公司制定《供应商管理程序》《新供应商开发与管理指引》《采购部门管理制度》等，明确供应商准入与评价流程；在供应商准入和定期评审阶段，对供应商是否建立ISO 9001质量管理体系进行评分；考察供应商是否持有ISO 14001、ISO 45001、QC080000等认证",
+            "原文": "the Company has formulated a series of regulations, including the Supplier Management Procedure, New Supplier Development and Management Guidelines, and Procurement Department Management System, clarifying the the supplier onboarding and evaluation process.；the Company investigates whether suppliers hold certifications such as ISO 14001 (Environmental Management System), ISO 45001 (Occupational Health and Safety Management System), and QC080000 (Hazardous Substance Process Management System), which serve as important references for supplier evaluation.（第28-29页 Deepening Responsible Procurement）"
+          },
+          "供应商碳目标": {
+            "值": "未披露",
+            "原文": "未披露"
+          },
+          "供应商绿色采购标准": {
+            "值": "公司制定《环境保护与安全承诺》，明确要求供应商在运营中严格遵守环境、职业健康安全法律法规及公司管理要求；与供应商签署《质量与保密协议》《采购框架协议》，明确交付材料标准",
+            "原文": "The Company has formulated the Environmental Protection and Safety Commitment, clearly requiring suppliers to strictly comply with environmental, occupational health, and safety laws, regulations, and company management requirements during operations.；By signing the Quality and Confidentiality Agreement and the Procurement Framework Agreement with suppliers, the Company defines the standards for materials delivered by suppliers.（第29页 Supply Chain ESG Management）"
+          }
+        },
+        "供应链协同减排": {
+          "供应商激励": {
+            "值": "根据供应商评级结果实施分级管理：A级优秀供应商在付款、订单、检验和物料采购方面享有优先权",
+            "原文": "Grade A: Excellent suppliers will receive priority in payment, orders, inspection, and material procurement（第29页 Supplier Categorization）"
+          },
+          "包装减量及回收情况": {
+            "值": "未披露",
+            "原文": "未披露"
+          },
+          "循环经济链塑造": {
+            "值": "公司推行绿色办公，实施节水、节电、办公用品回收、垃圾分类等措施；设备清洗采用逆流漂洗方式，清洗废水回用于厂房空调冷却塔",
+            "原文": "Counterflow rinsing methods are used in equipment cleaning, and wastewater from cleaning is reused in the plant's air conditioning cooling towers.（第22页 Water Saving）；Comprehensively implement waste sorting.（第22页 Waste Sorting and Cleanliness Management）"
+          },
+          "绿色物流": {
+            "值": "公司通过制度引导与配套设施相结合推进运输低碳转型：制定绿色出行费用标准，园区内建设37个新能源汽车充电桩，逐步以新能源车辆替换传统商务车，目前已配备11辆新能源商务车",
+            "原文": "Formulating expense standards related to green travel to guide employees toward low-carbon travel methods; constructing 37 charging stations for new energy vehicles within the park to support employees' low-carbon commuting; and gradually promoting the transition to green business vehicles by continuously replacing conventional vehicles with new energy vehicles for business travel. As of now, the Company has equipped 11 new energy commercial vehicles（第22页 Green Travel）"
+          }
+        },
+        "供应链风险管控": {
+          "供应链碳风险传导影响评估": {
+            "值": "公司积极构建供应商风险管理体系，基于评级结果实施风险管控措施；极端天气事件可能影响供应链稳定性与物流效率，产生负面影响",
+            "原文": "The Company actively builds a supplier risk ma……（第29页 Strategy）；Extreme weather events such as typhoons and floods may damage the Company's production infrastructure, affect supply chain stability and logistics efficiency, generating negative impact on the normal production and operations.（第19页 Response to Climate Change）"
+          },
+          "气候风险暴露供应商数量": {
+            "值": "未披露",
+            "原文": "未披露"
+          },
+          "碳合规风险事件发生率": {
+            "值": "未披露",
+            "原文": "未披露"
+          },
+          "高碳供应商占比": {
+            "值": "未披露",
+            "原文": "未披露"
+          }
+        }
+      },
+      "未覆盖指标": []
+    },
+    "透明度": {
+      "指标": {
+        "披露合规性": {
+          "交易所ESG披露指引符合性": {
+            "值": "部分符合",
+            "原文": "Preparation Basis: Shenzhen Stock Exchange Self-Regulatory Guidelines No. 17 for Companies Listed on Shenzhen Stock Exchange - Sustainability Report (For Trial Implementation)；Shenzhen Stock Exchange Self-Regulatory Guidance No. 3 for Companies Listed on the ChiNext Market of Shenzhen Stock Exchange—Preparation of Sustainability Report（第3页 Preparation Basis）"
+          },
+          "历史信息披露更正次数": {
+            "值": "未提及",
+            "原文": "未提及"
+          },
+          "监管强制披露要求符合性": {
+            "值": "未提及",
+            "原文": "未提及"
+          }
+        },
+        "披露范围与完整性": {
+          "供应链碳披露层级": {
+            "值": "未披露",
+            "原文": "未披露"
+          },
+          "碳排放披露范围": {
+            "值": "范围一+二",
+            "原文": "Direct GHG Emissions (Scope 1) 403.93 tCO2e；Indirect GHG Emissions (Scope 2) 20,358.27 tCO2e（第20页 Metrics and Targets）"
+          },
+          "碳资产与交易信息披露比例": {
+            "值": "未披露",
+            "原文": "未披露"
+          }
+        },
+        "披露质量与可信度": {
+          "ESG评级结果及行业排名": {
+            "值": "Wind 2024 Wind ESG Rating A；Global New Energy ESG Top 100；2025 Listed Company ESG Value Delivery Award；2025 ESG Investment Value Top 100",
+            "原文": "2024 Wind ESG Rating A Wind；Global New Energy ESG Top 100 GGEIC&NEIAAP&APVIA；2025 Listed Company ESG Value Delivery Award Value Online；2025 ESG Investment Value Top 100 Stock Star（第8页 ESG Rating Awards）"
+          },
+          "ISO14064/ISO50001认证": {
+            "值": "未提及",
+            "原文": "未提及"
+          },
+          "信息披露频次": {
+            "值": "年度",
+            "原文": "This report is released on an annual basis, consistent with the fiscal year.（第3页 Reporting Period）"
+          },
+          "第三方核查覆盖率": {
+            "值": "未披露",
+            "原文": "未披露"
+          }
+        }
+      },
+      "未覆盖指标": []
+    },
+    "金融化情况": {
+      "指标": {
+        "碳资产管理": {
+          "CCER开发与储备": {
+            "值": "未披露",
+            "原文": "未披露"
+          },
+          "碳资产交易收益": {
+            "值": "未披露",
+            "单位": "",
+            "原文": "未披露"
+          },
+          "碳资产保值增值策略": {
+            "值": "未披露",
+            "原文": "未披露"
+          },
+          "碳配额管理": {
+            "值": "未披露",
+            "原文": "未披露"
+          }
+        },
+        "碳金融": {
+          "碳金融衍生品参与情况": {
+            "值": "未披露",
+            "原文": "未披露"
+          },
+          "绿色信贷": {
+            "值": "未披露",
+            "单位": "",
+            "原文": "未披露"
+          },
+          "绿色债券": {
+            "值": "未披露",
+            "单位": "",
+            "原文": "未披露"
+          }
+        }
+      },
+      "未覆盖指标": []
+    }
+  },
+  "证据校验": {
+    "checked": 23,
+    "degraded": [],
+    "enabled": true,
+    "failed": 0,
+    "reason": "",
+    "skipped": 19,
+    "版本": "v118",
+    "阈值": {
+      "ngram": 6,
+      "数字命中下限": 0.8,
+      "文本命中下限": 0.4
+    }
+  },
+  "评分增强数据": {
+    "L4计算结果": {
+      "CCER开发与储备": {
+        "L4得分": 1,
+        "保底分": 1.0,
+        "值": "未披露",
+        "原文": "未披露",
+        "基准来源": "行业均值",
+        "基准样本数": 11,
+        "基础分": 0,
+        "失分类型": "完整度失分",
+        "子域": "碳资产管理",
+        "完整度分": 0,
+        "对标分": 1,
+        "指标": "CCER开发与储备",
+        "是否未披露": true,
+        "权重": 0.005209,
+        "维度": "金融化情况",
+        "行业L4得分": 1.0,
+        "行业均值": 0.0,
+        "质量分": 0,
+        "障碍度": 0.0047
+      },
+      "ESG评级结果及行业排名": {
+        "L4得分": 9,
+        "保底分": null,
+        "值": "Wind 2024 Wind ESG Rating A；Global New Energy ESG Top 100；2025 Listed Company ESG Value Delivery Award；2025 ESG Investment Value Top 100",
+        "原文": "2024 Wind ESG Rating A Wind；Global New Energy ESG Top 100 GGEIC&NEIAAP&APVIA；2025 Listed Company ESG Value Delivery Awar",
+        "基准来源": "行业均值",
+        "基准样本数": 11,
+        "基础分": 6,
+        "失分类型": "无明显失分",
+        "子域": "披露质量与可信度",
+        "完整度分": 3,
+        "对标分": 3,
+        "指标": "ESG评级结果及行业排名",
+        "是否未披露": false,
+        "权重": 0.024035,
+        "维度": "透明度",
+        "行业L4得分": 3.45,
+        "行业均值": 0.45,
+        "质量分": 3,
+        "障碍度": 0.0024
+      },
+      "ISO14064/ISO50001认证": {
+        "L4得分": 0,
+        "保底分": null,
+        "值": "未提及",
+        "原文": "未提及",
+        "基准来源": "行业均值",
+        "基准样本数": 11,
+        "基础分": 0,
+        "失分类型": "完整度失分",
+        "子域": "披露质量与可信度",
+        "完整度分": 0,
+        "对标分": 0,
+        "指标": "ISO14064/ISO50001认证",
+        "是否未披露": true,
+        "权重": 0.033647,
+        "维度": "透明度",
+        "行业L4得分": 5.0,
+        "行业均值": 2.0,
+        "质量分": 0,
+        "障碍度": 0.0336
+      },
+      "交易所ESG披露指引符合性": {
+        "L4得分": 6,
+        "保底分": null,
+        "值": "部分符合",
+        "原文": "Preparation Basis: Shenzhen Stock Exchange Self-Regulatory Guidelines No. 17 for Companies Listed on Shenzhen Stock Exch",
+        "基准来源": "行业均值",
+        "基准样本数": 11,
+        "基础分": 3,
+        "失分类型": "质量失分",
+        "子域": "披露合规性",
+        "完整度分": 2,
+        "对标分": 3,
+        "指标": "交易所ESG披露指引符合性",
+        "是否未披露": false,
+        "权重": 0.068887,
+        "维度": "透明度",
+        "行业L4得分": 5.82,
+        "行业均值": 2.82,
+        "质量分": 1,
+        "障碍度": 0.0276
+      },
+      "供应商激励": {
+        "L4得分": 7,
+        "保底分": null,
+        "值": "根据供应商评级结果实施分级管理：A级优秀供应商在付款、订单、检验和物料采购方面享有优先权",
+        "原文": "Grade A: Excellent suppliers will receive priority in payment, orders, inspection, and material procurement（第29页 Supplie",
+        "基准来源": "行业均值",
+        "基准样本数": 11,
+        "基础分": 3,
+        "失分类型": "质量失分",
+        "子域": "供应链协同减排",
+        "完整度分": 2,
+        "对标分": 4,
+        "指标": "供应商激励",
+        "是否未披露": false,
+        "权重": 0.015786,
+        "维度": "供应链碳管理",
+        "行业L4得分": 3.73,
+        "行业均值": 0.73,
+        "质量分": 1,
+        "障碍度": 0.0047
+      },
+      "供应商碳培训及考核情况": {
+        "L4得分": 7,
+        "保底分": null,
+        "值": "报告期内开展供应商培训12场，共20家供应商参与",
+        "原文": "During the reporting period, the Company conducted 12 supplier training sessions, with a total of 20 suppliers participa",
+        "基准来源": "行业均值",
+        "基准样本数": 11,
+        "基础分": 4,
+        "失分类型": "质量失分",
+        "子域": "供应商碳管理",
+        "完整度分": 3,
+        "对标分": 3,
+        "指标": "供应商碳培训及考核情况",
+        "是否未披露": false,
+        "权重": 0.011575,
+        "维度": "供应链碳管理",
+        "行业L4得分": 3.36,
+        "行业均值": 0.36,
+        "质量分": 1,
+        "障碍度": 0.0035
+      },
+      "供应商碳披露及评价要求": {
+        "L4得分": 8,
+        "保底分": null,
+        "值": "公司制定《供应商管理程序》《新供应商开发与管理指引》《采购部门管理制度》等，明确供应商准入与评价流程；在供应商准入和定期评审阶段，对供应商是否建立ISO 9001质量管理体系进行评分；考察供应商是否持有ISO 14001、ISO 45001、QC080000等认证",
+        "原文": "the Company has formulated a series of regulations, including the Supplier Management Procedure, New Supplier Developmen",
+        "基准来源": "行业均值",
+        "基准样本数": 11,
+        "基础分": 4,
+        "失分类型": "质量失分",
+        "子域": "供应商碳管理",
+        "完整度分": 3,
+        "对标分": 4,
+        "指标": "供应商碳披露及评价要求",
+        "是否未披露": false,
+        "权重": 0.019289,
+        "维度": "供应链碳管理",
+        "行业L4得分": 4.64,
+        "行业均值": 1.64,
+        "质量分": 1,
+        "障碍度": 0.0039
+      },
+      "供应商碳目标": {
+        "L4得分": 0,
+        "保底分": null,
+        "值": "未披露",
+        "原文": "未披露",
+        "基准来源": "行业均值",
+        "基准样本数": 11,
+        "基础分": 0,
+        "失分类型": "完整度失分",
+        "子域": "供应商碳管理",
+        "完整度分": 0,
+        "对标分": 0,
+        "指标": "供应商碳目标",
+        "是否未披露": true,
+        "权重": 0.011575,
+        "维度": "供应链碳管理",
+        "行业L4得分": 3.55,
+        "行业均值": 0.55,
+        "质量分": 0,
+        "障碍度": 0.0116
+      },
+      "供应商绿色采购标准": {
+        "L4得分": 6,
+        "保底分": null,
+        "值": "公司制定《环境保护与安全承诺》，明确要求供应商在运营中严格遵守环境、职业健康安全法律法规及公司管理要求；与供应商签署《质量与保密协议》《采购框架协议》，明确交付材料标准",
+        "原文": "The Company has formulated the Environmental Protection and Safety Commitment, clearly requiring suppliers to strictly c",
+        "基准来源": "行业均值",
+        "基准样本数": 11,
+        "基础分": 3,
+        "失分类型": "质量失分",
+        "子域": "供应商碳管理",
+        "完整度分": 2,
+        "对标分": 3,
+        "指标": "供应商绿色采购标准",
+        "是否未披露": false,
+        "权重": 0.027003,
+        "维度": "供应链碳管理",
+        "行业L4得分": 5.82,
+        "行业均值": 2.82,
+        "质量分": 1,
+        "障碍度": 0.0108
+      },
+      "供应链碳披露层级": {
+        "L4得分": 1,
+        "保底分": 1.0,
+        "值": "未披露",
+        "原文": "未披露",
+        "基准来源": "行业均值",
+        "基准样本数": 11,
+        "基础分": 0,
+        "失分类型": "完整度失分",
+        "子域": "披露范围与完整性",
+        "完整度分": 0,
+        "对标分": 1,
+        "指标": "供应链碳披露层级",
+        "是否未披露": true,
+        "权重": 0.015759,
+        "维度": "透明度",
+        "行业L4得分": 3.09,
+        "行业均值": 0.09,
+        "质量分": 0,
+        "障碍度": 0.0142
+      },
+      "供应链碳风险传导影响评估": {
+        "L4得分": 6,
+        "保底分": null,
+        "值": "公司积极构建供应商风险管理体系，基于评级结果实施风险管控措施；极端天气事件可能影响供应链稳定性与物流效率，产生负面影响",
+        "原文": "The Company actively builds a supplier risk ma……（第29页 Strategy）；Extreme weather events such as typhoons and floods may d",
+        "基准来源": "行业均值",
+        "基准样本数": 11,
+        "基础分": 3,
+        "失分类型": "质量失分",
+        "子域": "供应链风险管控",
+        "完整度分": 2,
+        "对标分": 3,
+        "指标": "供应链碳风险传导影响评估",
+        "是否未披露": false,
+        "权重": 0.005786,
+        "维度": "供应链碳管理",
+        "行业L4得分": 1.0,
+        "行业均值": 0.0,
+        "质量分": 1,
+        "障碍度": 0.0023
+      },
+      "信息披露频次": {
+        "L4得分": 5,
+        "保底分": null,
+        "值": "年度",
+        "原文": "This report is released on an annual basis, consistent with the fiscal year.（第3页 Reporting Period）",
+        "基准来源": "行业均值",
+        "基准样本数": 11,
+        "基础分": 3,
+        "失分类型": "质量失分",
+        "子域": "披露质量与可信度",
+        "完整度分": 2,
+        "对标分": 2,
+        "指标": "信息披露频次",
+        "是否未披露": false,
+        "权重": 0.043271,
+        "维度": "透明度",
+        "行业L4得分": 6.09,
+        "行业均值": 3.09,
+        "质量分": 1,
+        "障碍度": 0.0216
+      },
+      "包装减量及回收情况": {
+        "L4得分": 0,
+        "保底分": null,
+        "值": "未披露",
+        "原文": "未披露",
+        "基准来源": "行业均值",
+        "基准样本数": 11,
+        "基础分": 0,
+        "失分类型": "完整度失分",
+        "子域": "供应链协同减排",
+        "完整度分": 0,
+        "对标分": 0,
+        "指标": "包装减量及回收情况",
+        "是否未披露": true,
+        "权重": 0.036826,
+        "维度": "供应链碳管理",
+        "行业L4得分": 4.55,
+        "行业均值": 1.55,
+        "质量分": 0,
+        "障碍度": 0.0368
+      },
+      "历史信息披露更正次数": {
+        "L4得分": 1,
+        "保底分": 1.0,
+        "值": "未提及",
+        "原文": "未提及",
+        "基准来源": "行业均值",
+        "基准样本数": 11,
+        "基础分": 0,
+        "失分类型": "完整度失分",
+        "子域": "披露合规性",
+        "完整度分": 0,
+        "对标分": 1,
+        "指标": "历史信息披露更正次数",
+        "是否未披露": true,
+        "权重": 0.022968,
+        "维度": "透明度",
+        "行业L4得分": 3.18,
+        "行业均值": 0.18,
+        "质量分": 0,
+        "障碍度": 0.0207
+      },
+      "循环经济链塑造": {
+        "L4得分": 7,
+        "保底分": null,
+        "值": "公司推行绿色办公，实施节水、节电、办公用品回收、垃圾分类等措施；设备清洗采用逆流漂洗方式，清洗废水回用于厂房空调冷却塔",
+        "原文": "Counterflow rinsing methods are used in equipment cleaning, and wastewater from cleaning is reused in the plant's air co",
+        "基准来源": "行业均值",
+        "基准样本数": 11,
+        "基础分": 3,
+        "失分类型": "质量失分",
+        "子域": "供应链协同减排",
+        "完整度分": 2,
+        "对标分": 4,
+        "指标": "循环经济链塑造",
+        "是否未披露": false,
+        "权重": 0.036826,
+        "维度": "供应链碳管理",
+        "行业L4得分": 4.91,
+        "行业均值": 1.91,
+        "质量分": 1,
+        "障碍度": 0.011
+      },
+      "气候风险暴露供应商数量": {
+        "L4得分": 1,
+        "保底分": 1.0,
+        "值": "未披露",
+        "原文": "未披露",
+        "基准来源": "行业均值",
+        "基准样本数": 11,
+        "基础分": 0,
+        "失分类型": "完整度失分",
+        "子域": "供应链风险管控",
+        "完整度分": 0,
+        "对标分": 1,
+        "指标": "气候风险暴露供应商数量",
+        "是否未披露": true,
+        "权重": 0.005786,
+        "维度": "供应链碳管理",
+        "行业L4得分": 1.0,
+        "行业均值": 0.0,
+        "质量分": 0,
+        "障碍度": 0.0052
+      },
+      "环保投资": {
+        "L4得分": 7,
+        "保底分": null,
+        "值": "2,311.80",
+        "原文": "Total Investment in Environmental Protection RMB (10K) / 2,311.80（第44页 Key Performance Form）",
+        "基准来源": "行业均值",
+        "基准样本数": 11,
+        "基础分": 4,
+        "失分类型": "质量失分",
+        "子域": "环境治理",
+        "完整度分": 3,
+        "对标分": 3,
+        "指标": "环保投资",
+        "是否未披露": false,
+        "权重": 0.035,
+        "维度": "企业内部碳管理",
+        "行业L4得分": 6.36,
+        "行业均值": 3.36,
+        "质量分": 1,
+        "障碍度": 0.0105
+      },
+      "环境管理体系": {
+        "L4得分": 8,
+        "保底分": null,
+        "值": "公司建立《环境、职业健康安全管理手册》等制度，构建由总经理领导、质量管理部协调、其他部门支持的管理架构；供应商评价中考察ISO 14001认证情况",
+        "原文": "It has established systems such as the Environmental, Occupational Health and Safety Management Manual, and built a mana",
+        "基准来源": "行业均值",
+        "基准样本数": 11,
+        "基础分": 4,
+        "失分类型": "质量失分",
+        "子域": "环境治理",
+        "完整度分": 3,
+        "对标分": 4,
+        "指标": "环境管理体系",
+        "是否未披露": false,
+        "权重": 0.035,
+        "维度": "企业内部碳管理",
+        "行业L4得分": 5.64,
+        "行业均值": 2.64,
+        "质量分": 1,
+        "障碍度": 0.007
+      },
+      "监管强制披露要求符合性": {
+        "L4得分": 0,
+        "保底分": null,
+        "值": "未提及",
+        "原文": "未提及",
+        "基准来源": "行业均值",
+        "基准样本数": 11,
+        "基础分": 0,
+        "失分类型": "完整度失分",
+        "子域": "披露合规性",
+        "完整度分": 0,
+        "对标分": 0,
+        "指标": "监管强制披露要求符合性",
+        "是否未披露": true,
+        "权重": 0.068887,
+        "维度": "透明度",
+        "行业L4得分": 6.64,
+        "行业均值": 3.64,
+        "质量分": 0,
+        "障碍度": 0.0689
+      },
+      "碳合规风险事件发生率": {
+        "L4得分": 1,
+        "保底分": 1.0,
+        "值": "未披露",
+        "原文": "未披露",
+        "基准来源": "行业均值",
+        "基准样本数": 11,
+        "基础分": 0,
+        "失分类型": "完整度失分",
+        "子域": "供应链风险管控",
+        "完整度分": 0,
+        "对标分": 1,
+        "指标": "碳合规风险事件发生率",
+        "是否未披露": true,
+        "权重": 0.005786,
+        "维度": "供应链碳管理",
+        "行业L4得分": 1.0,
+        "行业均值": 0.0,
+        "质量分": 0,
+        "障碍度": 0.0052
+      },
+      "碳总量": {
+        "L4得分": 8,
+        "保底分": null,
+        "值": "20,762.20",
+        "原文": "Total GHG Emissions 20,762.20 tCO2e（第10页 Key Performance；第20页 Metrics and Targets；第44页 Key Performance Form）",
+        "基准来源": "行业均值",
+        "基准样本数": 11,
+        "基础分": 5,
+        "失分类型": "无明显失分",
+        "子域": "碳排放",
+        "完整度分": 3,
+        "对标分": 3,
+        "指标": "碳总量",
+        "是否未披露": false,
+        "权重": 0.021475,
+        "维度": "企业内部碳管理",
+        "行业L4得分": 7.27,
+        "行业均值": 4.27,
+        "质量分": 2,
+        "障碍度": 0.0043
+      },
+      "碳排放强度": {
+        "L4得分": 9,
+        "保底分": null,
+        "值": "1.34",
+        "原文": "GHG Emission Intensity 1.34 tCO2e per million RMB of revenue（第10页 Key Performance；第20页 Metrics and Targets）",
+        "基准来源": "行业均值",
+        "基准样本数": 11,
+        "基础分": 5,
+        "失分类型": "无明显失分",
+        "子域": "碳排放",
+        "完整度分": 3,
+        "对标分": 4,
+        "指标": "碳排放强度",
+        "是否未披露": false,
+        "权重": 0.016707,
+        "维度": "企业内部碳管理",
+        "行业L4得分": 6.36,
+        "行业均值": 3.36,
+        "质量分": 2,
+        "障碍度": 0.0017
+      },
+      "碳排放披露范围": {
+        "L4得分": 5,
+        "保底分": null,
+        "值": "范围一+二",
+        "原文": "Direct GHG Emissions (Scope 1) 403.93 tCO2e；Indirect GHG Emissions (Scope 2) 20,358.27 tCO2e（第20页 Metrics and Targets）",
+        "基准来源": "行业均值",
+        "基准样本数": 11,
+        "基础分": 3,
+        "失分类型": "质量失分",
+        "子域": "披露范围与完整性",
+        "完整度分": 2,
+        "对标分": 2,
+        "指标": "碳排放披露范围",
+        "是否未披露": false,
+        "权重": 0.047269,
+        "维度": "透明度",
+        "行业L4得分": 6.18,
+        "行业均值": 3.18,
+        "质量分": 1,
+        "障碍度": 0.0236
+      },
+      "碳排放抵消与同比变化": {
+        "L4得分": 10,
+        "保底分": null,
+        "值": "2024年总排放24,401.86 tCO₂e，2025年20,762.20 tCO₂e，同比下降；光伏发电808.01万kWh，减排4,287.30 tCO₂e",
+        "原文": "Total GHG Emissions tCO2e 24,401.86 20,762.20（第44页 Key Performance Form）；PV Generation Amount 808.01*10⁴ kWh，Amount of G",
+        "基准来源": "行业均值",
+        "基准样本数": 11,
+        "基础分": 6,
+        "失分类型": "无明显失分",
+        "子域": "碳排放",
+        "完整度分": 3,
+        "对标分": 4,
+        "指标": "碳排放抵消与同比变化",
+        "是否未披露": false,
+        "权重": 0.011929,
+        "维度": "企业内部碳管理",
+        "行业L4得分": 3.55,
+        "行业均值": 0.55,
+        "质量分": 3,
+        "障碍度": 0.0
+      },
+      "碳管理体系建设": {
+        "L4得分": 8,
+        "保底分": null,
+        "值": "公司开展温室气体核算、碳足迹分析、减排策略制定、碳中和目标设定、碳交易及碳税应对等专项培训；依据GHG Protocol及《温室气体排放核算与报告要求 第29部分：机械设备制造企业》进行温室气体统计",
+        "原文": "the Company has conducted specialized training covering core topics such as greenhouse gas accounting, carbon footprint ",
+        "基准来源": "行业均值",
+        "基准样本数": 11,
+        "基础分": 4,
+        "失分类型": "质量失分",
+        "子域": "环境治理",
+        "完整度分": 3,
+        "对标分": 4,
+        "指标": "碳管理体系建设",
+        "是否未披露": false,
+        "权重": 0.035,
+        "维度": "企业内部碳管理",
+        "行业L4得分": 4.64,
+        "行业均值": 1.64,
+        "质量分": 1,
+        "障碍度": 0.007
+      },
+      "碳资产与交易信息披露比例": {
+        "L4得分": 1,
+        "保底分": 1.0,
+        "值": "未披露",
+        "原文": "未披露",
+        "基准来源": "行业均值",
+        "基准样本数": 11,
+        "基础分": 0,
+        "失分类型": "完整度失分",
+        "子域": "披露范围与完整性",
+        "完整度分": 0,
+        "对标分": 1,
+        "指标": "碳资产与交易信息披露比例",
+        "是否未披露": true,
+        "权重": 0.026259,
+        "维度": "透明度",
+        "行业L4得分": 1.0,
+        "行业均值": 0.0,
+        "质量分": 0,
+        "障碍度": 0.0236
+      },
+      "碳资产交易收益": {
+        "L4得分": 1,
+        "保底分": 1.0,
+        "值": "未披露",
+        "原文": "未披露",
+        "基准来源": "行业均值",
+        "基准样本数": 11,
+        "基础分": 0,
+        "失分类型": "完整度失分",
+        "子域": "碳资产管理",
+        "完整度分": 0,
+        "对标分": 1,
+        "指标": "碳资产交易收益",
+        "是否未披露": true,
+        "权重": 0.005209,
+        "维度": "金融化情况",
+        "行业L4得分": 1.0,
+        "行业均值": 0.0,
+        "质量分": 0,
+        "障碍度": 0.0047
+      },
+      "碳资产保值增值策略": {
+        "L4得分": 1,
+        "保底分": 1.0,
+        "值": "未披露",
+        "原文": "未披露",
+        "基准来源": "行业均值",
+        "基准样本数": 11,
+        "基础分": 0,
+        "失分类型": "完整度失分",
+        "子域": "碳资产管理",
+        "完整度分": 0,
+        "对标分": 1,
+        "指标": "碳资产保值增值策略",
+        "是否未披露": true,
+        "权重": 0.005209,
+        "维度": "金融化情况",
+        "行业L4得分": 1.0,
+        "行业均值": 0.0,
+        "质量分": 0,
+        "障碍度": 0.0047
+      },
+      "碳配额管理": {
+        "L4得分": 1,
+        "保底分": 1.0,
+        "值": "未披露",
+        "原文": "未披露",
+        "基准来源": "行业均值",
+        "基准样本数": 11,
+        "基础分": 0,
+        "失分类型": "完整度失分",
+        "子域": "碳资产管理",
+        "完整度分": 0,
+        "对标分": 1,
+        "指标": "碳配额管理",
+        "是否未披露": true,
+        "权重": 0.015625,
+        "维度": "金融化情况",
+        "行业L4得分": 1.0,
+        "行业均值": 0.0,
+        "质量分": 0,
+        "障碍度": 0.0141
+      },
+      "碳金融衍生品参与情况": {
+        "L4得分": 1,
+        "保底分": 1.0,
+        "值": "未披露",
+        "原文": "未披露",
+        "基准来源": "行业均值",
+        "基准样本数": 11,
+        "基础分": 0,
+        "失分类型": "完整度失分",
+        "子域": "碳金融",
+        "完整度分": 0,
+        "对标分": 1,
+        "指标": "碳金融衍生品参与情况",
+        "是否未披露": true,
+        "权重": 0.013397,
+        "维度": "金融化情况",
+        "行业L4得分": 1.0,
+        "行业均值": 0.0,
+        "质量分": 0,
+        "障碍度": 0.0121
+      },
+      "第三方核查覆盖率": {
+        "L4得分": 1,
+        "保底分": 1.0,
+        "值": "未披露",
+        "原文": "未披露",
+        "基准来源": "行业均值",
+        "基准样本数": 11,
+        "基础分": 0,
+        "失分类型": "完整度失分",
+        "子域": "披露质量与可信度",
+        "完整度分": 0,
+        "对标分": 1,
+        "指标": "第三方核查覆盖率",
+        "是否未披露": true,
+        "权重": 0.024035,
+        "维度": "透明度",
+        "行业L4得分": 3.45,
+        "行业均值": 0.45,
+        "质量分": 0,
+        "障碍度": 0.0216
+      },
+      "绿色信贷": {
+        "L4得分": 1,
+        "保底分": 1.0,
+        "值": "未披露",
+        "原文": "未披露",
+        "基准来源": "行业均值",
+        "基准样本数": 11,
+        "基础分": 0,
+        "失分类型": "完整度失分",
+        "子域": "碳金融",
+        "完整度分": 0,
+        "对标分": 1,
+        "指标": "绿色信贷",
+        "是否未披露": true,
+        "权重": 0.040181,
+        "维度": "金融化情况",
+        "行业L4得分": 1.0,
+        "行业均值": 0.0,
+        "质量分": 0,
+        "障碍度": 0.0362
+      },
+      "绿色债券": {
+        "L4得分": 1,
+        "保底分": 1.0,
+        "值": "未披露",
+        "原文": "未披露",
+        "基准来源": "行业均值",
+        "基准样本数": 11,
+        "基础分": 0,
+        "失分类型": "完整度失分",
+        "子域": "碳金融",
+        "完整度分": 0,
+        "对标分": 1,
+        "指标": "绿色债券",
+        "是否未披露": true,
+        "权重": 0.040181,
+        "维度": "金融化情况",
+        "行业L4得分": 1.0,
+        "行业均值": 0.0,
+        "质量分": 0,
+        "障碍度": 0.0362
+      },
+      "绿色物流": {
+        "L4得分": 7,
+        "保底分": null,
+        "值": "公司通过制度引导与配套设施相结合推进运输低碳转型：制定绿色出行费用标准，园区内建设37个新能源汽车充电桩，逐步以新能源车辆替换传统商务车，目前已配备11辆新能源商务车",
+        "原文": "Formulating expense standards related to green travel to guide employees toward low-carbon travel methods; constructing ",
+        "基准来源": "行业均值",
+        "基准样本数": 11,
+        "基础分": 4,
+        "失分类型": "质量失分",
+        "子域": "供应链协同减排",
+        "完整度分": 3,
+        "对标分": 3,
+        "指标": "绿色物流",
+        "是否未披露": false,
+        "权重": 0.026306,
+        "维度": "供应链碳管理",
+        "行业L4得分": 3.45,
+        "行业均值": 0.45,
+        "质量分": 1,
+        "障碍度": 0.0079
+      },
+      "能效提升对比度": {
+        "L4得分": 9,
+        "保底分": null,
+        "值": "2024年能源消费强度0.30 tce/百万元营收，2025年0.32 tce/百万元营收",
+        "原文": "Energy Consumption Intensity tce / Million RMB in Revenue 0.30 0.32（第44页 Key Performance Form）",
+        "基准来源": "行业均值",
+        "基准样本数": 11,
+        "基础分": 6,
+        "失分类型": "无明显失分",
+        "子域": "能源消耗与节能方案",
+        "完整度分": 3,
+        "对标分": 3,
+        "指标": "能效提升对比度",
+        "是否未披露": false,
+        "权重": 0.014587,
+        "维度": "企业内部碳管理",
+        "行业L4得分": 3.27,
+        "行业均值": 0.27,
+        "质量分": 3,
+        "障碍度": 0.0015
+      },
+      "能源类型和强度": {
+        "L4得分": 6,
+        "保底分": null,
+        "值": "主要能源为电力，另使用天然气、汽油、柴油；2025年综合能源消费总量4,921.99 tce，能源消费强度0.32 tce/百万元营收",
+        "原文": "The Company's energy consumption consists primarily of electricity.；Total energy consumption 4,921.99 tce；Energy consump",
+        "基准来源": "行业均值",
+        "基准样本数": 11,
+        "基础分": 4,
+        "失分类型": "质量失分",
+        "子域": "能源消耗与节能方案",
+        "完整度分": 3,
+        "对标分": 2,
+        "指标": "能源类型和强度",
+        "是否未披露": false,
+        "权重": 0.026251,
+        "维度": "企业内部碳管理",
+        "行业L4得分": 7.73,
+        "行业均值": 4.73,
+        "质量分": 1,
+        "障碍度": 0.0105
+      },
+      "能耗同比变化": {
+        "L4得分": 9,
+        "保底分": null,
+        "值": "2024年综合能源消费总量5,755.65 tce，2025年4,921.99 tce，同比下降",
+        "原文": "Total Energy Consumption tce 5,755.65 4,921.99（第44页 Key Performance Form）",
+        "基准来源": "行业均值",
+        "基准样本数": 11,
+        "基础分": 6,
+        "失分类型": "无明显失分",
+        "子域": "能源消耗与节能方案",
+        "完整度分": 3,
+        "对标分": 3,
+        "指标": "能耗同比变化",
+        "是否未披露": false,
+        "权重": 0.014587,
+        "维度": "企业内部碳管理",
+        "行业L4得分": 3.45,
+        "行业均值": 0.45,
+        "质量分": 3,
+        "障碍度": 0.0015
+      },
+      "节能目标与改造情况": {
+        "L4得分": 7,
+        "保底分": null,
+        "值": "制定《能源管理程序》，通过建设光伏系统推进可再生能源替代；照明全部更换为LED节能灯，部分地下车库升级为LED感应灯；安装37个新能源汽车充电桩，已配备11辆新能源商务车；2025年光伏发电808.01万kWh，可再生能源消费占比16.79%",
+        "原文": "the Company has formulated the Energy Management Procedures. At the same time, the Company actively promotes the substit",
+        "基准来源": "行业均值",
+        "基准样本数": 11,
+        "基础分": 4,
+        "失分类型": "质量失分",
+        "子域": "能源消耗与节能方案",
+        "完整度分": 3,
+        "对标分": 3,
+        "指标": "节能目标与改造情况",
+        "是否未披露": false,
+        "权重": 0.026251,
+        "维度": "企业内部碳管理",
+        "行业L4得分": 6.45,
+        "行业均值": 3.45,
+        "质量分": 1,
+        "障碍度": 0.0079
+      },
+      "范围一排放": {
+        "L4得分": 9,
+        "保底分": null,
+        "值": "403.93",
+        "原文": "Direct GHG Emissions (Scope 1) 403.93 tCO2e（第20页 Metrics and Targets；第44页 Key Performance Form）",
+        "基准来源": "行业均值",
+        "基准样本数": 11,
+        "基础分": 5,
+        "失分类型": "无明显失分",
+        "子域": "碳排放",
+        "完整度分": 3,
+        "对标分": 4,
+        "指标": "范围一排放",
+        "是否未披露": false,
+        "权重": 0.021475,
+        "维度": "企业内部碳管理",
+        "行业L4得分": 6.82,
+        "行业均值": 3.82,
+        "质量分": 2,
+        "障碍度": 0.0021
+      },
+      "范围三排放": {
+        "L4得分": 5,
+        "保底分": null,
+        "值": "未披露",
+        "原文": "未披露",
+        "基准来源": "行业均值",
+        "基准样本数": 11,
+        "基础分": 2,
+        "失分类型": "完整度失分",
+        "子域": "碳排放",
+        "完整度分": 0,
+        "对标分": 3,
+        "指标": "范围三排放",
+        "是否未披露": false,
+        "权重": 0.011929,
+        "维度": "企业内部碳管理",
+        "行业L4得分": 3.45,
+        "行业均值": 0.45,
+        "质量分": 2,
+        "障碍度": 0.006
+      },
+      "范围二排放": {
+        "L4得分": 9,
+        "保底分": null,
+        "值": "20,358.27",
+        "原文": "Indirect GHG Emissions (Scope 2) 20,358.27 tCO2e（第20页 Metrics and Targets；第44页 Key Performance Form）",
+        "基准来源": "行业均值",
+        "基准样本数": 11,
+        "基础分": 5,
+        "失分类型": "无明显失分",
+        "子域": "碳排放",
+        "完整度分": 3,
+        "对标分": 4,
+        "指标": "范围二排放",
+        "是否未披露": false,
+        "权重": 0.021475,
+        "维度": "企业内部碳管理",
+        "行业L4得分": 6.82,
+        "行业均值": 3.82,
+        "质量分": 2,
+        "障碍度": 0.0021
+      },
+      "高碳供应商占比": {
+        "L4得分": 1,
+        "保底分": 1.0,
+        "值": "未披露",
+        "原文": "未披露",
+        "基准来源": "行业均值",
+        "基准样本数": 11,
+        "基础分": 0,
+        "失分类型": "完整度失分",
+        "子域": "供应链风险管控",
+        "完整度分": 0,
+        "对标分": 1,
+        "指标": "高碳供应商占比",
+        "是否未披露": true,
+        "权重": 0.005786,
+        "维度": "供应链碳管理",
+        "行业L4得分": 1.0,
+        "行业均值": 0.0,
+        "质量分": 0,
+        "障碍度": 0.0052
+      }
+    },
+    "公司类型": "listed",
+    "总分": 4.59,
+    "维度得分": {
+      "企业内部碳管理": 7.87,
+      "供应链碳管理": 4.81,
+      "透明度": 3.12,
+      "金融化情况": 1.0
+    },
+    "行业": "装备制造",
+    "评分等级": "基础",
+    "障碍度Top10": [
+      {
+        "L4得分": 0,
+        "失分类型": "完整度失分",
+        "指标": "监管强制披露要求符合性",
+        "权重": 0.068887,
+        "障碍度": 0.0689
+      },
+      {
+        "L4得分": 0,
+        "失分类型": "完整度失分",
+        "指标": "包装减量及回收情况",
+        "权重": 0.036826,
+        "障碍度": 0.0368
+      },
+      {
+        "L4得分": 1,
+        "失分类型": "完整度失分",
+        "指标": "绿色信贷",
+        "权重": 0.040181,
+        "障碍度": 0.0362
+      },
+      {
+        "L4得分": 1,
+        "失分类型": "完整度失分",
+        "指标": "绿色债券",
+        "权重": 0.040181,
+        "障碍度": 0.0362
+      },
+      {
+        "L4得分": 0,
+        "失分类型": "完整度失分",
+        "指标": "ISO14064/ISO50001认证",
+        "权重": 0.033647,
+        "障碍度": 0.0336
+      },
+      {
+        "L4得分": 6,
+        "失分类型": "质量失分",
+        "指标": "交易所ESG披露指引符合性",
+        "权重": 0.068887,
+        "障碍度": 0.0276
+      },
+      {
+        "L4得分": 5,
+        "失分类型": "质量失分",
+        "指标": "碳排放披露范围",
+        "权重": 0.047269,
+        "障碍度": 0.0236
+      },
+      {
+        "L4得分": 1,
+        "失分类型": "完整度失分",
+        "指标": "碳资产与交易信息披露比例",
+        "权重": 0.026259,
+        "障碍度": 0.0236
+      },
+      {
+        "L4得分": 1,
+        "失分类型": "完整度失分",
+        "指标": "第三方核查覆盖率",
+        "权重": 0.024035,
+        "障碍度": 0.0216
+      },
+      {
+        "L4得分": 5,
+        "失分类型": "质量失分",
+        "指标": "信息披露频次",
+        "权重": 0.043271,
+        "障碍度": 0.0216
+      }
+    ]
+  }
+}

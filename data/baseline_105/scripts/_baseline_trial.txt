@@ -1,0 +1,35 @@
+﻿璇诲彇 raw_json = 12 浠?| 鍙敤 12 浠?| 寮傚父 0 浠?
+宸插啓 [REPO]\data\baseline_105\weights_patch.json
+python.exe : Traceback (most recent call last):
+所在位置 行:447 字符: 1
++ & $py "[REPO]\data\baseline_ ...
++ ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified: (Traceback (most recent call last) 
+   ::String) [], RemoteException
+    + FullyQualifiedErrorId : NativeCommandError
+ 
+  File "[LOCALAPPDATA]\Local\Programs\Python\Python313\Lib\site-package
+s\openpyxl\descriptors\base.py", line 59, in _convert
+    value = expected_type(value)
+TypeError: float() argument must be a string or a real number, not 'list'
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "[REPO]\data\baseline_105\scrip
+ts\build_baseline_v2.py", line 288, in <module>
+    main()
+    ~~~~^^
+  File "[REPO]\data\baseline_105\scrip
+ts\build_baseline_v2.py", line 261, in main
+    ws.column_dimensions[get_column_letter(ci)].width = [6, 30, 12, 6, 11] + [9
+] * len(keys)
+    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "[LOCALAPPDATA]\Local\Programs\Python\Python313\Lib\site-package
+s\openpyxl\descriptors\base.py", line 71, in __set__
+    value = _convert(self.expected_type, value)
+  File "[LOCALAPPDATA]\Local\Programs\Python\Python313\Lib\site-package
+s\openpyxl\descriptors\base.py", line 61, in _convert
+    raise TypeError('expected ' + str(expected_type))
+TypeError: expected <class 'float'>
+rc=1

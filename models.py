@@ -105,7 +105,13 @@ def call_llm(system_prompt: str, user_text: str, model_id: str = None,
             {"role": "user", "content": user_text}
         ],
         "max_tokens": 16384,
-        "temperature": 0.1,
+        # v=116：0.1 → 0.0。抽取任务要的是"读原文→填结构"，不存在"需要多样性"的场景。
+        # 背景（2026-09-25）：同一份报告两次运行，总分 5.7 vs 6.25、透明度维度分
+        #   5.51 vs 6.98，差异 100% 来自提取 JSON（算分是纯函数）。
+        # ⚠️ 温度 0 只能消除**采样**随机性，消不掉 GPU 浮点归约顺序差异（batch 方差）
+        #   —— DeepSeek 也未提供 seed 参数。故此项是"降方差"，不是"保证确定"。
+        #   真正的确定性靠下游加固：受控枚举 + 规则判定 + 证据强制（见 extraction_prompt.md）。
+        "temperature": 0.0,
     }
     # v=99：DeepSeek V4.1 系列**思考模式默认开启**（effort=high），思维链经
     # reasoning_content 返回且与 content **共享 max_tokens 预算**。实测影响：

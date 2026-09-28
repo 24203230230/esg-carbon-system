@@ -28,6 +28,29 @@ from pathlib import Path
 logger = logging.getLogger('weights_logic')
 
 # ============================== 常量 ==============================
+# v119（C1）：繁简归一 —— 报告可能是繁体，而本模块全部判定词是简体中文。
+#   不归一时，繁体的「未揭露」「未提及」不匹配简体枚举 ⇒ 被判成"有实质内容"，
+#   该指标白拿「完整度1 + 质量1」。证据校验侧实测：归一后命中率 0.021 → 0.800。
+#   依赖缺失时**降级为原样返回**，绝不因此报错（保证任何环境都能跑）。
+try:
+    from zhconv import convert as _zh_convert
+except Exception:                                   # noqa: BLE001
+    _zh_convert = None
+
+
+def _zh_norm(s) -> str:
+    """繁体 → 简体；英文/数字/空值原样；无 zhconv 依赖时原样返回。"""
+    if s is None:
+        return ''
+    t = str(s)
+    if not t or _zh_convert is None:
+        return t
+    try:
+        return _zh_convert(t, 'zh-cn')
+    except Exception:                               # noqa: BLE001
+        return t
+
+
 WEIGHTS_PATH = Path(__file__).parent / 'weights.json'
 
 # 4 个维度与其下 L3 子域映射（用于维度得分聚合）
@@ -56,11 +79,127 @@ def normalize_dim_name(dim_name: str) -> str:
     return DIM_NAME_NORMALIZE.get(str(dim_name).strip(), str(dim_name).strip())
 
 # 多年迹象关键词（质量分3档判定）
+# v=116 硬化：移除 "对比 / 趋势 / 增长 / 下降 / ~ ～ 至 — -" 这批**过于宽泛**的词与符号。
+#   原实现里原文只要出现一个 "-"（表格线、破折号、数字区间都算）就判「多年」、
+#   质量分 2→3 跳档，是评分漂移的主要放大器之一
+#   （L4 跳 3 分 × 6.89% 权重 × 2 项 ≈ 总分 ±0.41，与实测漂移量级吻合）。
+#   现改为**结构化判定**：文本中出现 ≥2 个不同的四位年份，或出现明确的
+#   "逐年 / 同比 / 较上"等提示词，才认定为多年。
+# v119（C1）：补英文等价式（英文报告的值可能是英文写法）。
+#   匹配时统一 lower，故此处一律小写。
 MULTI_YEAR_KEYWORDS = [
-    "2020", "2021", "2022", "2023", "2024", "2025", "2026",
-    "逐年", "连续", "多年", "近三年", "近五年", "同比", "较上",
-    "对比", "趋势", "增长", "下降", "~", "至", "～", "—", "-",
+    "逐年", "连续", "多年", "近三年", "近五年", "同比", "较上", "相比上年", "与上年",
+    # 英文等价式（英文报告 / 英文值）
+    "year-on-year", "year over year", "yoy", "consecutive", "multi-year",
+    "multi year", "over the past", "compared with last year",
+    "compared to last year", "three-year", "five-year", "annual comparison",
 ]
+
+# v=116："表示实质上没有披露"的表述集合。这些写法语义相同但字面不同，
+#   原实现会把「未披露（报告未提供…）」判成定性披露（完整度2 / 质量1），
+#   而简写「未披露」只拿 0 / 0 ⇒ 同一指标基础分 0↔3 跳档。
+#   统一归为「无值」可显著收敛同一指标的跨轮次波动。
+UNDISCLOSED_PAT = re.compile(
+    r'(未披露|未提及|未找到|未明确|未涉及|未提供|未涵盖|未单独披露|未公布|未公开'
+    r'|没有披露|无相关(?:信息|内容|表述|数据)?|无法获取|未识别|未体现)'
+    # v119（C1）：用词变体（字形简体但用词不同，zhconv 转换无效，须显式列出）
+    r'|(未揭露|未公示|未公告|未统计|暂未披露|暂未提及|未开展相关披露)'
+    # v119（C1）：英文等价式（英文报告的值可能是英文写法）
+    r'|(?:(?:not|no|non|without)[\s\-]*(?:disclosed|mention(?:ed|ing)?|report(?:ed|ing)?'
+    r'|provid(?:ed|ing)|available|applicable|data|information|record(?:ed)?))'
+    r'|undisclosed',
+    re.IGNORECASE,
+)
+# 转折/肯定词：出现即说明该表述含实质内容（如"未明确…，但已建立…"），不算未披露
+AFFIRM_PAT = re.compile(
+    r'(但|已建立|已通过|已获得|已制定|已完成|已开展|已实施|已有|通过了|获得了|正在推进|已披露)'
+    # v119（C1）：英文等价式
+    r'|(?:\bbut\b|\bhowever\b|\byet\b'
+    r'|has (?:established|obtained|formulated|completed|launched|implemented)'
+    r'|have (?:established|obtained|formulated|completed|launched|implemented))',
+    re.IGNORECASE,
+)
+# v=116c：补齐「表示没有披露」的**短字面量占位符**全集（与 UNDISCLOSED_PAT 对齐）。
+#   背景：模型在未披露类指标上，除了填 "未披露"，还会填 "未提及/未找到/未明确"
+#   等字面量；若只挡 "未披露"，这些等价写法会让「原文」被判为『有内容』，
+#   使该指标白拿完整度1+质量1 分。牧原实测：4 个指标（含两个 0.0689 最高权重）
+#   因此把透明度维度从 1.86 抬到 3.12，总分跳 0.12~0.66。
+#   注：这里**只列纯占位符**，不含元描述长句（如"报告未提及…"），故对历史数据
+#   保持零影响（与 v2-lite 同口径）。
+EMPTY_VALUES = (
+    '', '未披露', '未提及', '未找到', '未明确', '未涉及', '未提供', '未涵盖',
+    '未单独披露', '未公布', '未公开', '未识别', '未体现', '没有披露',
+    '无', '没有', '暂无', '不涉及', '不适用', '—', '-', 'N/A', 'n/a',
+    # v119（C1）：**用词变体**（字形是简体、但用词与大陆不同）。
+    #   ⚠️ zhconv 只做「字形」转换，不做「用词」转换 —— 「未揭露」四字繁简同形，
+    #   归一后仍是「未揭露」，故必须在此显式列出。实测模型确实会填「未揭露」。
+    '未揭露', '未公示', '未公告', '未统计', '暂未披露', '暂未提及',
+    '无相关资料', '暂无相关信息', '未披露相关信息',
+    # v119（C1）：英文等价式与常见变体（比较前统一 lower + 去首尾空白）
+    'not disclosed', 'not mentioned', 'not reported', 'not provided',
+    'not available', 'not applicable', 'not found', 'not specified',
+    'no data', 'no information', 'no relevant information', 'no disclosure',
+    'none', 'nil', 'null', 'na', 'undisclosed', 'unavailable',
+    '--', '–',
+)
+
+# v119（C1）：占位符判定 —— 空白归一 + 大小写归一，兼容英文写法。
+#   注意：**只判"纯占位符字面量"**，不启用 _is_undisclosed —— 历史数据里
+#   「原文」为长句元描述（"报告未提及…"）的占很高比例，一并归零会改变既有评分。
+_EMPTY_LOWER = {str(v).strip().lower() for v in EMPTY_VALUES}
+
+
+def _is_empty_value(s) -> bool:
+    """是否为空值 / 占位符（v119：兼容英文与大小写；空白视为空）。"""
+    if s is None:
+        return True
+    t = str(s).strip()
+    if not t:
+        return True
+    if t in EMPTY_VALUES:
+        return True
+    return t.lower() in _EMPTY_LOWER
+
+
+def _is_undisclosed(val: str) -> bool:
+    """值字段是否属于「实质上没有披露」。
+    含具体数字的表述不算（有量化信息）；带肯定性转折的也不算（有实质内容）。
+    v119（C1）：入口做繁简归一，使繁体「未揭露」等价于简体「未披露」。
+    """
+    val = _zh_norm(val)
+    if not val:
+        return False
+    if re.search(r'\d', val):
+        return False
+    if not UNDISCLOSED_PAT.search(val):
+        return False
+    return not AFFIRM_PAT.search(val)
+
+
+def _value_present(val: str) -> bool:
+    """值字段是否构成「实质披露」—— v=116 统一入口（完整度分与质量分共用）。
+
+    与原实现的差别仅在：把"带解释的未披露表述"也归为无值，消除同义不同判。
+    正常披露（含数字 / 含实质文字 / 带转折的自述）行为完全不变。
+    v119（C1）：占位符判定改走 `_is_empty_value`（兼容英文与大小写）。
+    """
+    if _is_empty_value(val):
+        return False
+    return not _is_undisclosed(val)
+
+
+def _multi_year_evidence(text: str) -> bool:
+    """是否具备「多年数据」证据（v=116 结构化判定）。
+
+    判定顺序：① 文本含 ≥2 个不同的四位年份 → 是；② 含"逐年/同比/较上"等提示词 → 是。
+    单个年份（如"2025年排放量：X"）**不算** —— 那只是单年数据。
+    v119（C1）：先繁简归一并统一小写，使英文提示词（year-on-year / consecutive）可命中。
+    """
+    text = _zh_norm(text)
+    if len(set(re.findall(r'(?<!\d)(20\d{2})(?!\d)', text or ''))) >= 2:
+        return True
+    low = (text or '').lower()
+    return any(kw in low for kw in MULTI_YEAR_KEYWORDS)
 
 # ============================== 数据加载 ==============================
 def load_weights() -> dict:
@@ -93,22 +232,31 @@ def calc_completeness(node: dict) -> int:
     """
     if not isinstance(node, dict):
         return 0
-    val = str(node.get('值') or '').strip()
-    raw = str(node.get('原文') or '').strip()
+    # v119（C1）：先繁简归一（简体输入为恒等变换 ⇒ 历史中文数据零影响）
+    val = _zh_norm(node.get('值') or '').strip()
+    raw = _zh_norm(node.get('原文') or '').strip()
 
-    # 未披露标记
-    if val in ('', '未披露', '无', '—', '-', 'N/A', '不适用'):
-        val_has = False
-    else:
-        val_has = True
+    # v=116：统一走 _value_present —— 把「未披露（报告未提供…）」这类带解释的
+    #   同义表述也归为无值（原先会被判成定性披露 2 分，造成同指标跨轮次跳档）。
+    #   正常披露、以及"未明确…，但已建立…"这类含实质内容的表述行为不变。
+    val_has = _value_present(val)
+    # v=116b：「原文」也归一化占位符 —— 证据强制规则下，模型会把「原文」填成
+    #   "未披露"/"无"（占位）或留空，两种写法语义等价。原实现只判 `not raw`，
+    #   于是 值=未披露 时，「原文=未披露」判 1 分、「原文="" 」判 0 分，
+    #   单指标差 2 分 ⇒ 实测放大成总分 3 分跳变（红豆 5.32 ↔ 2.33）。
+    #   ⚠️ 此处**只判字面量占位符**，**不**启用 _is_undisclosed：
+    #   历史数据中「原文」为长句元描述（"报告未提及XXX"）占 48.6%，若一并归零
+    #   会大幅改变既有评分（行业基准库需重算）；只判字面量则影响面实测为 0。
+    #   v119（C1）：判定改走 _is_empty_value（英文/繁体/大小写等价形式一并挡住）。
+    raw_has = not _is_empty_value(raw)
 
-    if not val_has and not raw:
+    if not val_has and not raw_has:
         return 0  # 全空 → 未披露
     if val_has and re.search(r'\d', val):
         return 3  # 有数字 → 定量
     if val_has:
         return 2  # 有文字 → 定性
-    return 1  # 仅原文 → 简单提及
+    return 1 if raw_has else 0  # 仅原文 → 简单提及
 
 
 # ============================== 公式2：质量分 ==============================
@@ -121,22 +269,26 @@ def calc_quality(node: dict) -> int:
     """
     if not isinstance(node, dict):
         return 0
-    val = str(node.get('值') or '').strip()
-    year = str(node.get('年份') or '').strip()
-    raw = str(node.get('原文') or '').strip()
+    # v119（C1）：先繁简归一（简体输入为恒等变换 ⇒ 历史中文数据零影响）
+    val = _zh_norm(node.get('值') or '').strip()
+    year = _zh_norm(node.get('年份') or '').strip()
+    raw = _zh_norm(node.get('原文') or '').strip()
 
-    val_has = val not in ('', '未披露', '无', '—', '-', 'N/A', '不适用') and re.search(r'\d', val)
-    year_has = year not in ('', '未披露', '无', '—')
+    val_has = _value_present(val) and bool(re.search(r'\d', val))
+    year_has = _value_present(year)
+    # v=116b：原文只判字面量占位符（与 calc_completeness 同口径）
+    # v119（C1）：改走 _is_empty_value（英文/繁体/大小写等价形式一并挡住）
+    raw_has = not _is_empty_value(raw)
 
-    if not val_has and not year_has and not raw:
+    if not val_has and not year_has and not raw_has:
         return 0  # 无任何披露
-    if year_has and (re.search(r'[~至—\-]', year) or '年' in year and '至' in year):
-        return 3  # 年份含范围 → 多年
-    if val_has and any(kw in raw for kw in MULTI_YEAR_KEYWORDS):
-        return 3  # 原文含多年迹象 → 多年
+    if year_has and _multi_year_evidence(year):
+        return 3  # 年份字段本身含多年证据
+    if val_has and _multi_year_evidence(raw + ' ' + val):
+        return 3  # 原文/值含多年证据
     if year_has:
         return 2  # 单年数据
-    if raw:
+    if raw_has:
         return 1  # 仅文字描述
     return 0
 

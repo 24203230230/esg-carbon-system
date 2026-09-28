@@ -40,3 +40,10 @@ cloudflared-temp/
 #   他人的复现方式见 README「复现与 AI 辅助部署」
 stack_ctl.ps1
 open_server_ui.cmd
+
+# ===== 本机 PowerShell 重定向产物（UTF-16 乱码，无复现价值）=====
+#   真实运行日志见 data/baseline_105/scripts/_recheck/_summary.json
+data/baseline_105/scripts/_recheck_*.txt
+data/baseline_105/scripts/_recheck_test1.txt
+data/baseline_105/**/*_stdout.txt
+data/baseline_105/**/*_rc.txt

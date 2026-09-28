@@ -1,0 +1,1260 @@
+{
+  "_meta": {
+    "manifest_no": 2,
+    "company": "三一重能股份有限公司（SANY Renewable Energy Co., Ltd.）",
+    "industry": "装备制造",
+    "lang": "EN",
+    "pdf": "[DATA_ROOT]/ESG报告\\补充的ESG报告\\三一重能：三一重能2025年度环境、社会及治理（ESG）报告（英文版）.pdf",
+    "pdf_file": "三一重能：三一重能2025年度环境、社会及治理（ESG）报告（英文版）.pdf",
+    "extract_build": "v119b",
+    "task_id": "689b46ec8ee747baa08b48084dc56fa0",
+    "elapsed_s": 51.4,
+    "fetched_at": "2026-09-27 14:30:16",
+    "runtime_build": "v119b",
+    "build_note": "v120/v121 仅改内存管理（并发槽位闸门 + pdfminer 页级缓存释放），不改变提取口径与评分逻辑；故统一标 v119b（提取口径版本），实际运行容器版本见 runtime_build。"
+  },
+  "报告元数据": {
+    "主营业务": "风电机组的研发、制造与销售，以及风电场的设 计、建设与运营管理",
+    "企业名称": "三一重能股份有限公司",
+    "企业性质": "未披露",
+    "所属行业": "能源电力",
+    "报告名称": "三一重能2025年度环境、社会及治理（ESG）报告",
+    "报告年份": "2025",
+    "报告页码/章节": "第1-48页",
+    "营收规模": "273.80亿元"
+  },
+  "指标提取结果": {
+    "企业内部碳管理": {
+      "指标": {
+        "环境治理": {
+          "环保投资": {
+            "值": "未披露",
+            "单位": "",
+            "原文": "未披露"
+          },
+          "环境管理体系": {
+            "值": "公司已建立环境管理体系，由董事会作为最高责任机构，在执行层面设立安全生产、职业健康、消防安全与环境保护委员会（安全委员会），由总经理担任主任，负责环境管理的战略决策与监督；HSE管理部作为执行部门，统筹环境管理体系建设、环境绩效提升和日常监测管理。报告期内，公司修订了《环境政策》，新增废水、废气、固废及二氧化碳排放控制目标，并完善了《突发环境事件应急预案》的组织架构和应急流程。",
+            "原文": "The Board of Directors is the highest responsible body for the Company's environmental management. A Safety Production, Occupational Health, Fire Safety, and Environmental Protection Committee... is established at the executive level, chaired by the Company's general manager... The HSE Management Department, as the executing department, coordinates the construction of the environmental management system... By revising the Environmental Policy, new control targets for wastewater, waste gas, solid waste, and carbon dioxide emissions were added..."
+          },
+          "碳管理体系建设": {
+            "值": "公司已连续第五年开展全价值链温室气体盘查，识别运营及上下游价值链的温室气体排放源，并基于盘查结果建立科学减排目标和清晰的脱碳路径。公司于2024年7月正式向科学碳目标倡议（SBTi）提交《企业雄心助力1.5°C温控目标承诺书》，承诺以公开透明方式推进气候行动，力争2050年实现价值链净零排放，并计划在24个月内完成基于SBTi标准的中短期、长期及净零排放目标设定并提交SBTi验证。",
+            "原文": "The Company has conducted a full value chain greenhouse gas inventory for the fifth consecutive year... In July 2024, the Company officially submitted the \"Commitment Letter for Corporate Ambition to Support the 1.5°C Temperature Goal\" to the Science Based Targets initiative (SBTi), committing to advance climate action in an open and transparent manner, aiming to achieve net-zero emissions across its value chain by 2050. The Company will set near-term, long-term, and net-zero emissions targets based on SBTi standards and plans to complete the target setting and submit it for SBTi verification within 24 months."
+          }
+        },
+        "碳排放": {
+          "碳总量": {
+            "值": "未披露",
+            "单位": "tCO₂e",
+            "原文": "未披露",
+            "年份": "2025"
+          },
+          "碳排放强度": {
+            "值": "未披露",
+            "单位": "tCO₂e/万元",
+            "原文": "未披露",
+            "年份": "2025"
+          },
+          "碳排放抵消与同比变化": {
+            "值": "未披露",
+            "原文": "未披露"
+          },
+          "范围一排放": {
+            "值": "17,574",
+            "单位": "tCO₂e",
+            "原文": "Scope 1 Emissions 17,574 Tonnes of CO2 Equivalent",
+            "年份": "2025"
+          },
+          "范围三排放": {
+            "值": "未披露",
+            "单位": "tCO₂e",
+            "原文": "未披露",
+            "年份": "2025"
+          },
+          "范围二排放": {
+            "值": "175,515（市场基准）；158,093（位置基准）",
+            "单位": "tCO₂e",
+            "原文": "Scope 2 Emissions (Market-Based) 175,515 Tonnes of CO2 Equivalent; Scope 2 Emissions (Location-Based) 158,093 Tonnes of CO2 Equivalent",
+            "年份": "2025"
+          }
+        },
+        "能源消耗与节能方案": {
+          "能效提升对比度": {
+            "值": "未披露",
+            "原文": "未披露"
+          },
+          "能源类型和强度": {
+            "值": "综合能耗355,590.00 MWh；直接能源消耗46,212.53 MWh；间接能源消耗309,377.47 MWh；可再生能源占比13.17%；购买绿电33,575.94 MWh",
+            "原文": "Comprehensive Energy Consumption (MWh) 355,590.00; Total Direct Energy Consumption (MWh) 46,212.53; Total Indirect Energy Consumption (MWh) 309,377.47; renewable energy accounted for 13.17% of the energy used by SANY Renewable Energy, and purchased green electricity across the Company's sites totaled 33,575.94 MWh."
+          },
+          "能耗同比变化": {
+            "值": "未披露",
+            "原文": "未披露"
+          },
+          "节能目标与改造情况": {
+            "值": "公司制定《能源管理工作制度》，成立能源管理领导小组，建立覆盖全公司的能源管理网络。2025年，公司重点构建光伏发电、储能系统与绿电交易相结合的综合路径以优化能源结构。报告期内，三一重能、三一智能电机、三一通榆、三一张家口、三一韶山、三一郴州、三一塔城、三一巴彦淖尔已获得ISO 50001能源管理体系认证。",
+            "原文": "we have formulated the Energy Management Work System based on national energy work policies and energy management standards... An energy management leadership group has been established... By the end of 2025, SANY Renewable Energy, Sany Intelligent Motor, Sany Tongyu, Sany Zhangjiakou, Sany Shaoshan, Sany Chenzhou, Sany Tacheng, and Sany Bayannur have obtained ISO 50001 Energy Management System certification."
+          }
+        }
+      },
+      "未覆盖指标": [
+        "碳总量",
+        "碳排放强度",
+        "范围三排放",
+        "碳排放抵消与同比变化",
+        "环保投资",
+        "能耗同比变化",
+        "能效提升对比度"
+      ]
+    },
+    "供应链碳管理": {
+      "指标": {
+        "供应商碳管理": {
+          "供应商碳培训及考核情况": {
+            "值": "报告期内，公司组织供应商安全与6S管理培训，共44人参加。",
+            "原文": "During the Reporting Period, the Company organized safety and 6S management training for suppliers, with a total of 44 participants"
+          },
+          "供应商碳披露及评价要求": {
+            "值": "公司要求供应商在准入时完成《三一重能供应商企业社会责任自评问卷》，明确10条红线标准。在供应商评估与管理中，优先考虑战略供应商和可持续发展高风险供应商。报告期内，公司优化了供应商评估流程，对高风险供应商依据《可持续发展尽职调查表》进行尽职调查，并将调查结果纳入供应商绩效评估考量。全年共236家供应商接受绩效评估。",
+            "原文": "requiring suppliers to complete the SANY Renewable Energy Supplier Corporate Social Responsibility Self-Assessment Questionnaire at onboarding, clarifying 10 red-line criteria... For high-risk suppliers, the Company conducted due diligence based on the Sustainability Due Diligence Review Form, and incorporated the investigation results into supplier performance evaluation considerations. A total of 236 suppliers underwent performance evaluation throughout the year."
+          },
+          "供应商碳目标": {
+            "值": "未披露",
+            "原文": "未披露"
+          },
+          "供应商绿色采购标准": {
+            "值": "公司作为风电行业首家获得ISO 20400可持续采购符合性声明的企业，持续推进2030可持续采购目标与行动计划。公司更新了《供应商管理政策》，进一步明确供应商开发与寻源、准入评估、绩效评估、退出/淘汰各阶段的管理要求。",
+            "原文": "As the first enterprise in the wind power industry to obtain an ISO 20400 Sustainable Procurement Statement of Conformity, the Company has been proceeding continuously with its 2030 sustainable procurement goals and action plan... we updated the Supplier Management Policy, further clarifying management requirements for each stage: supplier development and sourcing, supplier admission assessment, supplier performance evaluation, and supplier exit/removal."
+          }
+        },
+        "供应链协同减排": {
+          "供应商激励": {
+            "值": "未披露",
+            "原文": "未披露"
+          },
+          "包装减量及回收情况": {
+            "值": "公司积极践行绿色包装与循环利用原则，基于减量化、再利用、再循环和再设计理念，系统优化包装材料管理。通过与第三方机构合作建立木箱回收机制，每年回收再利用约30,000个木箱用于运输自产产品，相当于节约1,537.84吨木材。公司推广使用木托盘替代塑料托盘，并实施金属托盘替代木托盘的小规模试点，每月可减少150个木托盘的浪费。同时，公司减少塑料包装膜使用，选择可生物降解和可回收塑料包装膜用于产品包装。",
+            "原文": "SANY Renewable Energy has established a wooden box recycling mechanism in collaboration with third-party organizations, recycling and reusing approximately 30,000 wooden boxes annually for shipping its self-manufactured products, which equates to saving 1,537.84 tonnes of wood. The Company promotes the use of wooden pallets to replace plastic ones and has implemented a small-scale initiative to use metal pallets instead of wooden ones, which can reduce the waste of 150 wooden pallets each month. While reducing the use of plastic packaging films, the Company opts for biodegradable and recyclable plastic packaging films for product packaging."
+          },
+          "循环经济链塑造": {
+            "值": "公司开展退役叶片处置方案研究，持续监测可回收树脂技术发展，作为叶片回收再利用的技术规划与准备。同时倡导对下塔筒发电机主要部件进行修复和再利用，减少资源浪费，促进风电行业循环经济。",
+            "原文": "the Company conducted research on decommissioned blade disposal solutions and continuously monitored the development of recyclable resin technologies, as part of technical planning and preparation for blade recycling and reuse. We also advocated the practice of repairing and reusing main components of down-to-tower generators to reduce resource waste and foster the circular economy within the wind power industry."
+          },
+          "绿色物流": {
+            "值": "未披露",
+            "原文": "未披露"
+          }
+        },
+        "供应链风险管控": {
+          "供应链碳风险传导影响评估": {
+            "值": "公司高度重视供应链风险管控，报告期内完善了供应链风险与机遇的识别、评估和管理机制。依据《供应商风险评估办法》，定期审查和识别供应商风险等级，并制定针对性风险控制措施或实施细则。在供应商评估与管理中，优先考虑战略供应商和可持续发展高风险供应商，以有效避免或降低供应链风险。截至报告期末，公司未识别出存在“重大风险”的供应商。报告期内，公司识别出18项供应链相关风险和4项供应链相关机遇，并针对每项风险和机遇，根据其重要性程度制定了切实可行的管理策略和应对措施。",
+            "原文": "The Company places high importance on supply chain risk control, enhancing mechanisms and processes for identification, assessment, and management of supply chain risks and opportunities during the Reporting Period... By the end of the Reporting Period, the Company did not identify any suppliers with \"significant risks\"... During the Reporting Period, the Company identified 18 supply chain-related risks and 4 supply chain-related opportunities, and for each risk and opportunity, we developed practical management strategies and response measures based on their importance levels."
+          },
+          "气候风险暴露供应商数量": {
+            "值": "未披露",
+            "原文": "未披露"
+          },
+          "碳合规风险事件发生率": {
+            "值": "未披露",
+            "原文": "未披露"
+          },
+          "高碳供应商占比": {
+            "值": "未披露",
+            "原文": "未披露"
+          }
+        }
+      },
+      "未覆盖指标": [
+        "供应商碳目标",
+        "供应商激励",
+        "绿色物流",
+        "高碳供应商占比",
+        "气候风险暴露供应商数量",
+        "碳合规风险事件发生率"
+      ]
+    },
+    "透明度": {
+      "指标": {
+        "披露合规性": {
+          "交易所ESG披露指引符合性": {
+            "值": "部分符合",
+            "原文": "This report is prepared in accordance with the Guidelines No. 14 of Shanghai Stock Exchange for Self-Regulation of Listed Companies—Sustainability Report (Trial) by the Shanghai Stock Exchange and the Guide No.13 for Self-Regulatory Supervision on Listed Companies of the SSE STAR Market—Compilation of Sustainable Development Reports."
+          },
+          "历史信息披露更正次数": {
+            "值": "未提及",
+            "原文": "未披露"
+          },
+          "监管强制披露要求符合性": {
+            "值": "未提及",
+            "原文": "未披露"
+          }
+        },
+        "披露范围与完整性": {
+          "供应链碳披露层级": {
+            "值": "一级",
+            "原文": "requiring suppliers to complete the SANY Renewable Energy Supplier Corporate Social Responsibility Self-Assessment Questionnaire at onboarding, clarifying 10 red-line criteria"
+          },
+          "碳排放披露范围": {
+            "值": "范围一+二",
+            "原文": "Scope 1 Emissions 17,574 Tonnes of CO2 Equivalent; Scope 2 Emissions (Market-Based) 175,515 Tonnes of CO2 Equivalent; Scope 2 Emissions (Location-Based) 158,093 Tonnes of CO2 Equivalent"
+          },
+          "碳资产与交易信息披露比例": {
+            "值": "定性披露",
+            "原文": "By the end of the Reporting Period, SANY Renewable Energy had developed a total of 267,372 green power certificates."
+          }
+        },
+        "披露质量与可信度": {
+          "ESG评级结果及行业排名": {
+            "值": "标普全球企业可持续发展评估（CSA）得分升至70分，入选“2026全球可持续发展年鉴”；CDP气候变化评级：B；EcoVadis评级达到银牌，位列行业前15%；Wind ESG评级最高AAA，综合得分9.49/10，在电气设备行业395家入选公司中排名第一；华证ESG评级由A上调至AAA。",
+            "原文": "The 2025 S&P Global Corporate Sustainability Assessment (CSA) score has risen to 70 points and has been included in the \"2026 Global Sustainability Yearbook\"; CDP Climate Change Rating: B; EcoVadis rating reached Silver, ranking in the top 15% of the industry; Awarded the highest Wind ESG rating of AAA, with a comprehensive score of 9.49 out of 10. Ranked first among 395 selected companies in the electrical equipment industry; ESG comprehensive rating upgraded from A to AAA."
+          },
+          "ISO14064/ISO50001认证": {
+            "值": "部分认证",
+            "原文": "By the end of 2025, SANY Renewable Energy, Sany Intelligent Motor, Sany Tongyu, Sany Zhangjiakou, Sany Shaoshan, Sany Chenzhou, Sany Tacheng, and Sany Bayannur have obtained ISO 50001 Energy Management System certification."
+          },
+          "信息披露频次": {
+            "值": "年度",
+            "原文": "This report is an annual report, covering the period from January 1, 2025, to December 31, 2025."
+          },
+          "第三方核查覆盖率": {
+            "值": "未披露",
+            "原文": "未披露"
+          }
+        }
+      },
+      "未覆盖指标": [
+        "第三方核查覆盖率",
+        "监管强制披露要求符合性",
+        "历史信息披露更正次数"
+      ]
+    },
+    "金融化情况": {
+      "指标": {
+        "碳资产管理": {
+          "CCER开发与储备": {
+            "值": "公司持续推进中国核证自愿减排量（CCER）和绿证开发。截至报告期末，三一重能累计开发绿证267,372张。",
+            "原文": "We continue to promote the development of China Certified Emission Reduction (CCER) and green power certificates... By the end of the Reporting Period, SANY Renewable Energy had developed a total of 267,372 green power certificates."
+          },
+          "碳资产交易收益": {
+            "值": "未披露",
+            "单位": "",
+            "原文": "未披露"
+          },
+          "碳资产保值增值策略": {
+            "值": "未披露",
+            "原文": "未披露"
+          },
+          "碳配额管理": {
+            "值": "未披露",
+            "原文": "未披露"
+          }
+        },
+        "碳金融": {
+          "碳金融衍生品参与情况": {
+            "值": "未披露",
+            "原文": "未披露"
+          },
+          "绿色信贷": {
+            "值": "未披露",
+            "单位": "",
+            "原文": "未披露"
+          },
+          "绿色债券": {
+            "值": "未披露",
+            "单位": "",
+            "原文": "未披露"
+          }
+        }
+      },
+      "未覆盖指标": [
+        "绿色信贷",
+        "绿色债券",
+        "碳金融衍生品参与情况",
+        "碳配额管理",
+        "碳资产交易收益",
+        "碳资产保值增值策略"
+      ]
+    }
+  },
+  "证据校验": {
+    "checked": 20,
+    "degraded": [],
+    "enabled": true,
+    "failed": 0,
+    "reason": "",
+    "skipped": 22,
+    "版本": "v118",
+    "阈值": {
+      "ngram": 6,
+      "数字命中下限": 0.8,
+      "文本命中下限": 0.4
+    }
+  },
+  "评分增强数据": {
+    "L4计算结果": {
+      "CCER开发与储备": {
+        "L4得分": 7,
+        "保底分": null,
+        "值": "公司持续推进中国核证自愿减排量（CCER）和绿证开发。截至报告期末，三一重能累计开发绿证267,372张。",
+        "原文": "We continue to promote the development of China Certified Emission Reduction (CCER) and green power certificates... By t",
+        "基准来源": "行业均值",
+        "基准样本数": 10,
+        "基础分": 4,
+        "失分类型": "质量失分",
+        "子域": "碳资产管理",
+        "完整度分": 3,
+        "对标分": 3,
+        "指标": "CCER开发与储备",
+        "是否未披露": false,
+        "权重": 0.005209,
+        "维度": "金融化情况",
+        "行业L4得分": 1.0,
+        "行业均值": 0.0,
+        "质量分": 1,
+        "障碍度": 0.0016
+      },
+      "ESG评级结果及行业排名": {
+        "L4得分": 10,
+        "保底分": null,
+        "值": "标普全球企业可持续发展评估（CSA）得分升至70分，入选“2026全球可持续发展年鉴”；CDP气候变化评级：B；EcoVadis评级达到银牌，位列行业前15%；Wind ESG评级最高AAA，综合得分9.49/10，在电气设备行业395家入选公司中排名第一；华证ESG评级由A上调至AAA。",
+        "原文": "The 2025 S&P Global Corporate Sustainability Assessment (CSA) score has risen to 70 points and has been included in the ",
+        "基准来源": "行业均值",
+        "基准样本数": 10,
+        "基础分": 6,
+        "失分类型": "无明显失分",
+        "子域": "披露质量与可信度",
+        "完整度分": 3,
+        "对标分": 4,
+        "指标": "ESG评级结果及行业排名",
+        "是否未披露": false,
+        "权重": 0.024035,
+        "维度": "透明度",
+        "行业L4得分": 4.2,
+        "行业均值": 1.2,
+        "质量分": 3,
+        "障碍度": 0.0
+      },
+      "ISO14064/ISO50001认证": {
+        "L4得分": 6,
+        "保底分": null,
+        "值": "部分认证",
+        "原文": "By the end of 2025, SANY Renewable Energy, Sany Intelligent Motor, Sany Tongyu, Sany Zhangjiakou, Sany Shaoshan, Sany Ch",
+        "基准来源": "行业均值",
+        "基准样本数": 10,
+        "基础分": 3,
+        "失分类型": "质量失分",
+        "子域": "披露质量与可信度",
+        "完整度分": 2,
+        "对标分": 3,
+        "指标": "ISO14064/ISO50001认证",
+        "是否未披露": false,
+        "权重": 0.033647,
+        "维度": "透明度",
+        "行业L4得分": 5.6,
+        "行业均值": 2.6,
+        "质量分": 1,
+        "障碍度": 0.0135
+      },
+      "交易所ESG披露指引符合性": {
+        "L4得分": 6,
+        "保底分": null,
+        "值": "部分符合",
+        "原文": "This report is prepared in accordance with the Guidelines No. 14 of Shanghai Stock Exchange for Self-Regulation of Liste",
+        "基准来源": "行业均值",
+        "基准样本数": 10,
+        "基础分": 3,
+        "失分类型": "质量失分",
+        "子域": "披露合规性",
+        "完整度分": 2,
+        "对标分": 3,
+        "指标": "交易所ESG披露指引符合性",
+        "是否未披露": false,
+        "权重": 0.068887,
+        "维度": "透明度",
+        "行业L4得分": 5.9,
+        "行业均值": 2.9,
+        "质量分": 1,
+        "障碍度": 0.0276
+      },
+      "供应商激励": {
+        "L4得分": 0,
+        "保底分": null,
+        "值": "未披露",
+        "原文": "未披露",
+        "基准来源": "行业均值",
+        "基准样本数": 10,
+        "基础分": 0,
+        "失分类型": "完整度失分",
+        "子域": "供应链协同减排",
+        "完整度分": 0,
+        "对标分": 0,
+        "指标": "供应商激励",
+        "是否未披露": true,
+        "权重": 0.015786,
+        "维度": "供应链碳管理",
+        "行业L4得分": 3.9,
+        "行业均值": 0.9,
+        "质量分": 0,
+        "障碍度": 0.0158
+      },
+      "供应商碳培训及考核情况": {
+        "L4得分": 8,
+        "保底分": null,
+        "值": "报告期内，公司组织供应商安全与6S管理培训，共44人参加。",
+        "原文": "During the Reporting Period, the Company organized safety and 6S management training for suppliers, with a total of 44 p",
+        "基准来源": "行业均值",
+        "基准样本数": 10,
+        "基础分": 4,
+        "失分类型": "质量失分",
+        "子域": "供应商碳管理",
+        "完整度分": 3,
+        "对标分": 4,
+        "指标": "供应商碳培训及考核情况",
+        "是否未披露": false,
+        "权重": 0.011575,
+        "维度": "供应链碳管理",
+        "行业L4得分": 3.5,
+        "行业均值": 0.5,
+        "质量分": 1,
+        "障碍度": 0.0023
+      },
+      "供应商碳披露及评价要求": {
+        "L4得分": 8,
+        "保底分": null,
+        "值": "公司要求供应商在准入时完成《三一重能供应商企业社会责任自评问卷》，明确10条红线标准。在供应商评估与管理中，优先考虑战略供应商和可持续发展高风险供应商。报告期内，公司优化了供应商评估流程，对高风险供应商依据《可持续发展尽职调查表》进行尽职调查，并将调查结果纳入供应商绩效评估考量。全年共236家供应商接受绩效评估。",
+        "原文": "requiring suppliers to complete the SANY Renewable Energy Supplier Corporate Social Responsibility Self-Assessment Quest",
+        "基准来源": "行业均值",
+        "基准样本数": 10,
+        "基础分": 4,
+        "失分类型": "质量失分",
+        "子域": "供应商碳管理",
+        "完整度分": 3,
+        "对标分": 4,
+        "指标": "供应商碳披露及评价要求",
+        "是否未披露": false,
+        "权重": 0.019289,
+        "维度": "供应链碳管理",
+        "行业L4得分": 4.5,
+        "行业均值": 1.5,
+        "质量分": 1,
+        "障碍度": 0.0039
+      },
+      "供应商碳目标": {
+        "L4得分": 0,
+        "保底分": null,
+        "值": "未披露",
+        "原文": "未披露",
+        "基准来源": "行业均值",
+        "基准样本数": 10,
+        "基础分": 0,
+        "失分类型": "完整度失分",
+        "子域": "供应商碳管理",
+        "完整度分": 0,
+        "对标分": 0,
+        "指标": "供应商碳目标",
+        "是否未披露": true,
+        "权重": 0.011575,
+        "维度": "供应链碳管理",
+        "行业L4得分": 3.6,
+        "行业均值": 0.6,
+        "质量分": 0,
+        "障碍度": 0.0116
+      },
+      "供应商绿色采购标准": {
+        "L4得分": 8,
+        "保底分": null,
+        "值": "公司作为风电行业首家获得ISO 20400可持续采购符合性声明的企业，持续推进2030可持续采购目标与行动计划。公司更新了《供应商管理政策》，进一步明确供应商开发与寻源、准入评估、绩效评估、退出/淘汰各阶段的管理要求。",
+        "原文": "As the first enterprise in the wind power industry to obtain an ISO 20400 Sustainable Procurement Statement of Conformit",
+        "基准来源": "行业均值",
+        "基准样本数": 10,
+        "基础分": 4,
+        "失分类型": "质量失分",
+        "子域": "供应商碳管理",
+        "完整度分": 3,
+        "对标分": 4,
+        "指标": "供应商绿色采购标准",
+        "是否未披露": false,
+        "权重": 0.027003,
+        "维度": "供应链碳管理",
+        "行业L4得分": 5.8,
+        "行业均值": 2.8,
+        "质量分": 1,
+        "障碍度": 0.0054
+      },
+      "供应链碳披露层级": {
+        "L4得分": 7,
+        "保底分": null,
+        "值": "一级",
+        "原文": "requiring suppliers to complete the SANY Renewable Energy Supplier Corporate Social Responsibility Self-Assessment Quest",
+        "基准来源": "行业均值",
+        "基准样本数": 10,
+        "基础分": 3,
+        "失分类型": "质量失分",
+        "子域": "披露范围与完整性",
+        "完整度分": 2,
+        "对标分": 4,
+        "指标": "供应链碳披露层级",
+        "是否未披露": false,
+        "权重": 0.015759,
+        "维度": "透明度",
+        "行业L4得分": 3.5,
+        "行业均值": 0.5,
+        "质量分": 1,
+        "障碍度": 0.0047
+      },
+      "供应链碳风险传导影响评估": {
+        "L4得分": 7,
+        "保底分": null,
+        "值": "公司高度重视供应链风险管控，报告期内完善了供应链风险与机遇的识别、评估和管理机制。依据《供应商风险评估办法》，定期审查和识别供应商风险等级，并制定针对性风险控制措施或实施细则。在供应商评估与管理中，优先考虑战略供应商和可持续发展高风险供应商，以有效避免或降低供应链风险。截至报告期末，公司未识别出存在“重大风险”的供应商。报告期内，公司识别出18项供应链相关风险和4项供应链相关机遇，并针对每项风险和机遇，根据其重要性程度制定了切实可行的管理策略和应对措施。",
+        "原文": "The Company places high importance on supply chain risk control, enhancing mechanisms and processes for identification, ",
+        "基准来源": "行业均值",
+        "基准样本数": 10,
+        "基础分": 4,
+        "失分类型": "质量失分",
+        "子域": "供应链风险管控",
+        "完整度分": 3,
+        "对标分": 3,
+        "指标": "供应链碳风险传导影响评估",
+        "是否未披露": false,
+        "权重": 0.005786,
+        "维度": "供应链碳管理",
+        "行业L4得分": 3.2,
+        "行业均值": 0.2,
+        "质量分": 1,
+        "障碍度": 0.0017
+      },
+      "信息披露频次": {
+        "L4得分": 5,
+        "保底分": null,
+        "值": "年度",
+        "原文": "This report is an annual report, covering the period from January 1, 2025, to December 31, 2025.",
+        "基准来源": "行业均值",
+        "基准样本数": 10,
+        "基础分": 3,
+        "失分类型": "质量失分",
+        "子域": "披露质量与可信度",
+        "完整度分": 2,
+        "对标分": 2,
+        "指标": "信息披露频次",
+        "是否未披露": false,
+        "权重": 0.043271,
+        "维度": "透明度",
+        "行业L4得分": 6.3,
+        "行业均值": 3.3,
+        "质量分": 1,
+        "障碍度": 0.0216
+      },
+      "包装减量及回收情况": {
+        "L4得分": 8,
+        "保底分": null,
+        "值": "公司积极践行绿色包装与循环利用原则，基于减量化、再利用、再循环和再设计理念，系统优化包装材料管理。通过与第三方机构合作建立木箱回收机制，每年回收再利用约30,000个木箱用于运输自产产品，相当于节约1,537.84吨木材。公司推广使用木托盘替代塑料托盘，并实施金属托盘替代木托盘的小规模试点，每月可减少150个木托盘的浪费。同时，公司减少塑料包装膜使用，选择可生物降解和可回收塑料包装膜用于产品包装。",
+        "原文": "SANY Renewable Energy has established a wooden box recycling mechanism in collaboration with third-party organizations, ",
+        "基准来源": "行业均值",
+        "基准样本数": 10,
+        "基础分": 4,
+        "失分类型": "质量失分",
+        "子域": "供应链协同减排",
+        "完整度分": 3,
+        "对标分": 4,
+        "指标": "包装减量及回收情况",
+        "是否未披露": false,
+        "权重": 0.036826,
+        "维度": "供应链碳管理",
+        "行业L4得分": 4.5,
+        "行业均值": 1.5,
+        "质量分": 1,
+        "障碍度": 0.0074
+      },
+      "历史信息披露更正次数": {
+        "L4得分": 1,
+        "保底分": 1.0,
+        "值": "未提及",
+        "原文": "未披露",
+        "基准来源": "行业均值",
+        "基准样本数": 10,
+        "基础分": 0,
+        "失分类型": "完整度失分",
+        "子域": "披露合规性",
+        "完整度分": 0,
+        "对标分": 1,
+        "指标": "历史信息披露更正次数",
+        "是否未披露": true,
+        "权重": 0.022968,
+        "维度": "透明度",
+        "行业L4得分": 3.1,
+        "行业均值": 0.1,
+        "质量分": 0,
+        "障碍度": 0.0207
+      },
+      "循环经济链塑造": {
+        "L4得分": 5,
+        "保底分": null,
+        "值": "公司开展退役叶片处置方案研究，持续监测可回收树脂技术发展，作为叶片回收再利用的技术规划与准备。同时倡导对下塔筒发电机主要部件进行修复和再利用，减少资源浪费，促进风电行业循环经济。",
+        "原文": "the Company conducted research on decommissioned blade disposal solutions and continuously monitored the development of ",
+        "基准来源": "行业均值",
+        "基准样本数": 10,
+        "基础分": 3,
+        "失分类型": "质量失分",
+        "子域": "供应链协同减排",
+        "完整度分": 2,
+        "对标分": 2,
+        "指标": "循环经济链塑造",
+        "是否未披露": false,
+        "权重": 0.036826,
+        "维度": "供应链碳管理",
+        "行业L4得分": 6.3,
+        "行业均值": 3.3,
+        "质量分": 1,
+        "障碍度": 0.0184
+      },
+      "气候风险暴露供应商数量": {
+        "L4得分": 1,
+        "保底分": 1.0,
+        "值": "未披露",
+        "原文": "未披露",
+        "基准来源": "行业均值",
+        "基准样本数": 10,
+        "基础分": 0,
+        "失分类型": "完整度失分",
+        "子域": "供应链风险管控",
+        "完整度分": 0,
+        "对标分": 1,
+        "指标": "气候风险暴露供应商数量",
+        "是否未披露": true,
+        "权重": 0.005786,
+        "维度": "供应链碳管理",
+        "行业L4得分": 1.0,
+        "行业均值": 0.0,
+        "质量分": 0,
+        "障碍度": 0.0052
+      },
+      "环保投资": {
+        "L4得分": 0,
+        "保底分": null,
+        "值": "未披露",
+        "原文": "未披露",
+        "基准来源": "行业均值",
+        "基准样本数": 10,
+        "基础分": 0,
+        "失分类型": "完整度失分",
+        "子域": "环境治理",
+        "完整度分": 0,
+        "对标分": 0,
+        "指标": "环保投资",
+        "是否未披露": true,
+        "权重": 0.035,
+        "维度": "企业内部碳管理",
+        "行业L4得分": 7.2,
+        "行业均值": 4.2,
+        "质量分": 0,
+        "障碍度": 0.035
+      },
+      "环境管理体系": {
+        "L4得分": 5,
+        "保底分": null,
+        "值": "公司已建立环境管理体系，由董事会作为最高责任机构，在执行层面设立安全生产、职业健康、消防安全与环境保护委员会（安全委员会），由总经理担任主任，负责环境管理的战略决策与监督；HSE管理部作为执行部门，统筹环境管理体系建设、环境绩效提升和日常监测管理。报告期内，公司修订了《环境政策》，新增废水、废气、固废及二氧化碳排放控制目标，并完善了《突发环境事件应急预案》的组织架构和应急流程。",
+        "原文": "The Board of Directors is the highest responsible body for the Company's environmental management. A Safety Production, ",
+        "基准来源": "行业均值",
+        "基准样本数": 10,
+        "基础分": 3,
+        "失分类型": "质量失分",
+        "子域": "环境治理",
+        "完整度分": 2,
+        "对标分": 2,
+        "指标": "环境管理体系",
+        "是否未披露": false,
+        "权重": 0.035,
+        "维度": "企业内部碳管理",
+        "行业L4得分": 6.2,
+        "行业均值": 3.2,
+        "质量分": 1,
+        "障碍度": 0.0175
+      },
+      "监管强制披露要求符合性": {
+        "L4得分": 0,
+        "保底分": null,
+        "值": "未提及",
+        "原文": "未披露",
+        "基准来源": "行业均值",
+        "基准样本数": 10,
+        "基础分": 0,
+        "失分类型": "完整度失分",
+        "子域": "披露合规性",
+        "完整度分": 0,
+        "对标分": 0,
+        "指标": "监管强制披露要求符合性",
+        "是否未披露": true,
+        "权重": 0.068887,
+        "维度": "透明度",
+        "行业L4得分": 6.5,
+        "行业均值": 3.5,
+        "质量分": 0,
+        "障碍度": 0.0689
+      },
+      "碳合规风险事件发生率": {
+        "L4得分": 1,
+        "保底分": 1.0,
+        "值": "未披露",
+        "原文": "未披露",
+        "基准来源": "行业均值",
+        "基准样本数": 10,
+        "基础分": 0,
+        "失分类型": "完整度失分",
+        "子域": "供应链风险管控",
+        "完整度分": 0,
+        "对标分": 1,
+        "指标": "碳合规风险事件发生率",
+        "是否未披露": true,
+        "权重": 0.005786,
+        "维度": "供应链碳管理",
+        "行业L4得分": 1.0,
+        "行业均值": 0.0,
+        "质量分": 0,
+        "障碍度": 0.0052
+      },
+      "碳总量": {
+        "L4得分": 2,
+        "保底分": null,
+        "值": "未披露",
+        "原文": "未披露",
+        "基准来源": "行业均值",
+        "基准样本数": 10,
+        "基础分": 2,
+        "失分类型": "完整度失分",
+        "子域": "碳排放",
+        "完整度分": 0,
+        "对标分": 0,
+        "指标": "碳总量",
+        "是否未披露": false,
+        "权重": 0.021475,
+        "维度": "企业内部碳管理",
+        "行业L4得分": 7.2,
+        "行业均值": 4.2,
+        "质量分": 2,
+        "障碍度": 0.0172
+      },
+      "碳排放强度": {
+        "L4得分": 2,
+        "保底分": null,
+        "值": "未披露",
+        "原文": "未披露",
+        "基准来源": "行业均值",
+        "基准样本数": 10,
+        "基础分": 2,
+        "失分类型": "完整度失分",
+        "子域": "碳排放",
+        "完整度分": 0,
+        "对标分": 0,
+        "指标": "碳排放强度",
+        "是否未披露": false,
+        "权重": 0.016707,
+        "维度": "企业内部碳管理",
+        "行业L4得分": 6.6,
+        "行业均值": 3.6,
+        "质量分": 2,
+        "障碍度": 0.0134
+      },
+      "碳排放披露范围": {
+        "L4得分": 5,
+        "保底分": null,
+        "值": "范围一+二",
+        "原文": "Scope 1 Emissions 17,574 Tonnes of CO2 Equivalent; Scope 2 Emissions (Market-Based) 175,515 Tonnes of CO2 Equivalent; Sc",
+        "基准来源": "行业均值",
+        "基准样本数": 10,
+        "基础分": 3,
+        "失分类型": "质量失分",
+        "子域": "披露范围与完整性",
+        "完整度分": 2,
+        "对标分": 2,
+        "指标": "碳排放披露范围",
+        "是否未披露": false,
+        "权重": 0.047269,
+        "维度": "透明度",
+        "行业L4得分": 6.5,
+        "行业均值": 3.5,
+        "质量分": 1,
+        "障碍度": 0.0236
+      },
+      "碳排放抵消与同比变化": {
+        "L4得分": 0,
+        "保底分": null,
+        "值": "未披露",
+        "原文": "未披露",
+        "基准来源": "行业均值",
+        "基准样本数": 10,
+        "基础分": 0,
+        "失分类型": "完整度失分",
+        "子域": "碳排放",
+        "完整度分": 0,
+        "对标分": 0,
+        "指标": "碳排放抵消与同比变化",
+        "是否未披露": true,
+        "权重": 0.011929,
+        "维度": "企业内部碳管理",
+        "行业L4得分": 5.1,
+        "行业均值": 2.1,
+        "质量分": 0,
+        "障碍度": 0.0119
+      },
+      "碳管理体系建设": {
+        "L4得分": 10,
+        "保底分": null,
+        "值": "公司已连续第五年开展全价值链温室气体盘查，识别运营及上下游价值链的温室气体排放源，并基于盘查结果建立科学减排目标和清晰的脱碳路径。公司于2024年7月正式向科学碳目标倡议（SBTi）提交《企业雄心助力1.5°C温控目标承诺书》，承诺以公开透明方式推进气候行动，力争2050年实现价值链净零排放，并计划在24个月内完成基于SBTi标准的中短期、长期及净零排放目标设定并提交SBTi验证。",
+        "原文": "The Company has conducted a full value chain greenhouse gas inventory for the fifth consecutive year... In July 2024, th",
+        "基准来源": "行业均值",
+        "基准样本数": 10,
+        "基础分": 6,
+        "失分类型": "无明显失分",
+        "子域": "环境治理",
+        "完整度分": 3,
+        "对标分": 4,
+        "指标": "碳管理体系建设",
+        "是否未披露": false,
+        "权重": 0.035,
+        "维度": "企业内部碳管理",
+        "行业L4得分": 6.0,
+        "行业均值": 3.0,
+        "质量分": 3,
+        "障碍度": 0.0
+      },
+      "碳资产与交易信息披露比例": {
+        "L4得分": 7,
+        "保底分": null,
+        "值": "定性披露",
+        "原文": "By the end of the Reporting Period, SANY Renewable Energy had developed a total of 267,372 green power certificates.",
+        "基准来源": "行业均值",
+        "基准样本数": 10,
+        "基础分": 3,
+        "失分类型": "质量失分",
+        "子域": "披露范围与完整性",
+        "完整度分": 2,
+        "对标分": 4,
+        "指标": "碳资产与交易信息披露比例",
+        "是否未披露": false,
+        "权重": 0.026259,
+        "维度": "透明度",
+        "行业L4得分": 4.1,
+        "行业均值": 1.1,
+        "质量分": 1,
+        "障碍度": 0.0079
+      },
+      "碳资产交易收益": {
+        "L4得分": 1,
+        "保底分": 1.0,
+        "值": "未披露",
+        "原文": "未披露",
+        "基准来源": "行业均值",
+        "基准样本数": 10,
+        "基础分": 0,
+        "失分类型": "完整度失分",
+        "子域": "碳资产管理",
+        "完整度分": 0,
+        "对标分": 1,
+        "指标": "碳资产交易收益",
+        "是否未披露": true,
+        "权重": 0.005209,
+        "维度": "金融化情况",
+        "行业L4得分": 1.0,
+        "行业均值": 0.0,
+        "质量分": 0,
+        "障碍度": 0.0047
+      },
+      "碳资产保值增值策略": {
+        "L4得分": 1,
+        "保底分": 1.0,
+        "值": "未披露",
+        "原文": "未披露",
+        "基准来源": "行业均值",
+        "基准样本数": 10,
+        "基础分": 0,
+        "失分类型": "完整度失分",
+        "子域": "碳资产管理",
+        "完整度分": 0,
+        "对标分": 1,
+        "指标": "碳资产保值增值策略",
+        "是否未披露": true,
+        "权重": 0.005209,
+        "维度": "金融化情况",
+        "行业L4得分": 1.0,
+        "行业均值": 0.0,
+        "质量分": 0,
+        "障碍度": 0.0047
+      },
+      "碳配额管理": {
+        "L4得分": 0,
+        "保底分": null,
+        "值": "未披露",
+        "原文": "未披露",
+        "基准来源": "行业均值",
+        "基准样本数": 10,
+        "基础分": 0,
+        "失分类型": "完整度失分",
+        "子域": "碳资产管理",
+        "完整度分": 0,
+        "对标分": 0,
+        "指标": "碳配额管理",
+        "是否未披露": true,
+        "权重": 0.015625,
+        "维度": "金融化情况",
+        "行业L4得分": 3.8,
+        "行业均值": 0.8,
+        "质量分": 0,
+        "障碍度": 0.0156
+      },
+      "碳金融衍生品参与情况": {
+        "L4得分": 1,
+        "保底分": 1.0,
+        "值": "未披露",
+        "原文": "未披露",
+        "基准来源": "行业均值",
+        "基准样本数": 10,
+        "基础分": 0,
+        "失分类型": "完整度失分",
+        "子域": "碳金融",
+        "完整度分": 0,
+        "对标分": 1,
+        "指标": "碳金融衍生品参与情况",
+        "是否未披露": true,
+        "权重": 0.013397,
+        "维度": "金融化情况",
+        "行业L4得分": 1.0,
+        "行业均值": 0.0,
+        "质量分": 0,
+        "障碍度": 0.0121
+      },
+      "第三方核查覆盖率": {
+        "L4得分": 0,
+        "保底分": null,
+        "值": "未披露",
+        "原文": "未披露",
+        "基准来源": "行业均值",
+        "基准样本数": 10,
+        "基础分": 0,
+        "失分类型": "完整度失分",
+        "子域": "披露质量与可信度",
+        "完整度分": 0,
+        "对标分": 0,
+        "指标": "第三方核查覆盖率",
+        "是否未披露": true,
+        "权重": 0.024035,
+        "维度": "透明度",
+        "行业L4得分": 4.0,
+        "行业均值": 1.0,
+        "质量分": 0,
+        "障碍度": 0.024
+      },
+      "绿色信贷": {
+        "L4得分": 1,
+        "保底分": 1.0,
+        "值": "未披露",
+        "原文": "未披露",
+        "基准来源": "行业均值",
+        "基准样本数": 10,
+        "基础分": 0,
+        "失分类型": "完整度失分",
+        "子域": "碳金融",
+        "完整度分": 0,
+        "对标分": 1,
+        "指标": "绿色信贷",
+        "是否未披露": true,
+        "权重": 0.040181,
+        "维度": "金融化情况",
+        "行业L4得分": 1.0,
+        "行业均值": 0.0,
+        "质量分": 0,
+        "障碍度": 0.0362
+      },
+      "绿色债券": {
+        "L4得分": 1,
+        "保底分": 1.0,
+        "值": "未披露",
+        "原文": "未披露",
+        "基准来源": "行业均值",
+        "基准样本数": 10,
+        "基础分": 0,
+        "失分类型": "完整度失分",
+        "子域": "碳金融",
+        "完整度分": 0,
+        "对标分": 1,
+        "指标": "绿色债券",
+        "是否未披露": true,
+        "权重": 0.040181,
+        "维度": "金融化情况",
+        "行业L4得分": 1.0,
+        "行业均值": 0.0,
+        "质量分": 0,
+        "障碍度": 0.0362
+      },
+      "绿色物流": {
+        "L4得分": 0,
+        "保底分": null,
+        "值": "未披露",
+        "原文": "未披露",
+        "基准来源": "行业均值",
+        "基准样本数": 10,
+        "基础分": 0,
+        "失分类型": "完整度失分",
+        "子域": "供应链协同减排",
+        "完整度分": 0,
+        "对标分": 0,
+        "指标": "绿色物流",
+        "是否未披露": true,
+        "权重": 0.026306,
+        "维度": "供应链碳管理",
+        "行业L4得分": 4.3,
+        "行业均值": 1.3,
+        "质量分": 0,
+        "障碍度": 0.0263
+      },
+      "能效提升对比度": {
+        "L4得分": 0,
+        "保底分": null,
+        "值": "未披露",
+        "原文": "未披露",
+        "基准来源": "行业均值",
+        "基准样本数": 10,
+        "基础分": 0,
+        "失分类型": "完整度失分",
+        "子域": "能源消耗与节能方案",
+        "完整度分": 0,
+        "对标分": 0,
+        "指标": "能效提升对比度",
+        "是否未披露": true,
+        "权重": 0.014587,
+        "维度": "企业内部碳管理",
+        "行业L4得分": 3.7,
+        "行业均值": 0.7,
+        "质量分": 0,
+        "障碍度": 0.0146
+      },
+      "能源类型和强度": {
+        "L4得分": 6,
+        "保底分": null,
+        "值": "综合能耗355,590.00 MWh；直接能源消耗46,212.53 MWh；间接能源消耗309,377.47 MWh；可再生能源占比13.17%；购买绿电33,575.94 MWh",
+        "原文": "Comprehensive Energy Consumption (MWh) 355,590.00; Total Direct Energy Consumption (MWh) 46,212.53; Total Indirect Energ",
+        "基准来源": "行业均值",
+        "基准样本数": 10,
+        "基础分": 4,
+        "失分类型": "质量失分",
+        "子域": "能源消耗与节能方案",
+        "完整度分": 3,
+        "对标分": 2,
+        "指标": "能源类型和强度",
+        "是否未披露": false,
+        "权重": 0.026251,
+        "维度": "企业内部碳管理",
+        "行业L4得分": 7.3,
+        "行业均值": 4.3,
+        "质量分": 1,
+        "障碍度": 0.0105
+      },
+      "能耗同比变化": {
+        "L4得分": 0,
+        "保底分": null,
+        "值": "未披露",
+        "原文": "未披露",
+        "基准来源": "行业均值",
+        "基准样本数": 10,
+        "基础分": 0,
+        "失分类型": "完整度失分",
+        "子域": "能源消耗与节能方案",
+        "完整度分": 0,
+        "对标分": 0,
+        "指标": "能耗同比变化",
+        "是否未披露": true,
+        "权重": 0.014587,
+        "维度": "企业内部碳管理",
+        "行业L4得分": 3.7,
+        "行业均值": 0.7,
+        "质量分": 0,
+        "障碍度": 0.0146
+      },
+      "节能目标与改造情况": {
+        "L4得分": 7,
+        "保底分": null,
+        "值": "公司制定《能源管理工作制度》，成立能源管理领导小组，建立覆盖全公司的能源管理网络。2025年，公司重点构建光伏发电、储能系统与绿电交易相结合的综合路径以优化能源结构。报告期内，三一重能、三一智能电机、三一通榆、三一张家口、三一韶山、三一郴州、三一塔城、三一巴彦淖尔已获得ISO 50001能源管理体系认证。",
+        "原文": "we have formulated the Energy Management Work System based on national energy work policies and energy management standa",
+        "基准来源": "行业均值",
+        "基准样本数": 10,
+        "基础分": 4,
+        "失分类型": "质量失分",
+        "子域": "能源消耗与节能方案",
+        "完整度分": 3,
+        "对标分": 3,
+        "指标": "节能目标与改造情况",
+        "是否未披露": false,
+        "权重": 0.026251,
+        "维度": "企业内部碳管理",
+        "行业L4得分": 6.8,
+        "行业均值": 3.8,
+        "质量分": 1,
+        "障碍度": 0.0079
+      },
+      "范围一排放": {
+        "L4得分": 8,
+        "保底分": null,
+        "值": "17,574",
+        "原文": "Scope 1 Emissions 17,574 Tonnes of CO2 Equivalent",
+        "基准来源": "行业均值",
+        "基准样本数": 10,
+        "基础分": 5,
+        "失分类型": "无明显失分",
+        "子域": "碳排放",
+        "完整度分": 3,
+        "对标分": 3,
+        "指标": "范围一排放",
+        "是否未披露": false,
+        "权重": 0.021475,
+        "维度": "企业内部碳管理",
+        "行业L4得分": 7.2,
+        "行业均值": 4.2,
+        "质量分": 2,
+        "障碍度": 0.0043
+      },
+      "范围三排放": {
+        "L4得分": 5,
+        "保底分": null,
+        "值": "未披露",
+        "原文": "未披露",
+        "基准来源": "行业均值",
+        "基准样本数": 10,
+        "基础分": 2,
+        "失分类型": "完整度失分",
+        "子域": "碳排放",
+        "完整度分": 0,
+        "对标分": 3,
+        "指标": "范围三排放",
+        "是否未披露": false,
+        "权重": 0.011929,
+        "维度": "企业内部碳管理",
+        "行业L4得分": 5.0,
+        "行业均值": 2.0,
+        "质量分": 2,
+        "障碍度": 0.006
+      },
+      "范围二排放": {
+        "L4得分": 8,
+        "保底分": null,
+        "值": "175,515（市场基准）；158,093（位置基准）",
+        "原文": "Scope 2 Emissions (Market-Based) 175,515 Tonnes of CO2 Equivalent; Scope 2 Emissions (Location-Based) 158,093 Tonnes of ",
+        "基准来源": "行业均值",
+        "基准样本数": 10,
+        "基础分": 5,
+        "失分类型": "无明显失分",
+        "子域": "碳排放",
+        "完整度分": 3,
+        "对标分": 3,
+        "指标": "范围二排放",
+        "是否未披露": false,
+        "权重": 0.021475,
+        "维度": "企业内部碳管理",
+        "行业L4得分": 7.2,
+        "行业均值": 4.2,
+        "质量分": 2,
+        "障碍度": 0.0043
+      },
+      "高碳供应商占比": {
+        "L4得分": 1,
+        "保底分": 1.0,
+        "值": "未披露",
+        "原文": "未披露",
+        "基准来源": "行业均值",
+        "基准样本数": 10,
+        "基础分": 0,
+        "失分类型": "完整度失分",
+        "子域": "供应链风险管控",
+        "完整度分": 0,
+        "对标分": 1,
+        "指标": "高碳供应商占比",
+        "是否未披露": true,
+        "权重": 0.005786,
+        "维度": "供应链碳管理",
+        "行业L4得分": 1.0,
+        "行业均值": 0.0,
+        "质量分": 0,
+        "障碍度": 0.0052
+      }
+    },
+    "公司类型": "listed",
+    "总分": 4.11,
+    "维度得分": {
+      "企业内部碳管理": 4.61,
+      "供应链碳管理": 4.8,
+      "透明度": 4.33,
+      "金融化情况": 1.13
+    },
+    "行业": "能源电力",
+    "评分等级": "基础",
+    "障碍度Top10": [
+      {
+        "L4得分": 0,
+        "失分类型": "完整度失分",
+        "指标": "监管强制披露要求符合性",
+        "权重": 0.068887,
+        "障碍度": 0.0689
+      },
+      {
+        "L4得分": 1,
+        "失分类型": "完整度失分",
+        "指标": "绿色信贷",
+        "权重": 0.040181,
+        "障碍度": 0.0362
+      },
+      {
+        "L4得分": 1,
+        "失分类型": "完整度失分",
+        "指标": "绿色债券",
+        "权重": 0.040181,
+        "障碍度": 0.0362
+      },
+      {
+        "L4得分": 0,
+        "失分类型": "完整度失分",
+        "指标": "环保投资",
+        "权重": 0.035,
+        "障碍度": 0.035
+      },
+      {
+        "L4得分": 6,
+        "失分类型": "质量失分",
+        "指标": "交易所ESG披露指引符合性",
+        "权重": 0.068887,
+        "障碍度": 0.0276
+      },
+      {
+        "L4得分": 0,
+        "失分类型": "完整度失分",
+        "指标": "绿色物流",
+        "权重": 0.026306,
+        "障碍度": 0.0263
+      },
+      {
+        "L4得分": 0,
+        "失分类型": "完整度失分",
+        "指标": "第三方核查覆盖率",
+        "权重": 0.024035,
+        "障碍度": 0.024
+      },
+      {
+        "L4得分": 5,
+        "失分类型": "质量失分",
+        "指标": "碳排放披露范围",
+        "权重": 0.047269,
+        "障碍度": 0.0236
+      },
+      {
+        "L4得分": 5,
+        "失分类型": "质量失分",
+        "指标": "信息披露频次",
+        "权重": 0.043271,
+        "障碍度": 0.0216
+      },
+      {
+        "L4得分": 1,
+        "失分类型": "完整度失分",
+        "指标": "历史信息披露更正次数",
+        "权重": 0.022968,
+        "障碍度": 0.0207
+      }
+    ]
+  }
+}

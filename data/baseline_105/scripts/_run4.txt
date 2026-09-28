@@ -1,0 +1,14 @@
+﻿python.exe : Traceback (most recent call last):
+所在位置 行:447 字符: 1
++ & $py "[REPO]\data\baseline_ ...
++ ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified: (Traceback (most recent call last) 
+   ::String) [], RemoteException
+    + FullyQualifiedErrorId : NativeCommandError
+ 
+  File "[REPO]\data\baseline_105\scrip
+ts\make_manifest.py", line 211, in <module>
+    'lang': (p['lang'] if p else ''),
+             ~^^^^^^^^
+KeyError: 'lang'
+rc=1

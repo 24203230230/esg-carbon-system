@@ -1,0 +1,11 @@
+读取 raw_json = 92 份 | 可用 92 份 | 异常 0 份
+已写 [REPO]\data\baseline_105\weights_patch.json
+----------------------------------------------------------------------
+样本量 = 92 家
+行业数 = 10（其中样本<10 降级 7 个）
+每份得分指标数：中位 17 / 均值 17.7
+加权基础分 Σ：全市场均值 1.800
+产出： [REPO]\data\baseline_105\excel\行业基准库.xlsx
+产出： [REPO]\data\baseline_105\excel\基础分明细.xlsx
+产出： [REPO]\data\baseline_105\weights_patch.json
+BASELINE_V2_DONE

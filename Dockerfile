@@ -49,6 +49,11 @@ RUN pip install --no-cache-dir -i https://mirrors.aliyun.com/pypi/simple \
         jinja2 \
         cos-python-sdk-v5
 
+# v=118：证据强制校验（方案A）需要繁简归一化 —— zhconv 纯 Python、无编译、无外部数据文件，
+#   实测不转繁简时原文命中率仅 0.021（几乎全灭），转简后 0.800 ⇒ 该依赖是硬需求。
+RUN pip install --no-cache-dir -i https://mirrors.aliyun.com/pypi/simple \
+        zhconv
+
 # v=93：扫描件 OCR 兜底（RapidOCR + onnxruntime，完全离线，评委现场断网也能跑）
 #   ⚠️ 坑1：必须用 opencv-python-headless —— slim 镜像无 libGL.so.1，普通版直接 ImportError
 #   ⚠️ 坑2：rapidocr 的依赖写死 opencv_python，故装完须卸载再补 headless 版
@@ -68,6 +73,8 @@ COPY models.py /app/
 # 评分查表数据（42指标权重+行业基准库+全市场中位数+评分规则）
 COPY weights.json /app/
 COPY weights_logic.py /app/
+# v=118：证据强制校验模块（得分指标必须能在报告全文中定位到「原文」）
+COPY evidence_verify.py /app/
 # v=85：WeasyPrint HTML 报告模板（Jinja2）
 COPY templates/ /app/templates/
 

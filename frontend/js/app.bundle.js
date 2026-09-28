@@ -1404,7 +1404,68 @@ function checkUploadAction() {
  * ⚠️ 为什么 #scoring 是整段隐藏而不是逐字段置空：
  *   该区块内带着硬编码默认值（#overallScore=7.8、"优秀 (A)"、整段评估结论），
  *   逐字段清空既清不干净、又可能与下次 fillScoreCards() 打架；整段隐藏最干净。
+ *
+ * ---------------------------------------------------------------------------
+ * v=116 修复：「删除报告后提取结果区变成永久空壳」缺陷
+ *
+ * 现象：删掉第 1 份 → 再传第 2 份 → Step2「数据提取结果」只剩标题，42 张指标
+ *       卡片全没了；控制台刷 42 条 `l4-XX 元素不存在` +
+ *       `fillExtractCards 完成：填充 0 个，跳过 0 个`
+ *       （跳过 0 ⇒ 说明提取数据本身是齐的，纯粹是 DOM 骨架没了）。
+ *
+ * 根因：#extractResult 里的 42 张 l4-* 卡片骨架是 index.html 的**静态 HTML**；
+ *       fillExtractCards() 只负责「填充已存在的元素」，从不创建元素；
+ *       而 resetAnalysisView() 原用 innerHTML = '' 把骨架整段删除 ⇒ 无法再生。
+ *       （顺带坏处：fillScoreCards 会往 l4-XX-src 里 append 评分徽章，
+ *         不还原骨架则会跨报告累积徽章。）
+ *
+ * 修法：① 页面加载时抓一份「出厂骨架」快照；
+ *       ② reset 时用快照还原（= 清空上一份数据，但保留 DOM 骨架）；
+ *       ③ fillExtractCards 前再自愈一次 ⇒ 已处于坏状态的页面无需刷新即可恢复。
+ * ---------------------------------------------------------------------------
  */
+let _extractResultTemplate = null;
+(function captureExtractResultTemplate() {
+    const grab = () => {
+        try {
+            const box = document.getElementById('extractResult');
+            // 只在骨架齐全时留底（若加载时已被清空，宁可空着交给用户刷新）
+            if (box && box.innerHTML.indexOf('id="l4-01"') !== -1) {
+                _extractResultTemplate = box.innerHTML;
+            }
+        } catch (e) {
+            console.warn('提取结果骨架快照失败:', e);
+        }
+    };
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', grab, { once: true });
+    } else {
+        grab();
+    }
+})();
+
+/** 确保 #extractResult 的卡片骨架在位；若已被清空则用出厂快照重建。 */
+function ensureExtractResultDom() {
+    const box = document.getElementById('extractResult');
+    if (!box) return null;
+    if (document.getElementById('l4-01')) {
+        // 骨架完好；若加载期留底失败（极端情形），趁骨架仍在且尚未被评分徽章污染时补留一份
+        if (_extractResultTemplate === null &&
+            box.innerHTML.indexOf('id="l4-01"') !== -1 &&
+            box.innerHTML.indexOf('score-badge') === -1) {
+            _extractResultTemplate = box.innerHTML;
+        }
+        return box;   // 骨架完好
+    }
+    if (_extractResultTemplate) {                        // 用快照自愈
+        box.innerHTML = _extractResultTemplate;
+        console.info('[v=116] 提取结果卡片骨架已自愈重建（修复"删除报告后空壳"）');
+    } else {
+        console.warn('[v=116] 提取结果骨架快照缺失，无法自愈；请刷新页面');
+    }
+    return box;
+}
+
 function resetAnalysisView() {
     // 1) 隐藏并清空结果区（Step2 提取结果 / Step3 评分画像）
     const analysis = $('#analysis');
@@ -1413,7 +1474,13 @@ function resetAnalysisView() {
     if (scoring) scoring.style.display = 'none';
 
     const resultBox = $('#extractResult');
-    if (resultBox) { resultBox.style.display = 'none'; resultBox.innerHTML = ''; }
+    if (resultBox) {
+        // v=116 修复：原为 `resultBox.innerHTML = ''` —— 会把 #extractResult 内的静态
+        //   卡片骨架（42 张 l4-*）永久删除，而页面上没有任何重建代码 ⇒ 改为还原出厂快照：
+        //   视觉上等于「清空上一份数据」，但 DOM 骨架保留，下次提取才能正常填充。
+        resultBox.style.display = 'none';
+        try { ensureExtractResultDom(); } catch (e) { console.warn('提取结果骨架还原失败:', e); }
+    }
     const progressBox = $('#extractProgress');
     if (progressBox) progressBox.style.display = 'none';
     const modalBody = $('#reportModalBody');
@@ -1983,6 +2050,9 @@ function getGradeLabel(total) {
 }
 
 function fillExtractCards(extractData) {
+    // v=116 修复：先确保卡片骨架在位（删除报告时曾被 innerHTML='' 抹掉）
+    try { ensureExtractResultDom(); } catch (e) { console.warn('提取结果骨架自愈失败:', e); }
+
     // ↑↑↑ 关键：dims 必须在 try 块外声明（块作用域陷阱）↑↑↑
     let dims = {};
     try {
