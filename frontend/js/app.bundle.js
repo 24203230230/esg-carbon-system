@@ -624,12 +624,32 @@ async function getLocalSessionUser() {
  * @param {string} where 触发场景，仅用于记录与文案
  * @returns {Promise<boolean>} true=可继续；false=已拦下并弹出登录
  */
+// v=125：给「可能永远挂住」的 Promise 加一个上限。超时返回 null（而不是永远 pending）。
+//   适用范围：所有「鉴权/网络失败 ≠ 未登录」的判定 —— 这正是 v124 学到的教训。
+function _withTimeout(promise, ms) {
+    return Promise.race([
+        Promise.resolve(promise).catch(() => null),
+        new Promise(resolve => setTimeout(() => resolve(null), ms))
+    ]);
+}
+
 async function requireLogin(where) {
     if (!supaClient) {
         console.warn('[v115] Supabase 未就绪，登录门禁兜底放行：', where);
         return true;
     }
-    const user = await getCurrentUser();
+    // v=125：修「文件拖进去毫无反应」。
+    //   旧实现直接 `await getCurrentUser()`，而 getUser() 是一次**到 Supabase 的真实网络请求，
+    //   且没有超时**。这次跨境往返一旦卡住（浏览器直连 ap-southeast-1，校园网下抖动是常态），
+    //   handleFiles() 就永远停在这一行 —— 没有 toast、没有进度条、控制台也没有任何报错，
+    //   用户感知就是「上传区拉不动」。实测：把 /auth/v1 延迟 20s，drop 之后 8s 内零反馈。
+    //   现在按「零网络优先、网络有界」重排：
+    //     ① 内存快照（零网络）  ② 本地会话（零网络，读 localStorage）
+    //     ③ 只有两者都拿不到时才发网络请求，且最多等 6s。
+    //   任何失败都会走到下面的**明确提示**，绝不静默等待。
+    if (_lastAuthUser) return true;                    // ① 零网络：内存快照
+    if (await getLocalSessionUser()) return true;      // ② 零网络：本地会话
+    const user = await _withTimeout(getCurrentUser(), 6000);   // ③ 有界网络
     if (user) return true;
     App._loginPromptedFor = where || '提取';
     showToast('数据提取需先登录，请登录或注册后再上传报告', 'error');
