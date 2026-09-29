@@ -554,6 +554,10 @@ function closeNotice() {
 // ============ Supabase 认证 + 历史记录（v=70） ============
 let supaClient = null;
 let authMode = 'login'; // 'login' | 'register'
+// v=124：最近一次鉴权结果的**同步快照**。
+//   唯一用途：让上传区点击能走「零网络、零 await」的快路径（见 initUpload）。
+//   不要拿它当用户信息的权威来源，权威判据始终是 requireLogin() 的实时鉴权。
+let _lastAuthUser = null;
 
 function initSupabase() {
     if (typeof window.supabase === 'undefined' || !API_CONFIG.SUPABASE_URL) {
@@ -586,6 +590,23 @@ async function getCurrentUser() {
     try {
         const { data } = await supaClient.auth.getUser();
         return data.user || null;
+    } catch (e) { return null; }
+}
+
+/**
+ * v=124：读**本地会话**（不发网络请求）—— 只用于「上传区是否上锁 / 点击能否直开」这类判断。
+ *
+ * 为什么必须与 getCurrentUser() 分开：
+ *   getUser() 会向 Supabase 发一次网络请求校验 JWT，**失败与「未登录」返回值无法区分**。
+ *   旧实现恰恰用它的结果去写 .is-locked 类，且没有任何重试 ⇒ 首屏一次网络抖动
+ *   就把上传区永久锁成「未登录」（点击路径只看这个类，故拖拽能用、点击没反应）。
+ *   getSession() 只读 localStorage，快且稳，正是 UI 锁态该用的信号。
+ */
+async function getLocalSessionUser() {
+    if (!supaClient) return null;
+    try {
+        const { data } = await supaClient.auth.getSession();
+        return (data && data.session && data.session.user) || null;
     } catch (e) { return null; }
 }
 
@@ -627,13 +648,54 @@ async function refreshUploadLockUI(userArg) {
     if (!zone && !hint) return;
     let logged = true;   // 兜底：鉴权不可用时不算锁定态
     if (supaClient) {
-        const u = (typeof userArg !== 'undefined') ? userArg : await getCurrentUser();
+        let u;
+        if (typeof userArg !== 'undefined') {
+            u = userArg;                       // 调用方已查到（updateAuthUI），零额外请求
+        } else {
+            // v=124：先读本地会话（快、不依赖网络）；本地确实没有才发网络确认。
+            //   旧实现直接 getUser()，一次网络抖动就把 UI 误判成「未登录」。
+            u = await getLocalSessionUser();
+            if (!u) u = await getCurrentUser();
+        }
+        _lastAuthUser = u || null;             // 同步快照，供点击快路径使用
         logged = !!u;
+    } else {
+        _lastAuthUser = null;
     }
     const locked = !logged;
     if (zone) zone.classList.toggle('is-locked', locked);
     if (hint) hint.style.display = locked ? 'block' : 'none';
+    // v=124：解锁回补 —— 首屏鉴权若因抖动误判，靠重试自愈（见下方 scheduleUploadUnlockRetry）
+    if (locked) scheduleUploadUnlockRetry();
+    else _uploadUnlockRetries = 0;
 }
+
+// v=124：解锁回补。旧实现只在首屏与 auth 事件时刷一次锁态 ——
+//   首屏那次一旦因网络/服务冷启动失败，上传区会一直锁着，用户只能刷新页面。
+//   这里做有限次退避重试，并在页面重新可见/获得焦点时补一次，把抖动自愈掉。
+let _uploadUnlockRetries = 0;
+const _UPLOAD_UNLOCK_MAX_RETRY = 3;
+
+function scheduleUploadUnlockRetry() {
+    if (!supaClient) return;
+    if (_uploadUnlockRetries >= _UPLOAD_UNLOCK_MAX_RETRY) return;
+    _uploadUnlockRetries += 1;
+    setTimeout(() => {
+        const zone = $('#uploadZone');
+        if (!zone || !zone.classList.contains('is-locked')) { _uploadUnlockRetries = 0; return; }
+        refreshUploadLockUI();
+    }, 2000 * _uploadUnlockRetries);      // 2s / 4s / 6s
+}
+
+// v=124：回到页面时补一次（切标签页回来、从登录页返回等场景）
+document.addEventListener('visibilitychange', () => {
+    if (document.visibilityState !== 'visible' || !supaClient) return;
+    const zone = $('#uploadZone');
+    if (zone && zone.classList.contains('is-locked')) {
+        _uploadUnlockRetries = 0;
+        refreshUploadLockUI();
+    }
+});
 
 function openAuthModal() {
     authMode = 'login';
@@ -1040,22 +1102,29 @@ function initUpload() {
     const fileInput = $('#fileInput');
 
     // 点击上传
-    zone.addEventListener('click', (e) => {
+    zone.addEventListener('click', async (e) => {
         // v=115：点「请先登录」里的链接就别再往下走（那个链接自己会开登录弹窗）
         if (e.target.closest && e.target.closest('#uploadLoginHint')) return;
 
-        // v=115 登录门禁（最前一道）：未登录时连文件选择器都不打开。
-        //   让用户白挑一次文件、等选完才告诉他"要登录"，体验很差。
-        //   这里必须同步判断 —— requireLogin() 是异步的，来不及拦 click 的默认行为，
-        //   故读 refreshUploadLockUI() 维护的 .is-locked 类。
-        if (zone.classList.contains('is-locked')) {
-            e.preventDefault();
-            e.stopPropagation();
-            requireLogin('上传提取');
-            return;
-        }
+        // v=124：**不再用 .is-locked 类做拦截**。
+        //   旧实现：命中 .is-locked 就 preventDefault + return；而那个类由「首屏一次异步鉴权」
+        //   写入，任何一次网络抖动都会把已登录用户误置为锁定 —— 且点击路径只看这个类，
+        //   于是「已登录也点不开文件框」（拖拽走的是实时鉴权，所以只有拖拽能用）。
+        //   现改为：先把 <label for="fileInput"> 的原生打开行为统一拦下，再走下面这条受控路径。
+        //   （不拦的话，未登录时点「点击选择文件」会绕过门禁直接弹出选择器。）
+        e.preventDefault();
+        e.stopPropagation();
 
-        if (e.target.tagName !== 'LABEL') fileInput.click();
+        // ① 快路径：内存快照已有用户 → 零网络、零 await 直接打开。
+        //    必须避免 await —— 长时间 await 会让浏览器收回"用户手势"，
+        //    此后 fileInput.click() 会被静默忽略。
+        if (_lastAuthUser) { fileInput.click(); return; }
+
+        // ② 本地会话（仍不发网络请求）→ 立刻打开
+        if (await getLocalSessionUser()) { fileInput.click(); return; }
+
+        // ③ 兜底：实时鉴权（会发一次网络请求），通过后再打开
+        if (await requireLogin('上传提取')) fileInput.click();
     });
 
     // 拖拽

@@ -31,11 +31,22 @@
      该归一化**不削弱严格性**：小数点仍不去、数字仍须整体命中
      （`1234` 不会因去逗号而被 `1,235` 命中）。
 
-判定规则：
+判定规则（v=124b）：
   文本命中率 = 原文 6-gram 在报告全文 gram 集合中的命中比例
-  通过 ⟺ 文本命中 ≥ 0.4  且  （原文无「长度≥3 的数字」或 数字命中 ≥ 0.8）
+  通路 A：文本命中 ≥ 0.4  且  （原文无「长度≥3 的数字」或 数字命中 ≥ 0.8）
      · 表格型证据（标签与数值被排版分隔）会拉低文本命中，故靠数字分支兜住；
      · 但数字分支**不能单独放行**（否则虚构数字会漏网），故为「与」关系。
+  通路 B：**「值」**里的数字 ≥ 0.8 命中，且 文本命中 ≥ 0.25
+         且 「值」至少含 1 个**位数 ≥3** 的实数（_has_long_number）
+     · 「值」才是被打分的数据；它确实在报告里 ⇒ 该条读的是真数据；
+     · 原文只是上下文（常含模型自附引用与多年度数字），不应一票否决；
+     · 位数门槛挡住 `1.8`/`2.0` 这类"报告里到处都有"的短数字蒙混过关；
+     · 虚构数值（模型自己编的数）依旧过不了 ⇒ 防幻觉主干未动。
+
+  v=124b 另补两处**只提精度、不提风险**的归一化（比对前两侧同做）：
+  ⑤ 模型自附引用剥离：`（第21页 环境维度-应对气候变化）` / `(p.73)` 不是报告原文，
+     却把 6-gram 压到阈值以下（上海机场范围一：0.333 → 过）。删的是「非报告内容」。
+  ⑥ 作用域标签同义：`範圍 1` ≡ `範圍一` ≡ `Scope 1` → `范围1`（详见 _canon_scope）。
 
 实测（牧原 81 页繁体报告）：
   真实样本 146 项 → 通过率 100%（0 误伤）
@@ -75,6 +86,12 @@ MIN_NUM_RATE = float(os.environ.get('EVIDENCE_MIN_NUM', '0.8') or 0.8)
 MIN_REPORT_CHARS = int(os.environ.get('EVIDENCE_MIN_REPORT_CHARS', '200') or 200)
 # v=118b：千分位归一（两侧都去分隔符后再比对）。EVIDENCE_THOUSANDS=0 可回到 v118 行为。
 STRIP_THOUSANDS = _env_flag('EVIDENCE_THOUSANDS', True)
+# v=124b：剥掉模型自附的页/章节引用（见 _strip_citations）。=0 回到 v118b 行为。
+STRIP_CITATIONS = _env_flag('EVIDENCE_STRIP_CITATIONS', True)
+# v=124b：作用域标签同义归一（范围一 ≡ 范围1 ≡ Scope 1，见 _canon_scope）。=0 关闭。
+LABEL_NORM = _env_flag('EVIDENCE_LABEL_NORM', True)
+# v=124b：通路 B —— 「值」的数字全命中时放宽文本阈值（设 -1 关闭该通路）。
+RELAX_TEXT_RATE = float(os.environ.get('EVIDENCE_RELAX_TEXT', '0.25') or -1)
 
 _NUM_PAT = re.compile(r'\d+(?:\.\d+)?')
 _NON_WORD = re.compile(r'[^\w\u4e00-\u9fff]')
@@ -94,6 +111,19 @@ def _strip_thousands(s):
     return _THOUSANDS.sub('', s or '')
 
 
+def _has_long_number(s):
+    """「值」里是否存在**位数 ≥3 的实数**（小数点与千分位不计入位数）。
+
+    v=124b：通路 B 的前置门槛。为什么不能省：
+      `1.8`、`2.0` 这类短数字在十几万字的报告里**随处可能出现**，
+      拿它当"硬证据"等于给了模型一个随便蒙中的机会。
+      实测（92 份样本）：加上该门槛只损失 1 条放行（五粮液「环保投资 1.8」），
+      但通路 B 从此只接受"有实质位数"的数量。
+    """
+    return any(len(re.sub(r'\D', '', x)) >= 3
+               for x in _NUM_PAT.findall(_strip_thousands(s or '')))
+
+
 # 降级时写入的占位值（与算分层的"未披露"口径一致）
 DEGRADE_VALUE = '未披露'
 
@@ -108,14 +138,55 @@ def _to_simple(s):
         return s
 
 
+# ---- v=124b 归一化①：模型自附引用 ----
+# 实测（2026-09-29）：上海机场「范围一排放」原文 =
+#   '范围一 25,166.80 tCO2e（第21页 环境维度-应对气候变化）'
+# 尾部的「（第21页 …）」是模型给评委看的定位信息、**报告原文里没有**，
+# 却把 6-gram 命中率从「能过」压到 0.333（阈值 0.4）⇒ 真数据被判成幻觉。
+# 剥掉它只删除「非报告内容」，不放松任何判据 ⇒ 只提精度、不提风险。
+_CITE_BRACKET_IN = r'[（(\[【〔]'
+_CITE = re.compile(
+    r'[（(\[【〔][^（()）\[\]【】〔〕]{0,80}?'
+    r'(?:第\s*\d+\s*页|[Pp]{1,2}\.?\s*\d+)'
+    r'[^（()）\[\]【】〔〕]{0,80}?[)）\]】〕]'
+)
+
+# ---- v=124b 归一化②：作用域标签同义 ----
+# 报告排版惯用阿拉伯数字（「溫室氣體排放總量（範圍 1,2,3）」），
+# 模型按指标名写中文数字（「范围一排放」）——概念完全等价，6-gram 却直接归零。
+# 两侧都归一到「范围N」，英文 Scope 一并收编。
+_SCOPE_MAP = {'一': '1', '二': '2', '三': '3', '四': '4', '五': '5', '六': '6'}
+_SCOPE = re.compile(r'(?:范围|范畴|scope)\s*([一二三四五六123456])', re.I)
+
+
+def _strip_citations(s):
+    """剥掉「（第N页 …）」「(p.73)」这类模型自附引用"""
+    return _CITE.sub(' ', s or '')
+
+
+def _canon_scope(s):
+    """范围一 / 范围 1 / Scope 1 → 范围1"""
+    return _SCOPE.sub(lambda m: '范围' + _SCOPE_MAP.get(m.group(1), m.group(1)), s or '')
+
+
+def _pre(s):
+    """比对前的公共预处理：繁→简 + 引用剥离 + 标签归一"""
+    s = _to_simple(s or '')
+    if STRIP_CITATIONS:
+        s = _strip_citations(s)
+    if LABEL_NORM:
+        s = _canon_scope(s)
+    return s
+
+
 def _norm_text(s):
     """文本口径归一化：繁→简 + 去一切非字词（容忍标点/空白/换行差异）"""
-    return _NON_WORD.sub('', _to_simple(s or ''))
+    return _NON_WORD.sub('', _pre(s))
 
 
 def _norm_keep_num(s):
     """数字口径归一化：繁→简 + 只去空白（**保留小数点**，供严格数字匹配）"""
-    return _BLANK.sub('', _to_simple(s or ''))
+    return _BLANK.sub('', _pre(s))
 
 
 class ReportIndex(object):
@@ -168,14 +239,31 @@ class ReportIndex(object):
         return hit / float(len(nums))
 
     def check(self, raw, val=''):
-        """返回 (是否通过, 文本命中率, 数字命中率或 None)"""
+        """返回 (是否通过, 文本命中率, 数字命中率或 None)
+
+        两条通路（v=124b 新增 B）：
+          A（原判据，不变） 文本命中 ≥ MIN_TEXT_RATE
+                            且（原文无「长度≥3 的数字」或 数字命中 ≥ MIN_NUM_RATE）
+          B（新增）        「值」里的长数字≥MIN_NUM_RATE 命中，且 文本命中 ≥ RELAX_TEXT_RATE
+
+        为什么要 B：实测 92 份里 36 条真数据被数字分支拦下，原因是模型在**原文**里
+        顺手抄了报告的多年度/派生数字（如 'Total GHG Emissions 10,268.32 11,178.42
+        10,905.91'，只有最后一年是本次要的「值」），其中个别年份因表格排版在解析结果里
+        对不上 ⇒ 数字命中掉到 0.5~0.75 < 0.8 ⇒ 整条被否。
+        但**「值」才是真正被打分的数据**：只要它确实出现在报告里，就说明这一条读的是真数据；
+        「原文」只是给评委看的上下文，不该被当成一票否决的理由。
+        ⚠️ 通路 B 不放弃文本判据（仍要 ≥ RELAX_TEXT_RATE），且「值」必须本身含长数字，
+           虚构数值（模型自己编的数）依旧过不了 —— 防幻觉的主干未动。
+        """
         tr = self.text_rate(raw)
-        if tr < MIN_TEXT_RATE:
-            return False, tr, None
         nr = self.num_rate((raw or '') + ' ' + (val or ''))
-        if nr is not None and nr < MIN_NUM_RATE:
-            return False, tr, nr
-        return True, tr, nr
+        if tr >= MIN_TEXT_RATE and (nr is None or nr >= MIN_NUM_RATE):
+            return True, tr, nr
+        if RELAX_TEXT_RATE >= 0 and tr >= RELAX_TEXT_RATE and _has_long_number(val):
+            vn = self.num_rate(val or '')
+            if vn is not None and vn >= MIN_NUM_RATE:
+                return True, tr, (nr if nr is not None else vn)
+        return False, tr, nr
 
 
 def _iter_leaves(doc):
@@ -216,8 +304,10 @@ def verify_document(doc, report_text):
         'failed': 0,
         'skipped': 0,
         'degraded': [],
-        '阈值': {'文本命中下限': MIN_TEXT_RATE, '数字命中下限': MIN_NUM_RATE, 'ngram': NGRAM_N},
-        '版本': 'v118b',
+        '阈值': {'文本命中下限': MIN_TEXT_RATE, '数字命中下限': MIN_NUM_RATE, 'ngram': NGRAM_N,
+                 '通路B文本下限': RELAX_TEXT_RATE,
+                 '引用剥离': bool(STRIP_CITATIONS), '标签归一': bool(LABEL_NORM)},
+        '版本': 'v124b',
     }
 
     if not ENABLED:

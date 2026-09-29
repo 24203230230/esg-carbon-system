@@ -102,9 +102,22 @@ PROMPT_FILE = os.environ.get('EXTRACTION_PROMPT_FILE', '/app/extraction_prompt.m
 
 # ============================== OCR 兜底配置（v=93） ==============================
 # 扫描件（纯图片 PDF）无文字层，原逻辑直接 400。改为自动转 OCR，对上层透明。
+#
+# v=124：三个参数改为**环境变量可覆盖**（原先写死 ⇒ 调优要重打镜像）。
+#   实测场景（宜宾五粮液 英文版，59 页纯扫描件）整份 OCR 812s ≈ 13.8s/页 —— 用户侧体感 16 分钟。
+def _env_int(name, default):
+    v = os.environ.get(name, '').strip()
+    return int(v) if v.isdigit() else default
+
+
 OCR_MIN_TEXT = 100        # 文字层低于此字符数视为扫描件（与 /api/extract 判定阈值一致）
-OCR_TARGET_WIDTH = 1800   # 降采样目标宽度：实测精度仅降 4.5%，速度快 4.8 倍（甜点值）
-OCR_MAX_PAGES = 60        # 单份最多识别页数，防止超厚报告无限等待
+# 降采样目标宽度：实测精度仅降 4.5%，速度快 4.8 倍（甜点值）。
+# 调小可线性提速（耗时∝面积）；报告正文 10pt 在 1500px 下仍有 ~21px 字高，余量充足。
+OCR_TARGET_WIDTH = _env_int('OCR_TARGET_WIDTH', 1800)
+OCR_MAX_PAGES = _env_int('OCR_MAX_PAGES', 60)   # 单份最多识别页数，防超厚报告无限等待
+# 无内嵌位图时的整页渲染分辨率（v=124 起可调；A4 在 150DPI ≈ 1240px 宽，
+# 低于 OCR_TARGET_WIDTH ⇒ 该路径本来就不会再缩放，故 DPI 直接决定耗时）。
+OCR_RENDER_DPI = _env_int('OCR_RENDER_DPI', 150)
 
 # v=97：字体编码损坏检测。判定从「只看字符数量」升级为「数量 + 质量」。
 # 依据（30 份实验实测）：受损 4 份最低 4.36%，完好 26 份最高 0.07% → 60 倍安全间隔，
@@ -275,12 +288,24 @@ def _ocr_one_page(page, ocr) -> str:
     # 路径二：兜底渲染页面位图（处理「文字转曲线」的矢量页，无内嵌位图）
     if img is None:
         try:
-            img = page.to_image(resolution=150).original
+            img = page.to_image(resolution=OCR_RENDER_DPI).original
         except Exception as e:
             logger.warning(f"页面渲染失败，跳过该页: {e}")
             return ""
 
-    # 降采样：扫描件原图常为 4961×3366（约 600DPI），按原尺寸 OCR 慢 4.8 倍
+    # 降采样：扫描件原图常为 4961×3366（约 600DPI），按原尺寸 OCR 慢 4.8 倍。
+    #
+    # v=124：⚠️ 曾试 `img.draft()` + BILINEAR 提速，**实测后已回退**（证据见 _perf/v124_D/）。
+    #   ① 提速不可测：同一夹具 4.075s/页 → 4.07~4.53s/页。
+    #      （同容器重复实验逐字节一致 ⇒ OCR 本身是确定性的，故 0 收益不是噪声掩盖的）
+    #   ② 识别结果**有损**：同一页整行消失（相似度 0.7606，
+    #      "Water withdrawal: 2,345,678.90 tonnes; ..." 那行在新代码下没有输出）
+    #      ⇒ 文本变少 ⇒ 分数被系统性压低。这与"不碰原逻辑/不做有损修复"的红线冲突。
+    #   ③ 根因：送入 OCR 的**像素尺寸**虽未变，但 draft 改了解码的 DCT 比例、BILINEAR 改了
+    #      重采样核 ⇒ 位图内容变了，而 OCR 对像素非尺度不变。
+    #   保留（均为零行为变更的可用性改进）：
+    #      · OCR_TARGET_WIDTH / OCR_MAX_PAGES / OCR_RENDER_DPI 三个环境变量旋钮（默认值同旧版）
+    #      · OCR 进度日志补 ETA
     try:
         if img.width > OCR_TARGET_WIDTH:
             ratio = OCR_TARGET_WIDTH / img.width
@@ -344,8 +369,12 @@ def ocr_pdf_pages(file_bytes: bytes, max_pages: int = OCR_MAX_PAGES,
             # 每 5 页报一次进度，便于从容器日志观察长任务
             if (i + 1) % 5 == 0 or (i + 1) == limit:
                 elapsed = time.time() - t0
+                # v=124：补 ETA —— 整份扫描件动辄十几分钟，日志里只有"已耗时"
+                # 时无法判断是卡住还是正常推进（用户侧曾反馈"OCR 跑了 16 分钟"）。
+                eta = elapsed / (i + 1) * (limit - i - 1)
                 logger.info(
                     f"⏳ OCR 进度: {i+1}/{limit} 页，已耗时 {elapsed:.0f}s"
+                    f"（{elapsed/(i+1):.1f}s/页），预计剩余 {eta:.0f}s"
                 )
     logger.info(f"🔍 OCR 扫描完成: {total} 页中共识别 {len(text_parts)} 页有效文本")
     return "\n\n".join(text_parts)
@@ -577,26 +606,29 @@ def _baseline_info():
 
 
 def _evidence_info():
-    """v=123：只读暴露证据校验的千分位归一开关（供部署验收 —— 判断 v118b 是否生效）。
-    任何异常返回 (None,)*4，绝不影响健康检查。"""
+    """只读暴露证据校验的开关（供部署验收判断线上实际生效的版本）。
+    任何异常返回全 None，绝不影响健康检查。"""
     try:
         from evidence_verify import (ENABLED as _en, STRIP_THOUSANDS as _th,
-                                     MIN_TEXT_RATE as _t, MIN_NUM_RATE as _n)
-        return bool(_en), ('on' if _th else 'off'), _t, _n
+                                     MIN_TEXT_RATE as _t, MIN_NUM_RATE as _n,
+                                     STRIP_CITATIONS as _sc, LABEL_NORM as _ln,
+                                     RELAX_TEXT_RATE as _rt)
+        return (bool(_en), ('on' if _th else 'off'), _t, _n,
+                ('on' if _sc else 'off'), ('on' if _ln else 'off'), _rt)
     except Exception:
-        return None, None, None, None
+        return None, None, None, None, None, None, None
 
 
 @app.route('/api/health', methods=['GET'])
 def health():
     """健康检查"""
     _bv, _bs = _baseline_info()
-    _ee, _eth, _emt, _emn = _evidence_info()
+    _ee, _eth, _emt, _emn, _esc, _eln, _ert = _evidence_info()
     return jsonify({
         "status": "ok",
         "service": "esg-extractor",
         "version": "1.0.0",
-        "build": "v123",  # v123：证据校验千分位归一（evidence_verify v118b：两侧去千分位分隔符，修复「真实数据带/不带千分位被判编造」的误杀；92 份回归中 25 条误拦恢复、真幻觉 0 漏放）｜v122b：修复 v122 的 health 路由错位（_baseline_info 被插到 @app.route 与 def health 之间 ⇒ 装饰器绑错函数）+ 基准库样本量键名（样本量→样本数）｜v122：B 阶段基准库重建（92 家重提取 + 现行口径重算；全局权重一字不动）｜v121：PDF 解析逐页释放缓存（纯内存管理，不改解析结果）——修复 52 页文档 RSS 线性涨到 2.3GB ⇒ 2G 机器 OOM/swap 抖动（单页 OCR 7.4s→65s）｜v120：并发内存闸门（纯防御：限"同时驻留的重任务数"）｜v119b：A2 混合控长｜v119 = A2 配额采样 + C1 判定词繁简/英文归一（zhconv）+ C2 提示词消歧义｜v118 = 证据强制校验（evidence_verify.py）｜v117 = EMPTY_VALUES 占位符全集｜v116 = 判据表4.4 + temp 0.0｜v114 = COS 直传
+        "build": "v124",  # v124：①报告字体全 CJK 覆盖（6990→29833 码位，根治繁体/生僻字渲染空白；旧字体实测繁体串 108 字缺 52）②证据校验 v124b（模型自附引用剥离 + 作用域标签同义归一 + 通路B「值数字全命中则放宽文本阈值」；92 份真实数据 A/B：新增放行 29 条、值字面查无 0、意外回收 0）③OCR：三个参数改环境变量可调 + 进度补 ETA（曾试 draft+BILINEAR 提速，实测 0 收益且同一页丢整行 ⇒ **已回退**，见 _perf/v124_D/）｜v123：证据校验千分位归一（evidence_verify v118b：两侧去千分位分隔符，修复「真实数据带/不带千分位被判编造」的误杀；92 份回归中 25 条误拦恢复、真幻觉 0 漏放）｜v122b：修复 v122 的 health 路由错位（_baseline_info 被插到 @app.route 与 def health 之间 ⇒ 装饰器绑错函数）+ 基准库样本量键名（样本量→样本数）｜v122：B 阶段基准库重建（92 家重提取 + 现行口径重算；全局权重一字不动）｜v121：PDF 解析逐页释放缓存（纯内存管理，不改解析结果）——修复 52 页文档 RSS 线性涨到 2.3GB ⇒ 2G 机器 OOM/swap 抖动（单页 OCR 7.4s→65s）｜v120：并发内存闸门（纯防御：限"同时驻留的重任务数"）｜v119b：A2 混合控长｜v119 = A2 配额采样 + C1 判定词繁简/英文归一（zhconv）+ C2 提示词消歧义｜v118 = 证据强制校验（evidence_verify.py）｜v117 = EMPTY_VALUES 占位符全集｜v116 = 判据表4.4 + temp 0.0｜v114 = COS 直传
         "model": DEEPSEEK_MODEL,
         "thinking": DEEPSEEK_THINKING,
         "pdf_support": PDF_SUPPORT,
@@ -604,6 +636,8 @@ def health():
         "ocr_support": OCR_SUPPORT,
         "ocr_max_pages": OCR_MAX_PAGES,
         "ocr_target_width": OCR_TARGET_WIDTH,
+        "ocr_render_dpi": OCR_RENDER_DPI,
+        "ocr_num_threads": OCR_NUM_THREADS if OCR_NUM_THREADS else 'default',
         "prompt_loaded": len(EXTRACTION_PROMPT) > 0,
         "deepseek_key_set": bool(DEEPSEEK_API_KEY),
         # v=114：COS 直传就绪状态（前端据此决定走直传还是原分片链路）
@@ -627,6 +661,10 @@ def health():
         "evidence_strip_thousands": _eth,
         "evidence_min_text": _emt,
         "evidence_min_num": _emn,
+        # v=124b：证据校验的三处新增归一/通路（只读；用于部署核验）
+        "evidence_strip_citations": _esc,
+        "evidence_label_norm": _eln,
+        "evidence_relax_text": _ert,
     })
 
 
