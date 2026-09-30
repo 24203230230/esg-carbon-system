@@ -1122,29 +1122,36 @@ function initUpload() {
     const fileInput = $('#fileInput');
 
     // 点击上传
-    zone.addEventListener('click', async (e) => {
+    //   v=126：修「点击选择文件不再弹出文件框」——改为**纯同步打开**，并放行 input 自身的事件。
+    //
+    //   ① 必须放行 input 自己派发的事件。
+    //      fileInput.click() 产生的 click 事件，target 就是 input；而 input 位于 zone 内部，
+    //      该事件会冒泡回本 handler。v124 在这里写了**无条件** e.preventDefault()，
+    //      等于把 input 的默认行为（"打开文件选择器"）一并取消 ⇒ 点了没有任何反应。
+    //      实测对照（同一页面、同一条 JS click）：
+    //        · input 在 zone 内 → 框不开
+    //        · 把 input 移出 zone → 立刻能开
+    //      差别只在于事件会不会冒泡回这个 handler。
+    //
+    //   ② 必须保持同步。任何 await 之后再调用 fileInput.click()，浏览器都可能已经收回
+    //      「用户手势」(transient activation)，那次 click 会被静默忽略 —— 同样表现为"点了没反应"。
+    //      所以这里不查登录、不发请求、不 await。
+    //
+    //   ③ 登录门禁不放在这里。handleFiles() 开头已有一道硬门禁，那才是唯一正确的位置
+    //      （选完文件之后、真正调提取接口之前）。在"打开选择器"这一步拦：
+    //        · 拦不住任何东西 —— 选择器是纯本地 UI，不产生任何服务端交互；
+    //        · 却会把上面① ② 两条一起踩满。
+    //      未登录用户选完文件后会立刻收到明确的登录提示，不会白传任何字节。
+    zone.addEventListener('click', (e) => {
+        // 放行 input 自身的事件 —— 绝不能 preventDefault，那会取消"打开文件选择器"
+        if (e.target === fileInput) return;
+
         // v=115：点「请先登录」里的链接就别再往下走（那个链接自己会开登录弹窗）
         if (e.target.closest && e.target.closest('#uploadLoginHint')) return;
 
-        // v=124：**不再用 .is-locked 类做拦截**。
-        //   旧实现：命中 .is-locked 就 preventDefault + return；而那个类由「首屏一次异步鉴权」
-        //   写入，任何一次网络抖动都会把已登录用户误置为锁定 —— 且点击路径只看这个类，
-        //   于是「已登录也点不开文件框」（拖拽走的是实时鉴权，所以只有拖拽能用）。
-        //   现改为：先把 <label for="fileInput"> 的原生打开行为统一拦下，再走下面这条受控路径。
-        //   （不拦的话，未登录时点「点击选择文件」会绕过门禁直接弹出选择器。）
-        e.preventDefault();
+        e.preventDefault();      // 只拦 <label for="fileInput"> 的原生激活，避免打开两次
         e.stopPropagation();
-
-        // ① 快路径：内存快照已有用户 → 零网络、零 await 直接打开。
-        //    必须避免 await —— 长时间 await 会让浏览器收回"用户手势"，
-        //    此后 fileInput.click() 会被静默忽略。
-        if (_lastAuthUser) { fileInput.click(); return; }
-
-        // ② 本地会话（仍不发网络请求）→ 立刻打开
-        if (await getLocalSessionUser()) { fileInput.click(); return; }
-
-        // ③ 兜底：实时鉴权（会发一次网络请求），通过后再打开
-        if (await requireLogin('上传提取')) fileInput.click();
+        fileInput.click();       // 同步调用 ⇒ 不丢用户手势
     });
 
     // 拖拽
