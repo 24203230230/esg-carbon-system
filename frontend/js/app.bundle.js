@@ -1167,13 +1167,34 @@ function initUpload() {
     });
 
     // 文件选择
+    //   v=127：修「选中文件后点『打开』毫无反应」——必须【先快照、再清空】。
+    //
+    //   input.files 返回的是【活引用】FileList，不是快照。
+    //   本机实测（与业务无关的最小验证）：取 ref = input.files → 执行 input.value = '' → ref.length 由 1 变 0。
+    //
+    //   而 handleFiles 是 async，第一行 await requireLogin(...) 会让它【立刻挂起并返回】；
+    //   紧随其后的 fileInput.value = '' 就趁这个空档把那个活引用清空了；
+    //   handleFiles 恢复执行时 Array.from(fileList) 已经是空数组 ⇒ forEach 空转
+    //   ⇒ added = 0、rejected = 0 ⇒ 后面两个提示分支都不成立 ⇒ 【零 toast、零反馈】。
+    //   用户看到的就是「选完文件什么都没发生」。
+    //
+    //   拖拽路径传的是 e.dataTransfer.files（与 input 无关、不会被清空）⇒ 一直正常。
+    //   这解释了为什么「只有点击路径坏、拖拽一直好」。
     fileInput.addEventListener('change', (e) => {
-        handleFiles(e.target.files);
-        fileInput.value = '';
+        const files = Array.from(e.target.files);   // ① 先脱离 input，落成普通数组
+        fileInput.value = '';                       // ② 再清空（保证同一个文件可以再次选中）
+        handleFiles(files);                         // ③ 传数组；handleFiles 内部对数组同样能 Array.from
     });
 }
 
 async function handleFiles(fileList) {
+    // ---- v=127 防御：先把入参落成普通数组 ----
+    // 入参可能是 input.files（【活引用】）。本函数是 async，任何 await 挂起期间，
+    // 外部只要清空那个 input（fileInput.value = ''），这个引用就会同步变空。
+    // 在第一个 await 之前完成快照，后续逻辑即与外部状态彻底解耦 ——
+    // 不再依赖「调用方记得先 Array.from」这种口头约定（v127 的缺陷正是这么来的）。
+    const incomingFiles = Array.from(fileList);
+
     // ---- v=115 门禁①：数据提取必须登录后才能使用 ----
     // 本系统「选中文件即调提取接口」，所以拦截点必须在这里；
     // 若拦在 startAnalysis()，用户已经白传了整份几十上百 MB 的文件。
@@ -1192,7 +1213,7 @@ async function handleFiles(fileList) {
     let rejected = 0;
 
     // 拖拽多份时只取第一份，并明确告知其余被忽略 —— 静默丢弃比报错更让人困惑
-    let files = Array.from(fileList);
+    let files = incomingFiles;              // v=127：用第一个 await 之前就落好的快照
     if (files.length > 1) {
         showToast(`一次只能上传 1 份报告，已忽略其余 ${files.length - 1} 个文件`, 'info');
         files = files.slice(0, 1);
