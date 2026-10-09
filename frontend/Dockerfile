@@ -6,6 +6,8 @@ COPY favicon.svg /usr/share/nginx/html/
 COPY css /usr/share/nginx/html/css
 COPY js /usr/share/nginx/html/js
 COPY vendor /usr/share/nginx/html/vendor
+# v200：Hero 自转地球需要 assets/earth.jpg（此前无 assets 目录）
+COPY assets /usr/share/nginx/html/assets
 
 # 复制 Nginx 配置（静态托管 + 反向代理到提取服务）
 COPY nginx.conf /etc/nginx/conf.d/default.conf

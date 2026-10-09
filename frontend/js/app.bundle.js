@@ -2695,9 +2695,9 @@ function renderReportRadar(scoreData) {
                 r: {
                     min: 0, max: 10,
                     ticks: { stepSize: 2, font: { size: 11 }, color: '#94a3b8', backdropColor: 'transparent' },
-                    grid: { color: 'rgba(0,0,0,0.06)' },
-                    angleLines: { color: 'rgba(0,0,0,0.06)' },
-                    pointLabels: { font: { size: 13, weight: '600' }, color: '#1a2332' }
+                    grid: { color: 'rgba(148,163,184,0.14)' },
+                    angleLines: { color: 'rgba(148,163,184,0.14)' },
+                    pointLabels: { font: { size: 13, weight: '600' }, color: '#c7d2e0' }
                 }
             }
         }
@@ -2820,7 +2820,7 @@ function mdToPdfMake(text) {
             nodes.push({
                 text: inlineParse(trimmed.replace(/^>\s?/, '')),
                 italics: true,
-                color: '#6b7280',
+                color: '#8ea0b8',
                 margin: [8, 3, 0, 6],
                 background: '#f9fafb'
             });
@@ -2967,14 +2967,14 @@ async function buildPdfReport() {
         adpNodes = structuredAdv.map((s, i) => ({
             stack: [
                 { text: `${i + 1}. ${s['指标'] || '指标'}（${s['适用性'] ? s['适用性'] + ' · ' : ''}${s['优先级'] || '-'}优先级）`, bold: true, margin: [0, 6, 0, 2] },
-                { text: `${s['能力判据'] ? `判据级别：${s['能力判据']}　·　` : ''}能力缺口类型：${s['失分类型'] || '—'}`, fontSize: 9, color: '#6b7280', margin: [0, 0, 0, 1] },
+                { text: `${s['能力判据'] ? `判据级别：${s['能力判据']}　·　` : ''}能力缺口类型：${s['失分类型'] || '—'}`, fontSize: 9, color: '#8ea0b8', margin: [0, 0, 0, 1] },
                 ...(s['企业特征'] ? [{ text: `企业特征：${s['企业特征']}`, margin: [0, 0, 0, 2] }] : []),
                 ...(s['现状'] ? [{ text: `能力表现：${s['现状']}`, margin: [0, 0, 0, 2] }] : []),
                 ...(s['同行对照'] ? [{ text: `标杆对照：${s['同行对照']}`, margin: [0, 0, 0, 2] }] : []),
                 { text: `能力缺口成因：${s['根源分析'] || '—'}`, margin: [0, 0, 0, 2] },
                 { text: `能力建设路径：${s['建议'] || '—'}`, margin: [0, 0, 0, 2] },
                 ...(s['改进收益'] ? [{ text: `能力补齐后水平：${s['改进收益']}`, color: '#047857', margin: [0, 0, 0, 2] }] : []),
-                ...(s['验证理由'] ? [{ text: `为何有效：${s['验证理由']}`, fontSize: 9, color: '#6b7280', margin: [0, 0, 0, 4] }] : [])
+                ...(s['验证理由'] ? [{ text: `为何有效：${s['验证理由']}`, fontSize: 9, color: '#8ea0b8', margin: [0, 0, 0, 4] }] : [])
             ]
         }));
     } else if (advPayloadPdf.md) {
@@ -3000,7 +3000,7 @@ async function buildPdfReport() {
         content: [
             // 标题
             { text: '碳治理能力画像报告', fontSize: 22, bold: true, alignment: 'center', margin: [0, 5, 0, 4] },
-            { text: `${company} · ${year}年度ESG报告`, alignment: 'center', color: '#6b7280', margin: [0, 0, 0, 22] },
+            { text: `${company} · ${year}年度ESG报告`, alignment: 'center', color: '#8ea0b8', margin: [0, 0, 0, 22] },
             // 一、评分总览
             { text: '一、评分总览', fontSize: 14, bold: true, color: '#1a3a6e', margin: [0, 0, 0, 8] },
             scoreTable,
@@ -3082,9 +3082,9 @@ function _renderRadarChart(sd) {
                     r: {
                         min: 0, max: 10,
                         ticks: { stepSize: 2, font: { size: 18 }, color: '#94a3b8', showLabelBackdrop: false },
-                        grid: { color: 'rgba(0,0,0,0.10)', lineWidth: 1.5 },
-                        angleLines: { color: 'rgba(0,0,0,0.10)', lineWidth: 1.5 },
-                        pointLabels: { font: { size: 22, weight: '600' }, color: '#1a2332', padding: 14 }
+                        grid: { color: 'rgba(148,163,184,0.20)', lineWidth: 1.5 },
+                        angleLines: { color: 'rgba(148,163,184,0.20)', lineWidth: 1.5 },
+                        pointLabels: { font: { size: 22, weight: '600' }, color: '#c7d2e0', padding: 14 }
                     }
                 }
             }
@@ -3155,8 +3155,8 @@ function _renderReportCharts(sd) {
                         tooltip: { enabled: false }
                     },
                     scales: {
-                        x: { beginAtZero: true, ticks: { font: { size: 15 }, color: '#6b7280' }, grid: { color: 'rgba(0,0,0,0.06)' } },
-                        y: { ticks: { font: { size: 17 }, color: '#1f2937' }, grid: { display: false } }
+                        x: { beginAtZero: true, ticks: { font: { size: 15 }, color: '#8ea0b8' }, grid: { color: 'rgba(148,163,184,0.14)' } },
+                        y: { ticks: { font: { size: 17 }, color: '#c7d2e0' }, grid: { display: false } }
                     }
                 }
             });
@@ -3271,8 +3271,8 @@ function _renderReportCharts(sd) {
                         v113Floor: { enabled: hasFloor, value: 1, rows: floorRows, label: '保底线 1.0' }
                     },
                     scales: {
-                        x: { beginAtZero: true, max: 10, ticks: { font: { size: 17 }, color: '#6b7280', stepSize: 2 }, grid: { color: 'rgba(0,0,0,0.06)' } },
-                        y: { ticks: { font: { size: 19 }, color: '#1f2937', autoSkip: false }, grid: { display: false } }
+                        x: { beginAtZero: true, max: 10, ticks: { font: { size: 17 }, color: '#8ea0b8', stepSize: 2 }, grid: { color: 'rgba(148,163,184,0.14)' } },
+                        y: { ticks: { font: { size: 19 }, color: '#c7d2e0', autoSkip: false }, grid: { display: false } }
                     }
                 },
                 plugins: [floorLine]

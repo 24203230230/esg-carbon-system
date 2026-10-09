@@ -5,10 +5,8 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>ESG碳治理能力画像系统</title>
     <meta name="description" content="面向企业与金融机构的碳治理能力评估工具 — 自动提取ESG报告碳信息，量化评估碳治理能力，生成可视化画像">
-    <link rel="stylesheet" href="css/style.css?v=127&t=1791272698">
+    <link rel="stylesheet" href="css/style.css?v=200&t=1791531825">
     <link rel="icon" type="image/svg+xml" href="favicon.svg?v=92">
-    <!-- v=92：移除 fonts.googleapis.com preconnect —— 全站未引用 Google Fonts，
-         国内网络下该预连接必然失败，只白白占用一个连接槽。字体走系统字体栈。 -->
     <!-- 第三方库（本地化 vendor，离线可用，全部带版本号以便长缓存失效） -->
     <script src="vendor/chart.umd.min.js?v=92"></script>
     <script src="vendor/marked.min.js?v=92"></script>
@@ -104,15 +102,21 @@
     </div>
 </header>
 
-<!-- ============ Hero 首页 ============ -->
+<!-- ============ Hero 首页：暗夜星空 + 自转地球 ============ -->
 <section class="section-hero" id="hero">
+    <canvas class="star-field" id="starCanvas"></canvas>
     <div class="hero-bg-grid"></div>
     <div class="hero-bg-glow"></div>
+    <div class="hero-bg-aurora"></div>
     <div class="container">
         <div class="hero-content">
             <div class="hero-badge">
                 <span class="dot-pulse"></span>
                 <span>ESG Carbon Governance Assessment</span>
+            </div>
+            <div class="hero-company-line">
+                <span class="hero-company-label">评估对象</span>
+                <span id="companyName">待分析</span>
             </div>
             <h1 class="hero-title">
                 碳治理能力<span class="text-gradient">自动画像</span><br>
@@ -158,6 +162,18 @@
                 </div>
             </div>
         </div>
+
+        <!-- 自转地球舞台 -->
+        <div class="hero-earth-wrap">
+            <div class="earth-orbit-ring earth-orbit-ring-1"></div>
+            <div class="earth-orbit-ring earth-orbit-ring-2"></div>
+            <canvas id="earthCanvas" class="earth-canvas"></canvas>
+            <div class="earth-glow" id="earthGlow"></div>
+            <div class="earth-ring-glow" id="earthRingGlow"></div>
+            <div class="earth-hint">点击地球，开始评估</div>
+        </div>
+
+        <!-- 数据浮卡（保留全部 id，分析后由 JS 动态填充） -->
         <div class="hero-visual">
             <div class="hero-card-float">
                 <div class="float-card card-1">
@@ -179,6 +195,10 @@
                     </div>
                     <div class="float-card-value score"><span id="hero-score">7.8</span><span>/10</span></div>
                     <div class="float-card-bar"><div class="bar-fill blue" style="width: 78%"></div></div>
+                    <div class="float-card-meta">
+                        <span>总分 <b id="hero-total">7.8</b></span>
+                        <span>等级 <b id="hero-level">优秀 (A)</b></span>
+                    </div>
                 </div>
                 <div class="float-card card-3">
                     <div class="float-card-header">
@@ -393,6 +413,9 @@
             <p class="extract-status" id="extractStatus">正在解析报告文件...</p>
         </div>
 
+        <!-- 提取结果摘要（JS 渲染容器） -->
+        <div class="extract-result-content" id="extractResultContent"></div>
+
         <!-- 提取结果 -->
         <div class="extract-result" id="extractResult" style="display:none">
             <div class="extract-tabs">
@@ -423,10 +446,6 @@
             </div>
 
             <!-- 企业内部碳管理 -->
-                        <!-- 企业内部碳管理 -->
-                        <!-- 企业内部碳管理 -->
-                        <!-- 维度: 企业内部碳管理 -->
-                        <!-- 维度: 企业内部碳管理 -->
             <div class="tab-panel" id="tab-internal">
                 <div class="dim-header">
                     <h3 class="dim-title">企业内部碳管理</h3>
@@ -781,7 +800,7 @@
             <div class="score-main">
                 <div class="score-circle-wrap">
                     <svg class="score-circle-svg" viewBox="0 0 200 200">
-                        <circle cx="100" cy="100" r="85" fill="none" stroke="#e8edf2" stroke-width="14"/>
+                        <circle cx="100" cy="100" r="85" fill="none" stroke="rgba(148,163,184,0.18)" stroke-width="14"/>
                         <circle cx="100" cy="100" r="85" fill="none" stroke="url(#scoreGradient)" stroke-width="14"
                             stroke-linecap="round"
                             stroke-dasharray="534"
@@ -848,6 +867,7 @@
                         <h4 id="detail-name-internal">企业内部碳管理</h4>
                         <span class="detail-score" id="detail-score-internal">— / 10</span>
                     </div>
+                    <span class="detail-rank" id="score-dim-internal">—</span>
                 </div>
                 <ul class="detail-list" id="detail-list-internal">
                     <li><span class="dot gray"></span>等待分析结果...</li>
@@ -862,6 +882,7 @@
                         <h4 id="detail-name-supply">供应链碳管理</h4>
                         <span class="detail-score" id="detail-score-supply">— / 10</span>
                     </div>
+                    <span class="detail-rank" id="score-dim-supply">—</span>
                 </div>
                 <ul class="detail-list" id="detail-list-supply">
                     <li><span class="dot gray"></span>等待分析结果...</li>
@@ -876,6 +897,7 @@
                         <h4 id="detail-name-disclosure">透明度披露</h4>
                         <span class="detail-score" id="detail-score-disclosure">— / 10</span>
                     </div>
+                    <span class="detail-rank" id="score-dim-transparency">—</span>
                 </div>
                 <ul class="detail-list" id="detail-list-disclosure">
                     <li><span class="dot gray"></span>等待分析结果...</li>
@@ -890,6 +912,7 @@
                         <h4 id="detail-name-finance">碳金融转化</h4>
                         <span class="detail-score" id="detail-score-finance">— / 10</span>
                     </div>
+                    <span class="detail-rank" id="score-dim-finance">—</span>
                 </div>
                 <ul class="detail-list" id="detail-list-finance">
                     <li><span class="dot gray"></span>等待分析结果...</li>
@@ -1178,7 +1201,8 @@
 
 <script src="js/config.js?v=97&t=1789282683"></script>
 <script src="js/mock-data.js?v=92&t=1787578323"></script>
-<script src="js/app.bundle.js?v=127&t=1791272698"></script>
-<script src="js/charts.js?v=127&t=1791272698"></script>
+<script src="js/app.bundle.js?v=200&t=1791531825"></script>
+<script src="js/charts.js?v=200&t=1791531825"></script>
+<script src="js/hero-effects.js?v=200&t=1791531825"></script>
 </body>
 </html>

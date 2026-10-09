@@ -100,8 +100,8 @@ const Charts = {
                     r: {
                         min: 0, max: 10,
                         ticks: { display: false },
-                        grid: { color: 'rgba(0,0,0,0.06)' },
-                        angleLines: { color: 'rgba(0,0,0,0.06)' },
+                        grid: { color: 'rgba(148,163,184,0.14)' },
+                        angleLines: { color: 'rgba(148,163,184,0.14)' },
                         pointLabels: { font: { size: 10 }, color: '#94a3b8' }
                     }
                 }
@@ -162,7 +162,7 @@ const Charts = {
                         position: 'bottom',
                         labels: {
                             font: { size: 13 },
-                            color: '#5a6c7d',
+                            color: '#8ea0b8',
                             padding: 16,
                             usePointStyle: true,
                             pointStyle: 'circle'
@@ -185,11 +185,11 @@ const Charts = {
                             color: '#94a3b8',
                             backdropColor: 'transparent'
                         },
-                        grid: { color: 'rgba(0,0,0,0.06)' },
-                        angleLines: { color: 'rgba(0,0,0,0.06)' },
+                        grid: { color: 'rgba(148,163,184,0.14)' },
+                        angleLines: { color: 'rgba(148,163,184,0.14)' },
                         pointLabels: {
                             font: { size: 13, weight: '600' },
-                            color: '#1a2332'
+                            color: '#c7d2e0'
                         }
                     }
                 }
@@ -252,12 +252,12 @@ const Charts = {
                             font: { size: 12 },
                             color: '#94a3b8'
                         },
-                        grid: { color: 'rgba(0,0,0,0.05)' }
+                        grid: { color: 'rgba(148,163,184,0.10)' }
                     },
                     x: {
                         ticks: {
                             font: { size: 12, weight: '600' },
-                            color: '#5a6c7d'
+                            color: '#8ea0b8'
                         },
                         grid: { display: false }
                     }
@@ -328,9 +328,9 @@ const Charts = {
                         r: {
                             min: 0, max: 10,
                             ticks: { stepSize: 2, font: { size: 11 }, color: '#94a3b8', backdropColor: 'transparent' },
-                            grid: { color: 'rgba(0,0,0,0.06)' },
-                            angleLines: { color: 'rgba(0,0,0,0.06)' },
-                            pointLabels: { font: { size: 13, weight: '600' }, color: '#1a2332' }
+                            grid: { color: 'rgba(148,163,184,0.14)' },
+                            angleLines: { color: 'rgba(148,163,184,0.14)' },
+                            pointLabels: { font: { size: 13, weight: '600' }, color: '#c7d2e0' }
                         }
                     }
                 }
@@ -393,10 +393,10 @@ const Charts = {
                         y: {
                             min: 0, max: 10,
                             ticks: { stepSize: 2, font: { size: 12 }, color: '#94a3b8' },
-                            grid: { color: 'rgba(0,0,0,0.05)' }
+                            grid: { color: 'rgba(148,163,184,0.10)' }
                         },
                         x: {
-                            ticks: { font: { size: 11 }, color: '#5a6c7d' },
+                            ticks: { font: { size: 11 }, color: '#8ea0b8' },
                             grid: { display: false }
                         }
                     }
