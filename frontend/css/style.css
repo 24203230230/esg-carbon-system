@@ -1388,6 +1388,38 @@ section { position: relative; }
     .nav-actions .btn-ghost, .nav-actions .btn-outline { display: none; }
     .nav-toggle { display: flex; }
 
+    /* v201：移动端用户下拉卡片。
+       v200 皮肤沿用了桌面端写法（320px 固定宽 + right:0 绝对定位），但窄屏下
+       触发胶囊位于导航栏中段（右侧还排着「开始评估」和汉堡图标），320px 的卡片
+       会向左溢出画布 —— 左侧的昵称/邮箱/菜单文案被整块裁掉。
+       （v127 时代的处理是 .navbar.nav-open .user-menu { position: static }，
+        因为那时卡片只在导航抽屉内出现，故未暴露；v200 撤销了导航抽屉，
+        该规则随之失效。）
+       这里沿用 v127 的思路（"窄屏会跑出画布 ⇒ 改为常规块"），
+       把卡片改成贴齐视口两侧、挂在导航栏下方的固定面板。 */
+    .user-menu {
+        position: fixed;
+        left: 12px;
+        right: 12px;
+        top: 74px;
+        width: auto;
+        max-height: calc(100vh - 92px);
+        max-height: calc(100dvh - 92px);
+        overflow-y: auto;
+        -webkit-overflow-scrolling: touch;
+    }
+
+    /* v201：移动端导航栏过挤带来的连带缺陷 ——
+       .nav-container 固定高 68px 且不换行，手机上三段内容（logo / 用户胶囊 /
+       开始评估 / 汉堡）挤不下：logo 被折成两行、用户胶囊里的「▾」被折到第二行，
+       看起来就像"登录组件显示不完整"。这里只做最小的不换行约束，
+       并让导航条整体留白收紧，避免任何横向溢出。 */
+    .nav-container { gap: 10px; }
+    .logo-text { white-space: nowrap; }
+    .user-menu-trigger { white-space: nowrap; }
+    .nav-actions { gap: 8px; }
+    .nav-actions .btn { padding-left: 14px; padding-right: 14px; white-space: nowrap; }
+
     .hero-card-float { margin-top: 0; }
     .hero-earth-wrap { margin-top: 12px; }
     .float-card { width: 46%; }

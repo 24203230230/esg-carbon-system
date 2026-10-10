@@ -6,6 +6,15 @@
 
 ---
 
+## v=201 — 移动端「登录组件」下拉卡片溢出修复（纯 CSS）
+
+- **现象**：手机端登录后点开用户胶囊，下拉卡片**左侧被裁**——昵称 / 邮箱 / 「我的分析 / 修改昵称 / 退出登录」等文案整块看不见（卡片向左溢出了视口）。
+- **根因（v200 换肤时丢了响应式分支，不是 v128 的适配写法变了）**：v127 把移动端导航改成了抽屉，卡片只在抽屉内出现，故只需 `.navbar.nav-open .user-menu{position:static; width:100%}` 即可铺满；**v200 撤销了导航抽屉**，用户胶囊改为**常驻顶栏**，而卡片仍沿用桌面写法（`position:absolute; right:0; width:320px`）。触发胶囊位于导航栏中段（右侧还排着「开始评估」+ 汉堡图标）⇒ 320px 的卡片**向左溢出画布**，左侧内容被裁。v200 的 768 断点里**一条 `.user-menu` 规则都没有**，故该缺陷无从规避。
+- **修复（仅 `css/style.css` 的 `@media(max-width:768px)` 块，零 JS 改动）**：`.user-menu` → `position:fixed; left/right:12px; top:74px; width:auto; max-height:calc(100dvh - 92px); overflow-y:auto`（沿用 v127「窄屏会跑出画布 ⇒ 改为常规块」的思路，把卡片改成贴齐视口两侧、挂在导航栏下方的面板）；顺带收掉同一「登录组件」的连带缺陷——`.logo-text` / `.user-menu-trigger` 加 `white-space:nowrap`、`.nav-container{gap:10px}` / `.nav-actions{gap:8px}`（原先 logo 被折成两行、用户胶囊里的「▾」被折到第二行）。缓存戳 `style.css?v=200` → `?v=201&t=1791627956`。
+- **验收（真 Edge 无头）**：修复前 390px 视口下卡片 `left=-94px`（94px 在画布外）；修复后 **320 / 360 / 390 / 430 四宽度** `overflowLeft/Right/Bottom` 与 `scrollWidth-clientWidth` **全为 0**。回归脚本 `_perf/_fe_m_user_card.py`（同进程起静态服 + 注入登录态 + 量 `#userMenu` rect），后续皮肤改动可一条命令回归。
+- **范围**：仅前端 2 个文件（`index.html` / `css/style.css`）变更，其余字节与 v200 一致；功能、接口、数据契约与后端三容器**零改动**。
+- 回滚底：`esg_extractor-frontend:v200keep`。
+
 ## v=200 — 「暗夜星空 + 自转地球」深色主题上线（前端换肤）
 
 - **换肤**：前端视觉由浅色商业风整体切换为**深空暗夜风**——底色 `#04070d`，绿（`#34d399`）/ 蓝（`#60a5fa`）/ 青（`#2dd4bf`）三色渐变主色，半透明磨砂玻璃卡片（`rgba(255,255,255,0.04)`），柔和辉光与呼吸式动效，26px 星空网格底纹；Hero 区改为**自转地球三维动效**（新增 `js/hero-effects.js` + `assets/earth.jpg`）。圆角分 16px（卡片）/ 10px（控件）两级。
