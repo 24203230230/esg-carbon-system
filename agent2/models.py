@@ -31,7 +31,9 @@ DEFAULT_MODEL = 'deepseek-v4-flash'
 MODEL_MAPPING = {
     'deepseek-v4-flash': 'deepseek-chat',       # V4 Flash → DeepSeek V3 Chat（等价）
     'deepseek-v4-pro':   'deepseek-reasoner',   # V4 Pro → DeepSeek V3 Reasoner（等价）
-    # 其他 provider 名字一致，不映射：glm-5.2 / glm-5v-turbo / kimi-k3 / minimax-m3
+    # 其他 provider 名字一致，不映射：glm-5.2 / kimi-k3
+    # v=202：MiniMax 上游模型名**大小写敏感**（MiniMax-M3），前端 id 为小写 minimax-m3 ⇒ 必须映射。
+    'minimax-m3':        'MiniMax-M3',
 }
 
 SUPPORTED_MODELS = [
@@ -45,7 +47,9 @@ SUPPORTED_MODELS = [
 
 # 支持 JSON 输出模式的模型（one-api 透传 response_format）
 # v=87：vision 模型按官方文档推测支持（多模态输出可能受限），先启用；不兼容会自动报错
-JSON_MODE_MODELS = {'deepseek-v4-flash', 'deepseek-v4-pro', 'deepseek-v4-flash-vision-exp', 'glm-5.2'}
+# v=202：实测 glm-5.2 / kimi-k3 / MiniMax-M3 上游均支持 json_object
+JSON_MODE_MODELS = {'deepseek-v4-flash', 'deepseek-v4-pro', 'deepseek-v4-flash-vision-exp', 'glm-5.2',
+                    'kimi-k3', 'minimax-m3'}
 
 
 def get_gateway_config() -> tuple:
@@ -53,6 +57,27 @@ def get_gateway_config() -> tuple:
     base_url = os.environ.get('LLM_GATEWAY_URL', 'http://esg-one-api:3000/v1')
     api_key = os.environ.get('LLM_GATEWAY_KEY', '')
     return base_url, api_key
+
+
+# v=202：按模型名推断 provider —— 各厂商对 temperature / thinking 的支持面不同，
+#   需要按厂商注入差异化参数（增量逻辑，不改动原有调用链）。
+def _provider_of(model: str) -> str:
+    m = (model or '').lower()
+    if m.startswith('deepseek'):
+        return 'deepseek'
+    if m.startswith('glm'):
+        return 'zhipu'
+    if m.startswith('kimi') or m.startswith('moonshot'):
+        return 'kimi'
+    if m.startswith('minimax'):
+        return 'minimax'
+    return 'unknown'
+
+
+# Kimi(Moonshot) 温度只接受固定值：开思考=1，关思考=0.6。
+# 传 0 / 0.1 会被上游 400 拒绝（实测 "invalid temperature: only 0.6 is allowed"）。
+# 本项目统一关闭思考 ⇒ 固定 0.6。（智谱/MiniMax/DeepSeek 无此限制）
+KIMI_TEMPERATURE_THINKING_OFF = 0.6
 
 
 # ============================== 统一 LLM 调用（one-api 网关） ==============================
@@ -100,8 +125,12 @@ def call_llm(system_prompt: str, user_text: str, model_id: str = None,
     # v=99：与 extractor 同步 —— DeepSeek V4.1 思考模式默认开启，思维链与 content
     # 共享 max_tokens 预算。Agent2 当前映射到 deepseek-chat（非思考）本无此问题，
     # 但显式声明可防止将来把映射改成直通名时重踩同一个坑；仅对 DeepSeek 系生效。
-    if real_model.startswith('deepseek'):
+    # v=202：扩展到 GLM / Kimi / MiniMax（三家同样默认开思考，实测均接受 thinking:disabled）。
+    if _provider_of(real_model) in ('deepseek', 'zhipu', 'kimi', 'minimax'):
         payload["thinking"] = {"type": "disabled"}
+    # v=202：Kimi 温度特判（关思考只能 0.6）—— 必须放在 thinking 之后覆写
+    if _provider_of(real_model) == 'kimi':
+        payload["temperature"] = KIMI_TEMPERATURE_THINKING_OFF
     # JSON 输出：仅支持 json_mode 的模型透传 response_format（one-api 透传给上游）
     if model_id in JSON_MODE_MODELS:
         payload["response_format"] = {"type": "json_object"}

@@ -6,6 +6,21 @@
 
 ---
 
+## v=202 — 多模型网关接入：智谱 GLM / Moonshot Kimi / MiniMax（后端）
+
+- **背景**：前端「模型选择」下拉早于版本 v=78 就预留了 6 个入口，但 one-api 侧**只有 DeepSeek 一条渠道**，其余入口选了必然报错。本次补齐三家（智谱 / Moonshot / MiniMax）。
+- **one-api 配置（不涉及前端）**：新增三条渠道 —— `glm-5.2`（智谱，type=16）、`kimi-k3`（Moonshot，type=25）、`MiniMax-M3`（MiniMax，type=27）；分发令牌的模型范围同步放开（否则 403「该令牌无权使用模型」）。前端静态资源**零改动**，故 `?v=NN` 不 bump。
+- **代码改动（仅 `models.py` + `agent2/models.py`，全部为增量，不动原调用链）**：
+  - `MODEL_MAPPING` 增加 `minimax-m3 → MiniMax-M3`。**上游模型名大小写敏感**（`MiniMax-M3`），而前端 id 是小写，不做映射上游会报模型不存在。
+  - `thinking:{"type":"disabled"}` 的作用域由「仅 `deepseek*`」扩展到 `glm*` / `kimi*` / `minimax*`。三家与 DeepSeek 一样**默认开启思考**，思维链经 `reasoning_content` 返回且与 `content` **共享 max_tokens 预算** —— 抽取任务是「读原文→填结构」，不需要思维链。
+  - 新增 `_provider_of()`（按模型名推断厂商）+ **Kimi 温度特判**：Moonshot 的 `temperature` **只接受固定值**（开思考 = 1，关思考 = 0.6），传 0 / 0.1 会被上游 400 拒绝（实测 `invalid temperature: only 0.6 is allowed`）。本项目统一关思考 ⇒ Kimi 固定 0.6。智谱 / MiniMax / DeepSeek 无此限制，沿用原值。
+  - `JSON_MODE_MODELS` 补入 `glm-5.2` / `kimi-k3` / `minimax-m3`（三家上游实测均支持 `response_format=json_object`）。
+- **实测证据（探针 → 网关 → 端到端）**：三家 API key 均先以「直接打上游」探针验证（模型清单 / 真实对话 / JSON 模式 / 思考开关）；建渠道后经 one-api 逐条 test；最终经网关拿到合法 JSON 输出。
+- **已知限制（如实记录）**：
+  1. **one-api 的智谱适配器会丢弃 `thinking` 字段** ⇒ 经网关调用 `glm-5.2` 时思考**关不掉**（实测 `reasoning_tokens=687`）。功能不受影响，仅多耗 token / 略慢；`max_tokens=16384` 下不会截断。
+  2. **Moonshot 中国站从香港服务器不可达**：`api.moonshot.cn` 解析到阿里云高防 IP（`8.147.223.37`），TCP 443 **3/3 全超时**，curl `http=000`；同机访问智谱（同为境内）正常 ⇒ 非本地网络问题。国际站 `api.moonshot.ai`（走 Cloudflare）**可达**，但该 key 属中国站账号，在 `.ai` 上返回 401 ⇒ 两站账号不通用。**`kimi-k3` 渠道已配置但当前不可用**，等换国际站 key 或改用中转即可生效。
+- 回滚底：`esg_extractor-esg-extractor:v202rollback` / `esg_extractor-esg-agent2:v202rollback`。
+
 ## v=201 — 移动端「登录组件」下拉卡片溢出修复（纯 CSS）
 
 - **现象**：手机端登录后点开用户胶囊，下拉卡片**左侧被裁**——昵称 / 邮箱 / 「我的分析 / 修改昵称 / 退出登录」等文案整块看不见（卡片向左溢出了视口）。
