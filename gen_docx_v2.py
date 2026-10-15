@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+import os
 from docx import Document
 from docx.shared import Pt, RGBColor, Inches
 from docx.enum.text import WD_ALIGN_PARAGRAPH
@@ -265,6 +266,8 @@ for i, row in enumerate(cl_data):
         cl.rows[i+1].cells[j].text = val
 
 # Save
-out = '[PROJECT]/output/E维度碳信息4层颗粒度_供应链碳画像.docx'
+out = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'output',
+                   'E维度碳信息4层颗粒度_供应链碳画像.docx')
+os.makedirs(os.path.dirname(out), exist_ok=True)
 doc.save(out)
 print(f'Saved: {out}')

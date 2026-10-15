@@ -42,9 +42,15 @@ def emit(msg=""):
     _LOG.append(str(msg))
 
 # ============================== 路径配置 ==============================
-DESKTOP_BATCH = r"[DATA_ROOT]\ESG-JSON-格式提取结果"
-PERF_BATCH = r"[WORKSPACE]/_perf\batch_results"
-SAMPLE_POOL = r"[WORKSPACE]/_perf\sample_pool.json"
+_REPO = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+_WS = os.path.dirname(_REPO)
+
+# 数据源路径（均可用环境变量覆盖；默认不依赖任何本机绝对路径）
+DESKTOP_BATCH = os.environ.get(
+    "PEER_BATCH_DIR",
+    os.path.join(os.path.expanduser("~"), "esg-data", "ESG-JSON-格式提取结果"))
+PERF_BATCH = os.environ.get("PEER_PERF_DIR", os.path.join(_WS, "_perf", "batch_results"))
+SAMPLE_POOL = os.environ.get("PEER_SAMPLE_POOL", os.path.join(_WS, "_perf", "sample_pool.json"))
 
 # ============================== 索引参数（体积控制） ==============================
 MAX_SAMPLES_PER_METRIC = 40     # 每指标最多保留多少家同行样例
@@ -350,8 +356,8 @@ def build_index(companies: dict):
 # ============================== MAIN ==============================
 def main():
     ap = argparse.ArgumentParser()
-    ap.add_argument("--out", default=r"[PROJECT]\agent2\peer_index.json")
-    ap.add_argument("--log", default=r"[WORKSPACE]/_perf\peer_build.log")
+    ap.add_argument("--out", default=os.path.join(_REPO, "agent2", "peer_index.json"))
+    ap.add_argument("--log", default=os.path.join(_WS, "_perf", "peer_build.log"))
     ap.add_argument("--dry", action="store_true", help="只打印统计，不落盘")
     args = ap.parse_args()
 

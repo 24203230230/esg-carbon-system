@@ -1,111 +1,201 @@
-碳治·智评（ESG 碳治理能力画像系统）
-Copyright (c) 2026 左志豪 及 碳治·智评项目团队
-All rights reserved.
+                                 Apache License
+                           Version 2.0, January 2004
+                        http://www.apache.org/licenses/
 
-================================================================
-一、许可授权（GRANT OF LICENSE）
-================================================================
+   TERMS AND CONDITIONS FOR USE, REPRODUCTION, AND DISTRIBUTION
 
-在遵守本许可条款的前提下，作者授予任何个人或组织以下非商业性使用权：
+   1. Definitions.
 
-  1. 下载、查看、运行、测试本软件的全部内容；
-  2. 用于个人学习、教学、学术研究与论文评审；
-  3. 为上述目的对本软件进行复制与个人学习用途的修改；
-  4. 在学术论文、毕业设计、课程作业中引用本软件的设计思路与代码片段，并予以署名。
+      "License" shall mean the terms and conditions for use, reproduction,
+      and distribution as defined by Sections 1 through 9 of this document.
 
-================================================================
-二、禁止事项（PROHIBITED USES）
-================================================================
+      "Licensor" shall mean the copyright owner or entity authorized by
+      the copyright owner that is granting the License.
 
-未经作者事先书面授权，任何情形下均不得从事以下行为：
+      "Legal Entity" shall mean the union of the acting entity and all
+      other entities that control, are controlled by, or are under common
+      control with that entity. For the purposes of this definition,
+      "control" means (i) the power, direct or indirect, to cause the
+      direction or management of such entity, whether by contract or
+      otherwise, or (ii) ownership of fifty percent (50%) or more of the
+      outstanding shares, or (iii) beneficial ownership of such entity.
 
-  1. 将本软件或其衍生作品用于任何商业用途，包括但不限于：
-     (a) 商业产品集成或嵌入；
-     (b) 商业服务提供（含 SaaS / PaaS）；
-     (c) 商业咨询、收费培训、有偿部署实施。
+      "You" (or "Your") shall mean an individual or Legal Entity
+      exercising permissions granted by this License.
 
-  2. 将本软件或其衍生作品面向公众进行商业性分发、销售、出租或转让。
+      "Source" form shall mean the preferred form for making modifications,
+      including but not limited to software source code, documentation
+      source, and configuration files.
 
-  3. 移除、篡改或隐藏本许可声明与版权信息。
+      "Object" form shall mean any form resulting from mechanical
+      transformation or translation of a Source form, including but
+      not limited to compiled object code, generated documentation,
+      and conversions to other media types.
 
-  4. 在违反中华人民共和国法律法规或国际公约的前提下使用本软件。
+      "Work" shall mean the work of authorship, whether in Source or
+      Object form, made available under the License, as indicated by a
+      copyright notice that is included in or attached to the work
+      (an example is provided in the Appendix below).
 
-================================================================
-三、侵权责任（INFRINGEMENT）
-================================================================
+      "Derivative Works" shall mean any work, whether in Source or Object
+      form, that is based on (or derived from) the Work and for which the
+      editorial revisions, annotations, elaborations, or other modifications
+      represent, as a whole, an original work of authorship. For the purposes
+      of this License, Derivative Works shall not include works that remain
+      separable from, or merely link (or bind by name) to the interfaces of,
+      the Work and Derivative Works thereof.
 
-违反本许可条款使用本软件者，作者将依据：
+      "Contribution" shall mean any work of authorship, including
+      the original version of the Work and any modifications or additions
+      to that Work or Derivative Works thereof, that is intentionally
+      submitted to Licensor for inclusion in the Work by the copyright owner
+      or by an individual or Legal Entity authorized to submit on behalf of
+      the copyright owner. For the purposes of this definition, "submitted"
+      means any form of electronic, verbal, or written communication sent
+      to the Licensor or its representatives, including but not limited to
+      communication on electronic mailing lists, source code control systems,
+      and issue tracking systems that are managed by, or on behalf of, the
+      Licensor for the purpose of discussing and improving the Work, but
+      excluding communication that is conspicuously marked or otherwise
+      designated in writing by the copyright owner as "Not a Contribution."
 
-  1. 《中华人民共和国著作权法》（2020 修正）
-  2. 《中华人民共和国反不正当竞争法》
-  3. 《保护文学和艺术作品伯尔尼公约》
+      "Contributor" shall mean Licensor and any individual or Legal Entity
+      on behalf of whom a Contribution has been received by Licensor and
+      subsequently incorporated within the Work.
 
-及相关国际公约，依法追究其法律责任，包括但不限于：
+   2. Grant of Copyright License. Subject to the terms and conditions of
+      this License, each Contributor hereby grants to You a perpetual,
+      worldwide, non-exclusive, no-charge, royalty-free, irrevocable
+      copyright license to reproduce, prepare Derivative Works of,
+      publicly display, publicly perform, sublicense, and distribute the
+      Work and such Derivative Works in Source or Object form.
 
-  (a) 立即停止侵权行为；
-  (b) 消除影响、公开赔礼道歉；
-  (c) 赔偿因侵权给著作权方造成的全部经济损失；
-  (d) 承担著作权方为制止侵权所支付的合理开支（包括律师费、取证费、诉讼费等）。
+   3. Grant of Patent License. Subject to the terms and conditions of
+      this License, each Contributor hereby grants to You a perpetual,
+      worldwide, non-exclusive, no-charge, royalty-free, irrevocable
+      (except as stated in this section) patent license to make, have made,
+      use, offer to sell, sell, import, and otherwise transfer the Work,
+      where such license applies only to those patent claims licensable
+      by such Contributor that are necessarily infringed by their
+      Contribution(s) alone or by combination of their Contribution(s)
+      with the Work to which such Contribution(s) was submitted. If You
+      institute patent litigation against any entity (including a
+      cross-claim or counterclaim in a lawsuit) alleging that the Work
+      or a Contribution incorporated within the Work constitutes direct
+      or contributory patent infringement, then any patent licenses
+      granted to You under this License for that Work shall terminate
+      as of the date such litigation is filed.
 
-================================================================
-四、商业授权（COMMERCIAL LICENSE）
-================================================================
+   4. Redistribution. You may reproduce and distribute copies of the
+      Work or Derivative Works thereof in any medium, with or without
+      modifications, and in Source or Object form, provided that You
+      meet the following conditions:
 
-如需将本软件用于商业用途，请通过以下方式联系作者获得单独书面授权：
+      (a) You must give any other recipients of the Work or
+          Derivative Works a copy of this License; and
 
-  · 邮箱：[USER_ID]@qq.com
-  · 项目主页：https://github.com/24203230230/esg-carbon-system
-  · 商业授权以单独签署的书面协议为准，本许可条款中的禁止事项对未获授权方依然有效。
+      (b) You must cause any modified files to carry prominent notices
+          stating that You changed the files; and
 
-================================================================
-五、免责声明（DISCLAIMER）
-================================================================
+      (c) You must retain, in the Source form of any Derivative Works
+          that You distribute, all copyright, patent, trademark, and
+          attribution notices from the Source form of the Work,
+          excluding those notices that do not pertain to any part of
+          the Derivative Works; and
 
-  1. 本软件按"现状"（AS IS）提供，作者不对软件的适用性、可靠性、准确性、完整性或及时性做任何明示或暗示的担保。
+      (d) If the Work includes a "NOTICE" text file as part of its
+          distribution, then any Derivative Works that You distribute must
+          include a readable copy of the attribution notices contained
+          within such NOTICE file, excluding those notices that do not
+          pertain to any part of the Derivative Works, in at least one
+          of the following places: within a NOTICE text file distributed
+          as part of the Derivative Works; within the Source form or
+          documentation, if provided along with the Derivative Works; or,
+          within a display generated by the Derivative Works, if and
+          wherever such third-party notices normally appear. The contents
+          of the NOTICE file are for informational purposes only and
+          do not modify the License. You may add Your own attribution
+          notices within Derivative Works that You distribute, alongside
+          or as an addendum to the NOTICE text from the Work, provided
+          that such additional attribution notices cannot be construed
+          as modifying the License.
 
-  2. 在任何情况下，作者均不对因使用或无法使用本软件而产生的任何直接、间接、附带、特殊、惩罚性或后果性损害（包括利润损失、业务中断、数据丢失等）承担责任。
+      You may add Your own copyright statement to Your modifications and
+      may provide additional or different license terms and conditions
+      for use, reproduction, or distribution of Your modifications, or
+      for any such Derivative Works as a whole, provided Your use,
+      reproduction, and distribution of the Work otherwise complies with
+      the conditions stated in this License.
 
-  3. 本软件生成的评分结果与建议仅供学术研究与决策参考，不构成任何投资建议或合规承诺。
+   5. Submission of Contributions. Unless You explicitly state otherwise,
+      any Contribution intentionally submitted for inclusion in the Work
+      by You to the Licensor shall be under the terms and conditions of
+      this License, without any additional terms or conditions.
+      Notwithstanding the above, nothing herein shall supersede or modify
+      the terms of any separate license agreement you may have executed
+      with Licensor regarding such Contributions.
 
-  4. 数据来源（ESG 报告原文、第三方数据）由使用方自行核实其合法性、准确性使用，作者不对数据真实性承担责任。
+   6. Trademarks. This License does not grant permission to use the trade
+      names, trademarks, service marks, or product names of the Licensor,
+      except as required for reasonable and customary use in describing the
+      origin of the Work and reproducing the content of the NOTICE file.
 
-================================================================
-六、终止（TERMINATION）
-================================================================
+   7. Disclaimer of Warranty. Unless required by applicable law or
+      agreed to in writing, Licensor provides the Work (and each
+      Contributor provides its Contributions) on an "AS IS" BASIS,
+      WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or
+      implied, including, without limitation, any warranties or conditions
+      of TITLE, NON-INFRINGEMENT, MERCHANTABILITY, or FITNESS FOR A
+      PARTICULAR PURPOSE. You are solely responsible for determining the
+      appropriateness of using or redistributing the Work and assume any
+      risks associated with Your exercise of permissions under this License.
 
-本许可在以下情况下自动终止：
+   8. Limitation of Liability. In no event and under no legal theory,
+      whether in tort (including negligence), contract, or otherwise,
+      unless required by applicable law (such as deliberate and grossly
+      negligent acts) or agreed to in writing, shall any Contributor be
+      liable to You for damages, including any direct, indirect, special,
+      incidental, or consequential damages of any character arising as a
+      result of this License or out of the use or inability to use the
+      Work (including but not limited to damages for loss of goodwill,
+      work stoppage, computer failure or malfunction, or any and all
+      other commercial damages or losses), even if such Contributor
+      has been advised of the possibility of such damages.
 
-  1. 授权方撤销本许可；
-  2. 被授权方严重违反本许可条款且未在30日内补救；
-  3. 被授权方主动放弃使用权。
+   9. Accepting Warranty or Additional Liability. While redistributing
+      the Work or Derivative Works thereof, You may choose to offer,
+      and charge a fee for, acceptance of support, warranty, indemnity,
+      or other liability obligations and/or rights consistent with this
+      License. However, in accepting such obligations, You may act only
+      on Your own behalf and on Your sole responsibility, not on behalf
+      of any other Contributor, and only if You agree to indemnify,
+      defend, and hold each Contributor harmless for any liability
+      incurred by, or claims asserted against, such Contributor by reason
+      of your accepting any such warranty or additional liability.
 
-终止后，被授权方应立即停止使用并销毁所持有的一切本软件副本。
+   END OF TERMS AND CONDITIONS
 
-================================================================
-七、其他（MISCELLANEOUS）
-================================================================
+   APPENDIX: How to apply the Apache License to your work.
 
-  1. 本许可条款的解释、效力及与之相关的争议解决，均适用中华人民共和国法律。
-  2. 因本许可引起的争议，双方应首先友好协商解决；协商不成的，提交作者所在地人民法院管辖。
-  3. 本许可条款的任何部分被认定为无效或不可执行的，不影响其他条款的效力。
-  4. 本许可最终解释权归作者所有。
+      To apply the Apache License to your work, attach the following
+      boilerplate notice, with the fields enclosed by brackets "[]"
+      replaced with your own identifying information. (Don't include
+      the brackets!)  The text should be enclosed in the appropriate
+      comment syntax for the file format. We also recommend that a
+      file or class name and description of purpose be included on the
+      same "printed page" as the copyright notice for easier
+      identification within third-party archives.
 
-================================================================
-八、开源仓库（OPEN SOURCE REPOSITORY）
-================================================================
+   Copyright 2026 碳治·智评（ESG 碳治理能力画像系统）项目组
 
-本软件源代码托管于 GitHub 私有仓库（论文定稿后转为公开），仓库地址：
+   Licensed under the Apache License, Version 2.0 (the "License");
+   you may not use this file except in compliance with the License.
+   You may obtain a copy of the License at
 
-  · 仓库 URL：https://github.com/24203230230/esg-carbon-system
-  · 配套附件：附件A-G（时间轴/提取提示词/统计脚本/统计表/AHP权重表/总结/行业库流水线）
-  · Issue 反馈：仅限学术用途，作者不承担持续维护义务。
+       http://www.apache.org/licenses/LICENSE-2.0
 
-================================================================
-
-特此声明。
-
-作者：左志豪（碳治·智评项目团队）
-日期：2026 年
-版本：v1.0
-
-本作品依据"非商业使用"原则开放。如需商业使用，请联系作者获得单独授权。
+   Unless required by applicable law or agreed to in writing, software
+   distributed under the License is distributed on an "AS IS" BASIS,
+   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+   See the License for the specific language governing permissions and
+   limitations under the License.

@@ -587,7 +587,10 @@ if __name__ == '__main__':
     import io as _io
     import sys as _sys
     _sys.stdout = _io.TextIOWrapper(_sys.stdout.buffer, encoding='utf-8', errors='replace')
-    src = r"[DATA_ROOT]\ESG-JSON-格式提取结果\国电南瑞科技股份有限公司-2025年_ESG报告_JSON.json"
+    src = os.environ.get("SAMPLE_ESG_JSON", "")
+    if not src or not os.path.exists(src):
+        print("跳过自测：请用环境变量 SAMPLE_ESG_JSON 指定样例提取结果 JSON 的路径")
+        raise SystemExit(0)
     with open(src, encoding='utf-8') as f:
         ext = json.load(f)
     _sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))

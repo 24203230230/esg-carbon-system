@@ -6,7 +6,7 @@ import os
 # ===== CSMAR数据路径 =====
 CSMAR_DATA_ROOT = os.environ.get(
     'CSMAR_DATA_ROOT',
-    '[DATA_ROOT]/碳中和'
+    os.path.join(os.path.expanduser('~'), 'esg-data', '碳中和')
 )
 
 # ===== CNINFO API 配置（可选，需要商业token） =====

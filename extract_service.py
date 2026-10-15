@@ -97,7 +97,7 @@ DEEPSEEK_MODEL = os.environ.get('DEEPSEEK_MODEL', 'deepseek-v4-flash')
 # 深度思考模式：enabled 开启 | disabled 关闭（提取任务默认关闭，速度更快更便宜）
 DEEPSEEK_THINKING = os.environ.get('DEEPSEEK_THINKING', 'disabled')
 
-# 提示词路径（容器内 /app，宿主机 [HOME]/WorkBuddy/Claw/esg_extractor/）
+# 提示词路径（容器内 /app；本地运行可用 EXTRACTION_PROMPT_FILE 指向提示词文件）
 PROMPT_FILE = os.environ.get('EXTRACTION_PROMPT_FILE', '/app/extraction_prompt.md')
 
 # ============================== OCR 兜底配置（v=93） ==============================

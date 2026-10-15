@@ -2,7 +2,10 @@
 """Read old .doc format"""
 import subprocess, os
 
-doc_path = r'[LOCALAPPDATA]\Local\Temp\workbuddy-weixin-media\inbound\weixin-file-d34f407a532e3d1d-供应链碳画像 (1).doc'
+doc_path = os.environ.get('DOC_PATH', '')
+if not doc_path or not os.path.exists(doc_path):
+    print('请用环境变量 DOC_PATH 指定待转换的 .doc 文件路径')
+    raise SystemExit(1)
 
 # Try antiword
 try:
@@ -26,7 +29,7 @@ except:
 
 # Try libreoffice
 try:
-    out_dir = r'[PROJECT]\output'
+    out_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'output')
     result = subprocess.run(
         ['libreoffice', '--headless', '--convert-to', 'txt:Text', '--outdir', out_dir, doc_path],
         capture_output=True, text=True, timeout=30

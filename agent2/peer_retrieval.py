@@ -30,7 +30,9 @@ import os
 import threading
 
 # ============================== 配置 ==============================
-INDEX_FILE = os.environ.get('PEER_INDEX_FILE', '/app/peer_index.json')
+INDEX_FILE = os.environ.get(
+    'PEER_INDEX_FILE',
+    os.path.join(os.path.dirname(os.path.abspath(__file__)), 'peer_index.json'))
 PEER_ENABLED = os.environ.get('PEER_RETRIEVAL', 'on').lower() not in ('0', 'off', 'false', 'no', '')
 MAX_SAME = int(os.environ.get('PEER_MAX_SAME', '2'))      # 每指标同行业样例上限
 MAX_CROSS = int(os.environ.get('PEER_MAX_CROSS', '1'))    # 每指标跨行业样例上限
@@ -298,14 +300,14 @@ if __name__ == '__main__':
     import io as _io
     sys.stdout = _io.TextIOWrapper(sys.stdout.buffer, encoding='utf-8', errors='replace')
     os.environ.setdefault('PEER_INDEX_FILE',
-                          r"[PROJECT]\agent2\peer_index.json")
+                          os.path.join(os.path.dirname(os.path.abspath(__file__)), 'peer_index.json'))
     INDEX_FILE = os.environ['PEER_INDEX_FILE']
 
     print("索引状态:", json.dumps(index_status(), ensure_ascii=False, indent=2))
 
     # 用 batch_results 里的真实增强 JSON 试跑
-    probe = r"[WORKSPACE]/_perf\batch_results\30_伟明环保.json"
-    if os.path.exists(probe):
+    probe = os.environ.get("PEER_PROBE_JSON", "")
+    if probe and os.path.exists(probe):
         with open(probe, encoding='utf-8') as f:
             raw = json.load(f)
         esg = (raw.get("result", {}) or {}).get("extracted", {}) or {}

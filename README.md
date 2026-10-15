@@ -139,12 +139,13 @@ docker-compose up -d                   # 启动
 1) 按 .env.example 生成 .env（密钥我会自己提供，绝不要写进仓库或提交）；
 2) 创建容器网络：docker network create --subnet 172.23.0.0/16 ai-network；
 3) 用 docker-compose up -d 启动四个容器（frontend / extractor / agent2 / one-api）；
-4) 用 curl http://localhost/api/health 验证返回 build=v114。
+4) 用 curl http://localhost/api/health 验证返回 build=v128。
 
 遇到报错请说明根因与修复步骤，不要跳过验证步骤。
 ```
 
-> 判断部署是否成功，看 `/api/health` 的 `build` 字段是否等于 `v114`——这是唯一可靠的信号，比页面能否打开更准。
+> 判断部署是否成功，看 `/api/health` 的 `build` 字段是否等于 `v128`——这是唯一可靠的信号，比页面能否打开更准。
+> 该值与 `baseline_version`（权重库版本）是**两条独立版本线**：前者随服务端代码变化，后者随权重库重建变化。
 
 ---
 
@@ -155,16 +156,18 @@ esg-carbon-system/
 ├── docker-compose.yml          # 四容器编排（extractor / frontend / agent2 / one-api）
 ├── Dockerfile                  # 提取 + 评分服务镜像
 ├── extract_service.py          # Flask 提取服务（提取 / 分片上传 / COS 直传 / OCR 兜底 / WeasyPrint PDF）
+├── evidence_verify.py          # 证据强制校验（防「数值幻觉抬高总分」的保险丝）
 ├── weights_logic.py            # ★ 评分引擎：公式 1–10 全实现（确定性算术层）
 ├── weights.json                # ★ 42 指标权重 + 10 行业基准库 + 全市场中位数 + 评分规则
 ├── models.py                   # LLM 网关配置与支持模型清单
 ├── extraction_prompt.md        # 智能体一 · 提取提示词
 ├── agent2/                     # 智能体二 · 障碍度根因分析服务
-│   ├── suggest_service.py      #   /api/suggest（双后端 deepseek | adp）
+│   ├── suggest_service.py      #   /api/suggest（后端由 ADP_BACKEND 切换：deepseek | adp）
+│   ├── models.py               #   模型映射与网关联调（与根目录版本按服务各自维护）
 │   ├── system_prompt.md        #   根因分析提示词 v3.0（元认知因果推导）
 │   ├── user_prompt.md
 │   ├── peer_retrieval.py       #   检索层：离线同行对标库检索（倒排索引）
-│   ├── peer_index.json         #   102 家同行索引（构建产物，随镜像发布，运行时零网络依赖）
+│   ├── peer_index.json         #   92 家同行索引（构建产物，随镜像发布，运行时零网络依赖）
 │   ├── web_search.py           #   企业公开信息检索（东方财富 / 巨潮资讯，免 Key）
 │   └── materiality.py          #   实质性分析（纯 Python 确定性计算）
 ├── tools/build_peer_index.py   # 重建 peer_index.json 的构建脚本
@@ -172,16 +175,19 @@ esg-carbon-system/
 │   ├── index.html
 │   ├── js/app.bundle.js        #   业务主逻辑
 │   ├── js/charts.js            #   雷达图 / 圆环 / 三色评分点
+│   ├── assets/                 #   Hero 地球贴图等静态素材
 │   ├── vendor/                 #   第三方库本地化（离线可用）
 │   └── nginx.conf              #   静态资源 + API 反代 + gzip + 长缓存策略
-├── templates/                  # 服务端 PDF 模板（Jinja2）+ 中文字体（思源黑体 CJKsc）
+├── templates/                  # 服务端 PDF 模板（Jinja2）+ 中文字体（Source Han Sans / Noto Sans CJKsc）
+├── data/baseline_105/          # 权重库构建数据（92 份提取结果 + 构建脚本 + 行业基准库 Excel）
 ├── supabase_schema.sql         # 认证与历史表结构 + RLS 策略
-├── CHANGELOG.md                # 版本沿革
 ├── deploy/                     # 部署与公网入口说明
 ├── docs/
 │   ├── architecture/           # 架构图（论文图 4-1 / 4-2 / 4-3）
-│   └── ESG碳画像系统排障复盘.docx
-└── 智能体二*.md                # 根因分析提示词定稿（v2.0 / v3.0）
+│   └── ESG碳画像系统排障复盘-20260816.docx
+├── README.md / ARCHITECTURE.md / CHANGELOG.md
+├── LICENSE                     # Apache License 2.0
+└── NOTICE                      # 版权与第三方组件声明
 ```
 
 ---
@@ -267,7 +273,7 @@ L4 得分 = 基础分 + 对标分 (0–10)
 
 **障碍度**（`calc_obstacle`）：以「权重 × 失分率」衡量该指标对总分的拖累程度，排序取 Top10 交给智能体二做逆向根因推导。
 
-**等级映射**：总分 → S / A / B / C 四档。
+**等级映射**：总分 → **卓越 / 优秀 / 良好 / 待改进** 四档（前端画像区与 PDF 报告使用同一口径）。
 
 ---
 
@@ -374,7 +380,8 @@ v=118 引入 **证据强制校验**（`evidence_verify.py`）作为兜底保险�
 
 ## 许可与溯源
 
-- **许可**：[LICENSE](LICENSE) —— 自定义「非商业使用」许可，商业用途需单独书面授权。
+- **许可**：[LICENSE](LICENSE) —— **Apache License 2.0**（可自由使用、修改、分发，含专利授权）。
+- **第三方组件**：[NOTICE](NOTICE) —— 随附分发的开源库与中文字体许可声明。
 - **排障复盘**：[`docs/ESG碳画像系统排障复盘-20260816.docx`](docs/) —— 15 个 Bug、4 类根源、排查清单、溯源索引。
 - **架构图**：[`docs/architecture/`](docs/architecture/) —— 论文图 4-1 / 4-2 / 4-3。
 - **部署说明**：[`deploy/`](deploy/) —— 公网入口与容器编排的部署要点。

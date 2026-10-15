@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 """Generate the 4-layer ESG indicator framework docx"""
+import os
 from docx import Document
 from docx.shared import Pt, RGBColor
 from docx.enum.text import WD_ALIGN_PARAGRAPH
@@ -187,6 +188,8 @@ for i, row in enumerate([
     for j, val in enumerate(row):
         cl_table.rows[i+1].cells[j].text = val
 
-output_path = '[PROJECT]/output/ESG指标框架4层颗粒度_v2.0.docx'
+output_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'output',
+                           'ESG指标框架4层颗粒度_v2.0.docx')
+os.makedirs(os.path.dirname(output_path), exist_ok=True)
 doc.save(output_path)
 print(f'Saved: {output_path}')
