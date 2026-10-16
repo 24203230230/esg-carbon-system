@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>ESG碳治理能力画像系统</title>
     <meta name="description" content="面向企业与金融机构的碳治理能力评估工具 — 自动提取ESG报告碳信息，量化评估碳治理能力，生成可视化画像">
-    <link rel="stylesheet" href="css/style.css?v=201&t=1791627956">
+    <link rel="stylesheet" href="css/style.css?v=202&t=1792140831">
     <link rel="icon" type="image/svg+xml" href="favicon.svg?v=92">
     <!-- 第三方库（本地化 vendor，离线可用，全部带版本号以便长缓存失效） -->
     <script src="vendor/chart.umd.min.js?v=92"></script>
@@ -1097,7 +1097,7 @@
     </div>
 </div>
 
-<!-- ============ 使用须知公告（v=115） ============ -->
+<!-- ============ 使用须知公告（v=203：新增「关于分析模型」Kimi 局限说明 + Gitee 镜像地址） ============ -->
 <div class="modal-overlay" id="noticeModal">
     <div class="modal-content modal-md">
         <div class="modal-header">
@@ -1133,9 +1133,17 @@
                 </section>
 
                 <section class="notice-sec">
+                    <h4>关于分析模型</h4>
+                    <p>系统内置多个大模型作为分析引擎，你可以按需切换。<b>其中「Kimi K3」目前不可用，入口已置灰</b>：该服务的国内站对境外服务器 IP 不通（我方服务器实测连接超时），国际站则需要境外网络环境与美元信用卡支付，因此本次交付版本<b>不开放该模型</b>。</p>
+                    <p>其余模型均正常可用：DeepSeek 系列为默认引擎；智谱 GLM 与 MiniMax 已完成端到端实测。<b>缺少 Kimi 不影响数据提取与评分功能的完整性</b>。</p>
+                </section>
+
+                <section class="notice-sec">
                     <h4>一起交流迭代</h4>
-                    <p>项目代码与文档在 GitHub 上维护，仓库地址如下。当前处于私有维护阶段，<b>作品提交（2026 年 10 月 20 日）后将转为公开仓库</b>，届时可直接访问、提交 Issue 与 Pull Request；在此之前，如对方法或结果有疑问，欢迎先与我们直接交流。</p>
-                    <p class="notice-repo"><a href="https://github.com/24203230230/esg-carbon-system" target="_blank" rel="noopener">github.com/24203230230/esg-carbon-system</a></p>
+                    <p>项目代码与文档已开源（Apache-2.0）。<b>若你所在网络访问 GitHub 不便，可通过 Gitee 镜像仓库访问同一份代码</b>：</p>
+                    <p class="notice-repo">GitHub：<a href="https://github.com/24203230230/esg-carbon-system" target="_blank" rel="noopener">github.com/24203230230/esg-carbon-system</a></p>
+                    <p class="notice-repo">Gitee 镜像：<a href="https://gitee.com/giteezzhzzh/esg-carbon-system" target="_blank" rel="noopener">gitee.com/giteezzhzzh/esg-carbon-system</a></p>
+                    <p>欢迎提交 Issue 与 Pull Request；如对方法或结果有疑问，也欢迎直接与我们交流。</p>
                 </section>
 
             </div>
@@ -1199,9 +1207,9 @@
 <!-- ============ Toast 提示 ============ -->
 <div class="toast-container" id="toastContainer"></div>
 
-<script src="js/config.js?v=97&t=1789282683"></script>
+<script src="js/config.js?v=98&t=1792140831"></script>
 <script src="js/mock-data.js?v=92&t=1787578323"></script>
-<script src="js/app.bundle.js?v=200&t=1791531825"></script>
+<script src="js/app.bundle.js?v=201&t=1792140831"></script>
 <script src="js/charts.js?v=200&t=1791531825"></script>
 <script src="js/hero-effects.js?v=200&t=1791531825"></script>
 </body>

@@ -1755,13 +1755,26 @@ function getCompanyType() {
 // ============ 分析模型选择（v=78 多模型，one-api 网关路由） ============
 function getSelectedModel() {
     // localStorage 记忆，默认 deepseek-v4-flash
+    // v=203：只认「可用」模型（disabled 的不算），历史选中已下架模型时自动回落
     const saved = localStorage.getItem('esg.selectedModel');
-    const models = (API_CONFIG.MODELS || []).map(m => m.id);
-    if (saved && models.includes(saved)) return saved;
-    return API_CONFIG.DEFAULT_MODEL || 'deepseek-v4-flash';
+    const models = API_CONFIG.MODELS || [];
+    const usable = models.filter(m => !m.disabled).map(m => m.id);
+    if (saved && usable.includes(saved)) return saved;
+
+    const fallbackId = API_CONFIG.DEFAULT_MODEL || 'deepseek-v4-flash';
+    const fallback = models.find(m => m.id === fallbackId);
+    if (fallback && !fallback.disabled) return fallbackId;
+    // 兜底：默认模型也被禁用时，取第一个可用模型；全禁用则原样返回默认（保持旧行为）
+    return usable[0] || fallbackId;
 }
 
 function setSelectedModel(modelId) {
+    // v=203：防御性拦截 —— 已置灰的模型不允许被选中（防止旧缓存页面/脚本直接调用）
+    const target = (API_CONFIG.MODELS || []).find(m => m.id === modelId);
+    if (!target || target.disabled) {
+        showToast('该模型暂不可用，请选择其他分析模型', 'warning');
+        return;
+    }
     localStorage.setItem('esg.selectedModel', modelId);
     // 更新 UI 高亮
     document.querySelectorAll('#modelOptions .company-type-option').forEach(el => {
@@ -1777,7 +1790,20 @@ function initModelSelector() {
     const models = API_CONFIG.MODELS || [];
     if (!models.length) return;
     const current = getSelectedModel();
-    container.innerHTML = models.map(m => `
+    // v=203：disabled 的模型渲染为「灰色不可点」（无 onclick、加 is-disabled + 角标）
+    container.innerHTML = models.map(m => {
+        if (m.disabled) {
+            return `
+        <label class="company-type-option is-disabled" data-model="${m.id}"
+               aria-disabled="true" title="该模型暂不可用">
+            <span class="option-card">
+                <span class="option-name">${m.label}<span class="option-badge">暂不可用</span></span>
+                <span class="option-desc">${m.desc}</span>
+            </span>
+        </label>
+    `;
+        }
+        return `
         <label class="company-type-option ${m.id === current ? 'active' : ''}" data-model="${m.id}"
                onclick="setSelectedModel('${m.id}')">
             <span class="option-card">
@@ -1785,7 +1811,8 @@ function initModelSelector() {
                 <span class="option-desc">${m.desc}</span>
             </span>
         </label>
-    `).join('');
+    `;
+    }).join('');
 }
 
 /**

@@ -6,6 +6,38 @@
 
 ---
 
+## v=203 — 前端：Kimi 入口置灰 + 使用须知公告更新（局限说明 + Gitee 镜像）
+
+- **背景（用户拍板）**：v=202 已把 Kimi 渠道配好，但**从服务器不可达** —— Moonshot 国内站 `api.moonshot.cn` 按源 IP 屏蔽境外服务器（香港实测 443/80 全超时、traceroute 至中国移动骨干后无响应），国际站 `platform.kimi.ai` 虽可达但需**境外网络 + 美元信用卡支付**（Stripe，$5 起，不支持微信）。故**本次不接入 Kimi**，改为前端置灰 + 公告说明局限。
+- **前端改动（4 个静态文件，`nginx.conf` 与后端零改动）**：
+  - `js/config.js`：`kimi-k3` 增加 `disabled: true`（语义＝**展示但不可选**），并把描述改为「月之暗面 · 暂不可用」。
+  - `js/app.bundle.js`：三处**防御性**改动（不动原调用链）——
+    ① `getSelectedModel()` 只认非 disabled 模型；**历史选中已下架模型的用户自动回落 `DEFAULT_MODEL`**（关键：否则老用户会被卡在不可用模型上）；
+    ② `setSelectedModel()` 拦截 disabled 模型（防旧缓存页面/脚本直接调用），提示「该模型暂不可用」；
+    ③ `initModelSelector()` 对 disabled 项**不渲染 onclick**、加 `is-disabled` + `aria-disabled="true"` + 「暂不可用」角标。
+  - `css/style.css`：新增 `.company-type-option.is-disabled`（`cursor:not-allowed`、`opacity:.5`、虚线边框，且**覆盖 hover 高亮**）与 `.option-badge` 角标样式。
+  - `index.html`：公告新增「**关于分析模型**」小节（说明 Kimi 不可用及原因、其余模型可用、不影响功能完整性）；「一起交流迭代」补 **Gitee 镜像地址** `https://gitee.com/giteezzhzzh/esg-carbon-system`（部分用户访问 GitHub 不便）；同时**修正已过期表述**（原文写「当前处于私有维护阶段…提交后转为公开」，实际仓库已是 public + Apache-2.0）。
+  - `?v` 缓存戳按资源独立递增：`style.css 201→202`、`js/app.bundle.js 200→201`、`js/config.js 97→98`；`index.html` 内引用同步更新 `&t=` 时间戳。
+- **本地验证（先于上线，真实浏览器 Microsoft Edge）**：
+  - Node 桩环境跑三个函数逻辑自测 **14/14**（含「历史=kimi 回落默认」「点 kimi 不写库」「kimi 段无 onclick」等）。
+  - Playwright 真实 Edge 起本地 http 服务跑 **21/21**：kimi 卡片 `is-disabled`、无 onclick、带角标；点击不改变选择；历史换成 kimi 后重载回落 `deepseek-v4-flash` 且高亮正确；公告含新小节与两个仓库链接；旧「私有维护阶段」已消失；**0 条 JS 运行时错误**。
+  - ⚠️ 排障记录：首轮 `MOCK_DATA is not defined` 报错经**同流程对照 HEAD 与改动版（均为 0 报错）**判定为测试侧 reload 竞态假象，非缺陷；公告文本首轮比对为空是因为对**隐藏元素**用了 `innerText`（改用 `textContent` 后正常）。
+- **上线与三层验收**：
+  - 本地 `docker build` → `esg_extractor-frontend:v203`（`55a1bce6ec77`）；`nginx -t` 通过；镜像内 6 个文件 sha256 **与本地逐一相等**。
+  - 包 `esg-frontend-v203.tar.gz` **32.6MB**（md5 `59deb184…`）→ SFTP（远端 md5 一致）→ `load` → `tag latest→v202bkeep` → `tag v203→latest` → `up -d --no-deps frontend`，容器重建成功。
+  - **第一判据（容器内哈希）**：`index.html` `27d34d44…` / `app.bundle.js` `7cdeb925…` / `config.js` `18f241a2…` / `style.css` `c65228bf…` / `earth.jpg` `ce97aca8…`（未变）/ `nginx.conf` `adfdef3c…`（未变）**全部 == 期望**。
+  - **方案 A 未回退**：`resolver 127.0.0.11 valid=10s ipv6=off` 与三处变量式 `proxy_pass $up_*` 仍在。
+  - **新特征**：`config_disabled=1`、`css_badge=1`、`gitee=1`、`old_private_left=0`；且**经 nginx 取回**的 `config.js` 含 `disabled: true`、首页含 Gitee 链接（证明静态资源真的换了，不是只换了镜像）。
+  - **旧修复未回退**：v126 手势、v127 `Array.from`、v200 `--bg-deep`、v201 `100dvh`、样本量 92 全部命中。
+  - 容器内 `nginx→上游`：`/api/health` 200、静态全 200、`/api/suggest` 与 `/api/report` 405（路由通）。
+- **公网验收（`https://esgextractor.cn`，真实 Edge）**：
+  - `js/config.js` / `js/app.bundle.js` / `css/style.css` 的 md5 **与本地逐字节相同**；`/` 200、`/api/health` 200（`build=v128`）、`/api/suggest` `/api/report` 405。
+  - 浏览器实跑 **17/17**：公告自动弹出且含新小节 + 两个仓库地址（Gitee 链接可点）；线上 Kimi 卡片置灰、无 onclick、带角标、点击无效；历史选中 kimi 回落默认；**0 条 JS 报错**。
+- 回滚底：`esg_extractor-frontend:v202bkeep`（= v202 `b64493d7`）。
+- **备注**：one-api 侧 Kimi 渠道（id=3）保留未删（无副作用，前端已不可选）；如需彻底清理可后续移除。
+
+---
+
 ## v=202b — 前端 nginx 动态解析上游（方案 A）：根治「重建容器后全站 /api/* 502」
 
 - **事故**：2026-10-16 上线 v=202（多模型接入）时只重建了 `esg-extractor`（`up -d --no-deps`），**未重建前端容器**。结果**首页 200、但所有 `/api/*` 全部 502**，故障**静默持续约 10 小时**才被发现；期间容器内直连上游 200、容器内端到端也 200，**唯独经 nginx 这一跳是红的**——典型的「绿灯空转」。当天已用 `docker restart esg-frontend` 临时恢复。

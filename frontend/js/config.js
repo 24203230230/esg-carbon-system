@@ -35,12 +35,17 @@ const API_CONFIG = {
     // id 与后端 models.py SUPPORTED_MODELS 保持一致
     // 分析模型列表（v=87：替换 glm-5v-turbo 为 deepseek-v4-flash-vision-exp，复用 DeepSeek 余额）
     // id 与后端 models.py SUPPORTED_MODELS 保持一致
+    // v=203：Kimi 入口置灰（disabled=true 表示「展示但不可选」）
+    //   原因：Moonshot 国内站按源 IP 屏蔽境外服务器（香港实测 443/80 全超时），
+    //         国际站需境外网络 + 美元信用卡支付，本次交付版本不开放该入口。
+    //   ⚠️ disabled 的模型不会出现在可选列表里；即使 localStorage 里残留旧选择，
+    //      getSelectedModel() 也会自动回落到 DEFAULT_MODEL。
     MODELS: [
         { id: 'deepseek-v4-flash', label: 'DeepSeek V4 Flash', desc: '快速 · 默认' },
         { id: 'deepseek-v4-pro',   label: 'DeepSeek V4 Pro',   desc: '深度推理' },
         { id: 'deepseek-v4-flash-vision-exp', label: 'DeepSeek V4 Vision', desc: '多模态视觉' },
         { id: 'glm-5.2',           label: 'GLM 5.2',           desc: '智谱' },
-        { id: 'kimi-k3',           label: 'Kimi K3',           desc: '月之暗面' },
+        { id: 'kimi-k3',           label: 'Kimi K3',           desc: '月之暗面 · 暂不可用', disabled: true },
         { id: 'minimax-m3',        label: 'MiniMax M3',        desc: 'MiniMax' }
     ],
     DEFAULT_MODEL: 'deepseek-v4-flash'
