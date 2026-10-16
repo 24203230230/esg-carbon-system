@@ -6,6 +6,23 @@
 
 ---
 
+## v=202b — 前端 nginx 动态解析上游（方案 A）：根治「重建容器后全站 /api/* 502」
+
+- **事故**：2026-10-16 上线 v=202（多模型接入）时只重建了 `esg-extractor`（`up -d --no-deps`），**未重建前端容器**。结果**首页 200、但所有 `/api/*` 全部 502**，故障**静默持续约 10 小时**才被发现；期间容器内直连上游 200、容器内端到端也 200，**唯独经 nginx 这一跳是红的**——典型的「绿灯空转」。当天已用 `docker restart esg-frontend` 临时恢复。
+- **根因**：nginx 对 `proxy_pass` 里的**主机名只在「启动 / 配置重载」时解析一次并永久缓存**。容器重建后 `esg-extractor` 分到新 IP，nginx 仍打旧 IP ⇒ 上游不可达。这不是代码缺陷，而是**部署流程缺口**（重建上游必须补一次 `nginx -s reload`）。
+- **修复（方案 A · 从机制上根治，仅 `frontend/nginx.conf` 一个文件）**：
+  - 新增 `resolver 127.0.0.11 valid=10s ipv6=off;` —— 指向 **Docker 内嵌 DNS**，缓存最长 10s。
+  - 三处 `proxy_pass http://esg-extractor:8082;` 改为**变量式**：`set $up_extractor http://esg-extractor:8082; proxy_pass $up_extractor;`（`/api/suggest` 用 `$up_agent2`、`/api/report` 用 `$up_extractor2`）。**变量式才会走 resolver 运行时解析**；写死主机名则永远走启动时缓存。
+  - ⚠️ 语义核对：变量式 `proxy_pass` **不带路径**时，nginx 回落为「原样透传请求 URI」，与改前（同样不带 URI）**完全一致**，不会有前缀被吃掉的问题。
+- **本地复现验证（不碰生产）**：用同镜像起 `nginx(新conf)` + 模拟上游，`--network-alias` 借用服务名。① URI 透传：`path=/api/health`、`query=probe=1`、POST body 全部原样到达；② 路由分流：`/api/suggest`→agent2、`/api/report`→extractor；③ **上游 IP `172.31.0.11 → .13` 漂移后 nginx 未重启即自愈**；④ 无 `no resolver defined` / `host not found`。
+- **上线后决定性验收（生产实测）**：
+  - 零风险校验：另起一个同镜像临时 nginx 挂到真实 `ai-network`，经 `127.0.0.11` 解析真实上游 → `/api/health` 200（`build=v128`）、`/api/suggest` / `/api/report` 405、resolver 错误 0 条。
+  - **IP 漂移取证**：把 `esg-extractor` 从 `172.23.0.4` 换到 `172.23.0.99`，**nginx 容器 `StartedAt` 前后完全一致（全程未重启）**，公网 `/api/health` 在 **t+0 瞬时中断 → t+4s 恢复 200**，其后 health/suggest/report 全通。改前该场景会**永久 502 直到人工重启**。取证后原 IP 已还原、公网复验 200。
+- **范围**：仅 `frontend/nginx.conf` 变更；`index.html` / `css/style.css` / `js/app.bundle.js` / `assets/earth.jpg` 与 v=201 **逐字节相同**（sha256 断言通过），**故 `?v=NN` 缓存戳不 bump**。后端三容器与接口契约零改动。
+- 部署方式：本地 `docker build` → `save`/`gzip`（32.6MB，md5 双向校验）→ SFTP → `load` → `tag latest→v201keep` → `tag v202→latest` → `up -d --no-deps frontend`（判据＝容器内 `nginx.conf` sha256 `adfdef3c…` == 本地）。
+- 回滚底：`esg_extractor-frontend:v201keep`。
+- **流程补丁**：① 重建 extractor/agent2 后**不再需要**手工 reload（本方案已覆盖）；② 验收判据必须包含「**经 nginx / 经公网**」的探测，只测容器内直连会漏掉这一整类故障。
+
 ## v=202 — 多模型网关接入：智谱 GLM / Moonshot Kimi / MiniMax（后端）
 
 - **背景**：前端「模型选择」下拉早于版本 v=78 就预留了 6 个入口，但 one-api 侧**只有 DeepSeek 一条渠道**，其余入口选了必然报错。本次补齐三家（智谱 / Moonshot / MiniMax）。
