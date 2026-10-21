@@ -505,6 +505,25 @@ def call_deepseek(system_prompt: str, user_text: str, max_retries: int = 2) -> d
 
 
 # ============================== 4 维度结构兜底 ==============================
+def _strip_md_fence(text: str) -> str:
+    """剥掉外层 Markdown 代码栅栏（```json … ```）。
+
+    v=204b：MiniMax M3 **无视** response_format=json_object，即便要求"只输出 JSON"，
+    仍会把结果包进 ```json 围栏 ⇒ 提取侧直接 json.loads 必然失败，表现为
+    「选 MiniMax 就报 LLM返回非JSON格式」。agent2 侧（suggest_service）早就有这层
+    兜底，提取侧一直没做 —— 这里补齐，只做"剥壳"，不改任何判定逻辑。
+    非栅栏文本原样返回（调用方据此判断是否发生了剥离）。
+    """
+    t = (text or '').strip()
+    if not t.startswith('```'):
+        return text
+    lines = t.split('\n')
+    if len(lines) < 2:
+        return text
+    inner = lines[1:-1] if lines[-1].strip().startswith('```') else lines[1:]
+    return '\n'.join(inner).strip()
+
+
 def normalize_extracted_structure(data: dict) -> dict:
     """保证 LLM 返回的 JSON 结构完整：4 维度嵌套 + 报告元数据齐备。
 
@@ -628,7 +647,7 @@ def health():
         "status": "ok",
         "service": "esg-extractor",
         "version": "1.0.0",
-        "build": "v128",  # v128：权重库全量重建（B_alt）—— 底座换成 92 份 baseline_105 重提取（v119b 生产链路）披露频率；L2 冻结为已修真源方向（企业内部碳管理9/供应链碳管理5/透明度7/金融化情况3，修正 v2.1 的搬移失误），L3/L4 由频率五分位（1/3/5/7/9）重新分档；Excel AHP 矩阵重算 ω 与模型逐项一致（57/57，最大偏差 0.000000pp，各组 CR=0）；42 项全局权重全部变化（C33 监管强制披露要求符合性 6.889%→0.518%、交易所ESG披露指引符合性 6.889%→4.660%、碳排放披露范围 4.727%→6.040%）；行业基准库/全市场中位数/评分规则一字不动；weights.json 的「版本」字段同步为 v2.1（B_alt 权重库重建 2026-10-06）｜v124：①报告字体全 CJK 覆盖（6990→29833 码位，根治繁体/生僻字渲染空白；旧字体实测繁体串 108 字缺 52）②证据校验 v124b（模型自附引用剥离 + 作用域标签同义归一 + 通路B「值数字全命中则放宽文本阈值」；92 份真实数据 A/B：新增放行 29 条、值字面查无 0、意外回收 0）③OCR：三个参数改环境变量可调 + 进度补 ETA（曾试 draft+BILINEAR 提速，实测 0 收益且同一页丢整行 ⇒ **已回退**，见 _perf/v124_D/）｜v123：证据校验千分位归一（evidence_verify v118b：两侧去千分位分隔符，修复「真实数据带/不带千分位被判编造」的误杀；92 份回归中 25 条误拦恢复、真幻觉 0 漏放）｜v122b：修复 v122 的 health 路由错位（_baseline_info 被插到 @app.route 与 def health 之间 ⇒ 装饰器绑错函数）+ 基准库样本量键名（样本量→样本数）｜v122：B 阶段基准库重建（92 家重提取 + 现行口径重算；全局权重一字不动）｜v121：PDF 解析逐页释放缓存（纯内存管理，不改解析结果）——修复 52 页文档 RSS 线性涨到 2.3GB ⇒ 2G 机器 OOM/swap 抖动（单页 OCR 7.4s→65s）｜v120：并发内存闸门（纯防御：限"同时驻留的重任务数"）｜v119b：A2 混合控长｜v119 = A2 配额采样 + C1 判定词繁简/英文归一（zhconv）+ C2 提示词消歧义｜v118 = 证据强制校验（evidence_verify.py）｜v117 = EMPTY_VALUES 占位符全集｜v116 = 判据表4.4 + temp 0.0｜v114 = COS 直传
+        "build": "v204b",  # v204b：MiniMax M3 无视 response_format、把 JSON 包进 ```json 围栏 ⇒ 提取侧补一层"剥围栏后重试"（agent2 侧早有，提取侧一直缺），否则一选 MiniMax 必报「LLM返回非JSON格式」｜v204：修复「切 GLM 5.2 报 LLM返回非JSON格式」——根因是 one-api 的智谱渠道用 DTO 重建请求体、把 thinking 字段丢弃，思考实际仍开着，16384 的 max_tokens 被思维链吃干（实测 tokens=63136 / content_len=3），content 只剩 "\n{\n"；改发 reasoning_effort="none"（智谱适配器会翻成 thinking.disabled，实测 reasoning 归零、prompt_tokens 与直连一致）；同时把「输出被截断」与「格式错」分开报错（原提示会把排查方向带偏到提示词）；顺带修 one-api 令牌白名单缺 minimax-m3（前端发小写 id、白名单只有上游名 MiniMax-M3 ⇒ 一选 MiniMax 就 403，已补）｜v128：权重库全量重建（B_alt）—— 底座换成 92 份 baseline_105 重提取（v119b 生产链路）披露频率；L2 冻结为已修真源方向（企业内部碳管理9/供应链碳管理5/透明度7/金融化情况3，修正 v2.1 的搬移失误），L3/L4 由频率五分位（1/3/5/7/9）重新分档；Excel AHP 矩阵重算 ω 与模型逐项一致（57/57，最大偏差 0.000000pp，各组 CR=0）；42 项全局权重全部变化（C33 监管强制披露要求符合性 6.889%→0.518%、交易所ESG披露指引符合性 6.889%→4.660%、碳排放披露范围 4.727%→6.040%）；行业基准库/全市场中位数/评分规则一字不动；weights.json 的「版本」字段同步为 v2.1（B_alt 权重库重建 2026-10-06）｜v124：①报告字体全 CJK 覆盖（6990→29833 码位，根治繁体/生僻字渲染空白；旧字体实测繁体串 108 字缺 52）②证据校验 v124b（模型自附引用剥离 + 作用域标签同义归一 + 通路B「值数字全命中则放宽文本阈值」；92 份真实数据 A/B：新增放行 29 条、值字面查无 0、意外回收 0）③OCR：三个参数改环境变量可调 + 进度补 ETA（曾试 draft+BILINEAR 提速，实测 0 收益且同一页丢整行 ⇒ **已回退**，见 _perf/v124_D/）｜v123：证据校验千分位归一（evidence_verify v118b：两侧去千分位分隔符，修复「真实数据带/不带千分位被判编造」的误杀；92 份回归中 25 条误拦恢复、真幻觉 0 漏放）｜v122b：修复 v122 的 health 路由错位（_baseline_info 被插到 @app.route 与 def health 之间 ⇒ 装饰器绑错函数）+ 基准库样本量键名（样本量→样本数）｜v122：B 阶段基准库重建（92 家重提取 + 现行口径重算；全局权重一字不动）｜v121：PDF 解析逐页释放缓存（纯内存管理，不改解析结果）——修复 52 页文档 RSS 线性涨到 2.3GB ⇒ 2G 机器 OOM/swap 抖动（单页 OCR 7.4s→65s）｜v120：并发内存闸门（纯防御：限"同时驻留的重任务数"）｜v119b：A2 混合控长｜v119 = A2 配额采样 + C1 判定词繁简/英文归一（zhconv）+ C2 提示词消歧义｜v118 = 证据强制校验（evidence_verify.py）｜v117 = EMPTY_VALUES 占位符全集｜v116 = 判据表4.4 + temp 0.0｜v114 = COS 直传
         "model": DEEPSEEK_MODEL,
         "thinking": DEEPSEEK_THINKING,
         "pdf_support": PDF_SUPPORT,
@@ -1628,16 +1647,46 @@ def run_extraction(filename, file_bytes, company_type='listed',
         return {"error": f"LLM调用失败: {str(e)}"}, 500
 
     # 6. 解析LLM返回的JSON
+    extracted_json = None
     try:
         extracted_json = json.loads(result['content'])
     except json.JSONDecodeError as e:
         logger.error(f"JSON 解析失败: {e}")
         logger.debug(f"LLM原始输出: {result['content'][:500]}")
-        return {
-            "error": "LLM返回非JSON格式",
-            "raw_content": result['content'][:2000],
-            "tokens_used": result['tokens_used']
-        }, 500
+        # v=204b：二级尝试 —— 剥掉 Markdown 代码围栏（MiniMax 会包 ```json）。
+        cleaned = _strip_md_fence(result['content'])
+        if cleaned != result['content']:
+            try:
+                extracted_json = json.loads(cleaned)
+                logger.warning(
+                    f"🧽 LLM 输出带 Markdown 代码围栏，剥离后解析成功"
+                    f"（model={result.get('model')}，该模型未遵守 response_format）"
+                )
+            except json.JSONDecodeError as e2:
+                logger.error(f"剥离围栏后仍非 JSON: {e2}")
+        if extracted_json is None:
+            # v=204：区分「输出语法错」与「输出被 max_tokens 腰斩」——两者的用户提示
+            #   与处置方式完全不同。截断的典型特征是 finish_reason=length 且 content 极短
+            #   （思维链把 16384 的输出预算吃干，content 只剩几个字符），此时提示
+            #   「非JSON格式」会把排查方向带偏到提示词上（2026-10-21 实证）。
+            if result.get('finish_reason') == 'length':
+                logger.warning(
+                    f"⚠️ 判定为输出截断而非格式错误：model={result.get('model')} "
+                    f"content_len={len(result['content'])} tokens={result['tokens_used']}"
+                )
+                return {
+                    "error": "模型输出被截断（输出预算耗尽）：思维链占满了 max_tokens，JSON 未写完",
+                    "hint": "请换用其他模型；若必须用该模型，需要关闭其思考模式（见 models.py 的 thinking/reasoning_effort 注入）",
+                    "raw_content": result['content'][:2000],
+                    "tokens_used": result['tokens_used'],
+                    "finish_reason": result.get('finish_reason'),
+                }, 500
+            return {
+                "error": "LLM返回非JSON格式",
+                "raw_content": result['content'][:2000],
+                "tokens_used": result['tokens_used'],
+                "finish_reason": result.get('finish_reason'),
+            }, 500
 
     # 6.4 记录 LLM 输出结构（用于排错）
     logger.info(f"LLM 提取结果 keys: {list(extracted_json.keys()) if isinstance(extracted_json, dict) else type(extracted_json)}")

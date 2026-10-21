@@ -126,7 +126,13 @@ def call_llm(system_prompt: str, user_text: str, model_id: str = None,
     # 共享 max_tokens 预算。Agent2 当前映射到 deepseek-chat（非思考）本无此问题，
     # 但显式声明可防止将来把映射改成直通名时重踩同一个坑；仅对 DeepSeek 系生效。
     # v=202：扩展到 GLM / Kimi / MiniMax（三家同样默认开思考，实测均接受 thinking:disabled）。
-    if _provider_of(real_model) in ('deepseek', 'zhipu', 'kimi', 'minimax'):
+    # v=204：⚠️ 智谱例外 —— one-api 的智谱渠道用 DTO 重建请求体，`thinking` 字段会被丢弃，
+    #   必须改发 OpenAI 标准字段 reasoning_effort="none"（实测 reasoning 归零）。
+    #   与 extractor/models.py 保持同一口径，否则「提取能用、根因分析炸」这种半通状态更难查。
+    prov = _provider_of(real_model)
+    if prov == 'zhipu':
+        payload["reasoning_effort"] = "none"
+    elif prov in ('deepseek', 'kimi', 'minimax'):
         payload["thinking"] = {"type": "disabled"}
     # v=202：Kimi 温度特判（关思考只能 0.6）—— 必须放在 thinking 之后覆写
     if _provider_of(real_model) == 'kimi':

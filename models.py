@@ -147,7 +147,26 @@ def call_llm(system_prompt: str, user_text: str, model_id: str = None,
     # v=202：扩展到 GLM / Kimi / MiniMax —— 三家同样默认开思考，且实测均接受
     #   {"thinking":{"type":"disabled"}}（GLM/Kimi 关思考后 reasoning 归零、延迟降 4~5 倍）。
     #   未识别的 provider 不注入，避免透传未知字段。
-    if _provider_of(real_model) in ('deepseek', 'zhipu', 'kimi', 'minimax'):
+    # ------------------------------------------------------------------
+    # v=204（2026-10-21）★ 修正：智谱必须改用 reasoning_effort，不能发 thinking。
+    #   现象：前端切 GLM 5.2 报「LLM返回非JSON格式」，日志为
+    #         finish_reason=length / content_len=3（"\n{\n"）/ tokens=63136。
+    #   定位过程（三组对照）：
+    #     ① 直连智谱 open.bigmodel.cn + thinking=disabled → reasoning=0，JSON 正常 ✅
+    #     ② 同一字段经 one-api 网关            → reasoning=508，content 只剩 3 字符 ❌
+    #        ⇒ 字段在网关这一跳丢了：one-api 的智谱渠道(type=16)用 DTO 重建请求体，
+    #          而该版本 DTO 只有 reasoning_effort、没有 thinking（二进制里 json 标签可证）。
+    #     ③ 同一请求改发 reasoning_effort="none" 经网关 → reasoning=0、JSON 完整，
+    #        且 prompt_tokens 与①完全一致 ⇒ 智谱适配器把它翻成了 thinking.disabled。
+    #   ⚠️ 因此"关思考"的字段是**按厂商不同**的，不是一套通吃：
+    #        deepseek / kimi / minimax → thinking.type=disabled（实测均生效）
+    #        zhipu                     → reasoning_effort="none"
+    #   为什么以前没发现：v=202 那次验证是**短 prompt**，思考开销小、content 仍能出全，
+    #   一旦输入上万 token，思考会把 16384 的 max_tokens 吃干，content 被腰斩。
+    prov = _provider_of(real_model)
+    if prov == 'zhipu':
+        payload["reasoning_effort"] = "none"
+    elif prov in ('deepseek', 'kimi', 'minimax'):
         payload["thinking"] = {"type": "disabled"}
     # v=202：Kimi 温度特判（关思考只能 0.6）—— 必须放在 thinking 之后覆写
     if _provider_of(real_model) == 'kimi':
@@ -178,7 +197,10 @@ def call_llm(system_prompt: str, user_text: str, model_id: str = None,
             return {
                 "content": content,
                 "tokens_used": tokens_used,
-                "model": data.get('model', model_id)
+                "model": data.get('model', model_id),
+                # v=204：把结束原因透出给上层 —— 用于区分「模型输出语法错」与
+                #   「输出被 max_tokens 腰斩」。二者都表现为 JSON 解析失败，但根因完全不同。
+                "finish_reason": finish_reason,
             }
         except requests.exceptions.RequestException as e:
             last_error = e
