@@ -97,7 +97,7 @@ DEEPSEEK_MODEL = os.environ.get('DEEPSEEK_MODEL', 'deepseek-v4-flash')
 # 深度思考模式：enabled 开启 | disabled 关闭（提取任务默认关闭，速度更快更便宜）
 DEEPSEEK_THINKING = os.environ.get('DEEPSEEK_THINKING', 'disabled')
 
-# 提示词路径（容器内 /app；本地运行可用 EXTRACTION_PROMPT_FILE 指向提示词文件）
+# 提示词路径（容器内 /app，宿主机 /c/Users/19814/WorkBuddy/Claw/esg_extractor/）
 PROMPT_FILE = os.environ.get('EXTRACTION_PROMPT_FILE', '/app/extraction_prompt.md')
 
 # ============================== OCR 兜底配置（v=93） ==============================
@@ -647,7 +647,7 @@ def health():
         "status": "ok",
         "service": "esg-extractor",
         "version": "1.0.0",
-        "build": "v204b",  # v204b：MiniMax M3 无视 response_format、把 JSON 包进 ```json 围栏 ⇒ 提取侧补一层"剥围栏后重试"（agent2 侧早有，提取侧一直缺），否则一选 MiniMax 必报「LLM返回非JSON格式」｜v204：修复「切 GLM 5.2 报 LLM返回非JSON格式」——根因是 one-api 的智谱渠道用 DTO 重建请求体、把 thinking 字段丢弃，思考实际仍开着，16384 的 max_tokens 被思维链吃干（实测 tokens=63136 / content_len=3），content 只剩 "\n{\n"；改发 reasoning_effort="none"（智谱适配器会翻成 thinking.disabled，实测 reasoning 归零、prompt_tokens 与直连一致）；同时把「输出被截断」与「格式错」分开报错（原提示会把排查方向带偏到提示词）；顺带修 one-api 令牌白名单缺 minimax-m3（前端发小写 id、白名单只有上游名 MiniMax-M3 ⇒ 一选 MiniMax 就 403，已补）｜v128：权重库全量重建（B_alt）—— 底座换成 92 份 baseline_105 重提取（v119b 生产链路）披露频率；L2 冻结为已修真源方向（企业内部碳管理9/供应链碳管理5/透明度7/金融化情况3，修正 v2.1 的搬移失误），L3/L4 由频率五分位（1/3/5/7/9）重新分档；Excel AHP 矩阵重算 ω 与模型逐项一致（57/57，最大偏差 0.000000pp，各组 CR=0）；42 项全局权重全部变化（C33 监管强制披露要求符合性 6.889%→0.518%、交易所ESG披露指引符合性 6.889%→4.660%、碳排放披露范围 4.727%→6.040%）；行业基准库/全市场中位数/评分规则一字不动；weights.json 的「版本」字段同步为 v2.1（B_alt 权重库重建 2026-10-06）｜v124：①报告字体全 CJK 覆盖（6990→29833 码位，根治繁体/生僻字渲染空白；旧字体实测繁体串 108 字缺 52）②证据校验 v124b（模型自附引用剥离 + 作用域标签同义归一 + 通路B「值数字全命中则放宽文本阈值」；92 份真实数据 A/B：新增放行 29 条、值字面查无 0、意外回收 0）③OCR：三个参数改环境变量可调 + 进度补 ETA（曾试 draft+BILINEAR 提速，实测 0 收益且同一页丢整行 ⇒ **已回退**，见 _perf/v124_D/）｜v123：证据校验千分位归一（evidence_verify v118b：两侧去千分位分隔符，修复「真实数据带/不带千分位被判编造」的误杀；92 份回归中 25 条误拦恢复、真幻觉 0 漏放）｜v122b：修复 v122 的 health 路由错位（_baseline_info 被插到 @app.route 与 def health 之间 ⇒ 装饰器绑错函数）+ 基准库样本量键名（样本量→样本数）｜v122：B 阶段基准库重建（92 家重提取 + 现行口径重算；全局权重一字不动）｜v121：PDF 解析逐页释放缓存（纯内存管理，不改解析结果）——修复 52 页文档 RSS 线性涨到 2.3GB ⇒ 2G 机器 OOM/swap 抖动（单页 OCR 7.4s→65s）｜v120：并发内存闸门（纯防御：限"同时驻留的重任务数"）｜v119b：A2 混合控长｜v119 = A2 配额采样 + C1 判定词繁简/英文归一（zhconv）+ C2 提示词消歧义｜v118 = 证据强制校验（evidence_verify.py）｜v117 = EMPTY_VALUES 占位符全集｜v116 = 判据表4.4 + temp 0.0｜v114 = COS 直传
+        "build": "v205",  # v205：判定口径收紧 —— ①「值=未披露」时无论原文写什么都不给分（堵「原文填模型自写元描述白拿 2 分」的计分漏洞，30 份回放 79 条 → 0）②`_is_undisclosed` 补「残余实质内容」判据，修「披露范围一和二，未披露范围三」这类**部分披露**被整条判死的误伤（回放翻转 12 条，全部为该指标）③透明度维度单独补抽覆盖（E 方案，极差 0.45→0.24）④所有结果加 `评分口径` 字段。**四个档位定义一字未改**，42 项权重/基准库/维度公式全部不动；回滚：TRANSPARENCY_RESAMPLE=0（只退补抽）｜v204b：MiniMax M3 无视 response_format、把 JSON 包进 ```json 围栏 ⇒ 提取侧补一层"剥围栏后重试"（agent2 侧早有，提取侧一直缺），否则一选 MiniMax 必报「LLM返回非JSON格式」｜v204：修复「切 GLM 5.2 报 LLM返回非JSON格式」——根因是 one-api 的智谱渠道用 DTO 重建请求体、把 thinking 字段丢弃，思考实际仍开着，16384 的 max_tokens 被思维链吃干（实测 tokens=63136 / content_len=3），content 只剩 "\n{\n"；改发 reasoning_effort="none"（智谱适配器会翻成 thinking.disabled，实测 reasoning 归零、prompt_tokens 与直连一致）；同时把「输出被截断」与「格式错」分开报错（原提示会把排查方向带偏到提示词）；顺带修 one-api 令牌白名单缺 minimax-m3（前端发小写 id、白名单只有上游名 MiniMax-M3 ⇒ 一选 MiniMax 就 403，已补）｜v128：权重库全量重建（B_alt）—— 底座换成 92 份 baseline_105 重提取（v119b 生产链路）披露频率；L2 冻结为已修真源方向（企业内部碳管理9/供应链碳管理5/透明度7/金融化情况3，修正 v2.1 的搬移失误），L3/L4 由频率五分位（1/3/5/7/9）重新分档；Excel AHP 矩阵重算 ω 与模型逐项一致（57/57，最大偏差 0.000000pp，各组 CR=0）；42 项全局权重全部变化（C33 监管强制披露要求符合性 6.889%→0.518%、交易所ESG披露指引符合性 6.889%→4.660%、碳排放披露范围 4.727%→6.040%）；行业基准库/全市场中位数/评分规则一字不动；weights.json 的「版本」字段同步为 v2.1（B_alt 权重库重建 2026-10-06）｜v124：①报告字体全 CJK 覆盖（6990→29833 码位，根治繁体/生僻字渲染空白；旧字体实测繁体串 108 字缺 52）②证据校验 v124b（模型自附引用剥离 + 作用域标签同义归一 + 通路B「值数字全命中则放宽文本阈值」；92 份真实数据 A/B：新增放行 29 条、值字面查无 0、意外回收 0）③OCR：三个参数改环境变量可调 + 进度补 ETA（曾试 draft+BILINEAR 提速，实测 0 收益且同一页丢整行 ⇒ **已回退**，见 _perf/v124_D/）｜v123：证据校验千分位归一（evidence_verify v118b：两侧去千分位分隔符，修复「真实数据带/不带千分位被判编造」的误杀；92 份回归中 25 条误拦恢复、真幻觉 0 漏放）｜v122b：修复 v122 的 health 路由错位（_baseline_info 被插到 @app.route 与 def health 之间 ⇒ 装饰器绑错函数）+ 基准库样本量键名（样本量→样本数）｜v122：B 阶段基准库重建（92 家重提取 + 现行口径重算；全局权重一字不动）｜v121：PDF 解析逐页释放缓存（纯内存管理，不改解析结果）——修复 52 页文档 RSS 线性涨到 2.3GB ⇒ 2G 机器 OOM/swap 抖动（单页 OCR 7.4s→65s）｜v120：并发内存闸门（纯防御：限"同时驻留的重任务数"）｜v119b：A2 混合控长｜v119 = A2 配额采样 + C1 判定词繁简/英文归一（zhconv）+ C2 提示词消歧义｜v118 = 证据强制校验（evidence_verify.py）｜v117 = EMPTY_VALUES 占位符全集｜v116 = 判据表4.4 + temp 0.0｜v114 = COS 直传
         "model": DEEPSEEK_MODEL,
         "thinking": DEEPSEEK_THINKING,
         "pdf_support": PDF_SUPPORT,
@@ -1501,6 +1501,14 @@ except (TypeError, ValueError):
     TEXT_SAMPLE_HEAD_RATIO = 0.5
 TEXT_SAMPLE_HEAD_RATIO = min(0.9, max(0.0, TEXT_SAMPLE_HEAD_RATIO))
 
+# ============================== 透明度补抽开关（v205） ==============================
+# E 方案：主抽 42 项后，再单独抽一次「透明度」10 项并覆盖。
+# 依据 A/C/E 三组 45 次实测：方差几乎全部集中在透明度维度，只拆这一个维度
+#   即可把平均极差 0.45 压到 0.24（−46%），而不会像「四维度全拆」那样让供应链整批崩塌。
+# 成本：+1 次调用。报告全文前置且与主抽逐字一致 ⇒ 命中前缀缓存，实测约 3 秒。
+# 回滚：.env 设 TRANSPARENCY_RESAMPLE=0 立即回到 v204b 行为。
+TRANSPARENCY_RESAMPLE = (os.environ.get('TRANSPARENCY_RESAMPLE') or '1').strip() not in ('0', 'false', 'False')
+
 
 def sample_text_by_quota(text: str, budget: int = 60000,
                          segments: int = TEXT_SAMPLE_SEGMENTS,
@@ -1697,6 +1705,30 @@ def run_extraction(filename, file_bytes, company_type='listed',
 
     # 6.5 关键！后端兜底——保证 4 维度嵌套结构完整（防止 LLM 抽风拍扁）
     extracted_json = normalize_extracted_structure(extracted_json)
+
+    # 6.52 透明度补抽（v205，E 方案）—— 只覆盖「透明度」一个维度，其余 32 项保持主抽结果。
+    #   为什么只拆这一个维度：A/C/E 三组 45 次实测显示方差几乎全部集中在透明度的
+    #     10 项受控枚举判断上；四维度全拆会让供应链整批崩塌（牧原 12 项同时判未披露）。
+    #   为什么放在证据校验之前：补抽结果同样必须过证据校验，顺序反了会漏。
+    #   为什么用 report_text 而非 full_report_text：补抽必须与主抽看到**同一份语料**，
+    #     否则两者的差异会混入"输入不同"这个新变量，无法归因。
+    #   失败处理：返回空/结构不符/抛异常一律保留主抽，绝不让整单失败。
+    if TRANSPARENCY_RESAMPLE:
+        try:
+            import transparency_batch
+            _tr = transparency_batch.resample(
+                report_text, filename, EXTRACTION_PROMPT, model_id=model_id)
+            if _tr and _tr.get('指标'):
+                extracted_json['指标提取结果']['透明度'] = {
+                    '指标': _tr['指标'],
+                    '未覆盖指标': _tr.get('未覆盖指标') or [],
+                }
+                _n = sum(len(v) for v in _tr['指标'].values() if isinstance(v, dict))
+                logger.info(f"🔁 透明度补抽已覆盖主抽（{_n} 项）")
+            else:
+                logger.info("🔁 透明度补抽未采用（保留主抽结果）")
+        except Exception as e:                      # noqa: BLE001
+            logger.warning(f"透明度补抽异常（保留主抽，不影响提取）：{e}")
 
     # 6.55 证据强制校验（v=118，方案A）：**任何拿到分的指标，其「原文」必须能在
     #      报告全文中定位到**；定位不到 ⇒ 降级为未披露。作用：防「原文是编造的」幻觉，

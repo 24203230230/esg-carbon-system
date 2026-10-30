@@ -119,6 +119,15 @@ AFFIRM_PAT = re.compile(
     r'|have (?:established|obtained|formulated|completed|launched|implemented))',
     re.IGNORECASE,
 )
+# v205：「部分披露」的判定门槛 —— 剔除含否定词的分句后，剩余实质内容达到该字数
+#   即视为「部分披露」，不再整条判为未披露。取 6 是实测取值：
+#   30 份真实结果中 1260 条叶子指标，该门槛下仅翻转 12 条（全部是「碳排放披露范围」，
+#   其标准答案就是「披露范围一和范围二，未披露范围三」），零副作用。
+PARTIAL_MIN_CHARS = 6
+# v205：评分口径标签 —— 写入 score_all 返回值，随 history.result_json 落库，
+#   用于区分「v204 及以前」的历史记录（旧记录无此字段）。
+SCORE_CALIBER = 'v205'
+
 # v=116c：补齐「表示没有披露」的**短字面量占位符**全集（与 UNDISCLOSED_PAT 对齐）。
 #   背景：模型在未披露类指标上，除了填 "未披露"，还会填 "未提及/未找到/未明确"
 #   等字面量；若只挡 "未披露"，这些等价写法会让「原文」被判为『有内容』，
@@ -165,6 +174,7 @@ def _is_undisclosed(val: str) -> bool:
     """值字段是否属于「实质上没有披露」。
     含具体数字的表述不算（有量化信息）；带肯定性转折的也不算（有实质内容）。
     v119（C1）：入口做繁简归一，使繁体「未揭露」等价于简体「未披露」。
+    v205：补「残余实质内容」判据 —— **部分披露不再整条判死**。
     """
     val = _zh_norm(val)
     if not val:
@@ -173,7 +183,17 @@ def _is_undisclosed(val: str) -> bool:
         return False
     if not UNDISCLOSED_PAT.search(val):
         return False
-    return not AFFIRM_PAT.search(val)
+    if AFFIRM_PAT.search(val):
+        return False
+    # v205：把含否定词的**分句**剔掉，剩余若仍有实质内容 ⇒ 属部分披露，不算未披露。
+    #   背景：「披露范围一和范围二，未披露范围三」是「碳排放披露范围」的标准答案，
+    #   原实现因尾部含「未披露」把整条判成无值 —— 30 份回放实测误伤 12 条，全是该指标。
+    #   只按**分句**剔除、不按整句否定 ⇒ 「未披露环境数据」这类纯否定仍是未披露。
+    keep = [s for s in re.split(r'[，。；、,.;\n（）()]', val)
+            if s.strip() and not UNDISCLOSED_PAT.search(s)]
+    if len(re.sub(r'\s', '', ''.join(keep))) >= PARTIAL_MIN_CHARS:
+        return False
+    return True
 
 
 def _value_present(val: str) -> bool:
@@ -236,6 +256,15 @@ def calc_completeness(node: dict) -> int:
     val = _zh_norm(node.get('值') or '').strip()
     raw = _zh_norm(node.get('原文') or '').strip()
 
+    # v205：值**明确声明「未披露」** ⇒ 直接 0 分，「原文」不作数。
+    #   背景：模型在未披露指标上会把「原文」填成「报告未披露XXX」这类自写元描述，
+    #     原实现据此给「简单提及 1 分」+ 质量 1 分（合计 2 分）—— 这是计分漏洞。
+    #   实测：30 份回放中 73 个「1 分档」样本里 61 个属此类；另 12 个是
+    #     「部分披露被误判」，已在 _is_undisclosed 侧修正，不在此处处理。
+    #   ⚠️ 只拦「值说未披露」，「值空 + 原文有内容」（提取不全）仍保留 1 分档语义。
+    if _is_undisclosed(val):
+        return 0
+
     # v=116：统一走 _value_present —— 把「未披露（报告未提供…）」这类带解释的
     #   同义表述也归为无值（原先会被判成定性披露 2 分，造成同指标跨轮次跳档）。
     #   正常披露、以及"未明确…，但已建立…"这类含实质内容的表述行为不变。
@@ -273,6 +302,11 @@ def calc_quality(node: dict) -> int:
     val = _zh_norm(node.get('值') or '').strip()
     year = _zh_norm(node.get('年份') or '').strip()
     raw = _zh_norm(node.get('原文') or '').strip()
+
+    # v205：值明确声明「未披露」⇒ 质量分 0，与 calc_completeness 同口径。
+    #   否则「值=未披露、原文=报告未披露XXX、年份=2024」会靠年份白拿 2 分。
+    if _is_undisclosed(val):
+        return 0
 
     val_has = _value_present(val) and bool(re.search(r'\d', val))
     year_has = _value_present(year)
@@ -576,6 +610,7 @@ def score_all(extracted: dict, industry: str, company_type: str = 'listed') -> d
     top10 = obstacle_list[:10]
 
     return {
+        '评分口径': SCORE_CALIBER,   # v205：随 history.result_json 落库，用于区分旧记录
         '公司类型': company_type,
         '行业': industry,
         'L4计算结果': l4_results,

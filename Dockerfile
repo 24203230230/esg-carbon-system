@@ -75,6 +75,10 @@ COPY weights.json /app/
 COPY weights_logic.py /app/
 # v=118：证据强制校验模块（得分指标必须能在报告全文中定位到「原文」）
 COPY evidence_verify.py /app/
+# v205：透明度维度补抽模块（E 方案：主抽 42 项后单独补抽透明度 10 项并覆盖）
+#   ⚠️ 漏了这行不会报错 —— 调用处是防御式 try/except，ImportError 会被吞成
+#      「补抽异常（保留主抽）」的 warning，功能静默失效。改动此处务必核对容器内文件存在。
+COPY transparency_batch.py /app/
 # v=85：WeasyPrint HTML 报告模板（Jinja2）
 COPY templates/ /app/templates/
 
