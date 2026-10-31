@@ -1638,6 +1638,10 @@ async function startAnalysis() {
     const analysisSection = $('#analysis');
     analysisSection.style.display = 'block';
 
+    // v=205：清掉上一份报告的摘要行（否则新一次提取的加载态里会挂着上一家企业的名称/年份）
+    const summaryBox = $('#extractResultContent');
+    if (summaryBox) summaryBox.innerHTML = '';
+
     const progress = $('#extractProgress');
     const result = $('#extractResult');
     const status = $('#extractStatus');
@@ -1896,17 +1900,28 @@ function renderExtractResult(extractData) {
     // 提取结果摘要容器（可能不存在，不影响卡片填充）
     const container = $('#extractResultContent');
     if (container) {
-        // 简化展示：显示企业信息和关键指标
-        const meta = extractData.报告元数据 || {};
-        const indicators = extractData.指标提取结果 || {};
-        container.innerHTML = `
+        // v=205 修复（空壳问题）：本函数是唯一「忘记解包」的读取点。
+        //   异步提取返回体是 {success, duration_sec, extracted:{报告元数据, 指标提取结果, ...}}，
+        //   元数据在 extracted 下一层；直接读顶层恒为 undefined ⇒ 页面渲染出
+        //   「企业名称: - ｜ 报告年份: - ｜ 所属行业: 待定」+ 一个空 JSON 块 {}。
+        //   与 previewReport / 雷达图 / 历史保存 三处统一为同一口径：extracted 优先。
+        const ext = (extractData && extractData.extracted) || extractData || {};
+        const meta = ext['报告元数据'] || {};
+        const indicators = ext['指标提取结果'] || {};
+
+        // 防御：拿不到任何内容时宁可不渲染，也不再吐一个「- / - / 待定」的空壳
+        const hasData = Object.keys(meta).length > 0 || Object.keys(indicators).length > 0;
+        container.innerHTML = hasData ? `
             <div class="extract-meta" style="margin-bottom:16px;">
-                <strong>企业名称:</strong> ${meta['企业名称'] || '-'} |
-                <strong>报告年份:</strong> ${meta['报告年份'] || '-'} |
-                <strong>所属行业:</strong> ${meta['所属行业'] || '待定'}
+                <strong>企业名称:</strong> ${escapeHtml(meta['企业名称'] || '') || '-'} |
+                <strong>报告年份:</strong> ${escapeHtml(meta['报告年份'] || '') || '-'} |
+                <strong>所属行业:</strong> ${escapeHtml(meta['所属行业'] || '') || '待定'}
             </div>
-            <pre style="max-height:300px; overflow:auto; font-size:12px; background:var(--color-card-bg); padding:12px; border-radius:8px;">${JSON.stringify(indicators, null, 2).slice(0, 3000)}</pre>
-        `;
+            <details style="margin-bottom:4px;">
+                <summary style="cursor:pointer; font-size:12px; color:var(--color-text-muted);">查看原始提取 JSON（调试用，含 42 项取值与原文证据）</summary>
+                <pre style="max-height:300px; overflow:auto; font-size:12px; background:var(--color-card-bg); padding:12px; border-radius:8px; margin-top:8px;">${escapeHtml(JSON.stringify(indicators, null, 2).slice(0, 3000))}</pre>
+            </details>
+        ` : '';
     }
     // 用真实数据填充页面卡片占位元素（核心逻辑：无论 container 是否存在都要跑）
     fillExtractCards(extractData);
